@@ -2,10 +2,11 @@
 `define STREAM_DEFS_VH
 `define SAMPLE_STREAM_DATA_W 32
 `define SAMPLE_STREAM_META_W 32
-`define MSG_STREAM_DATA_W 32
-`define BULK_STREAM_DATA_W 64
-`define STREAM_SOURCE_W 8
-`define STREAM_MSG_ID_W 8
-`define STREAM_CYCLE_ID_W 32
-`define STREAM_FLAGS_W 16
+`define MSG_STREAM_DATA_W    32
+`define BULK_STREAM_DATA_W   64
+`define STREAM_SOURCE_W      16
+`define STREAM_MSG_ID_W      16
+`define STREAM_TIMESTAMP_W   64
+`define STREAM_CYCLE_ID_W    32
+`define STREAM_FLAGS_W       32
 `endif
