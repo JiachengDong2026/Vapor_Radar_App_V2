@@ -1,0 +1,1 @@
+module sample_stream_sink(input clk,input rst_n,input valid,output ready,input [31:0] data); reg [31:0] count; assign ready=1'b1; always @(posedge clk) if(rst_n&&valid&&ready) begin count<=count+1'b1; $display("sample_stream %h",data); end endmodule

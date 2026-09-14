@@ -1,0 +1,1 @@
+module msg_stream_sink(input clk,input rst_n,input valid,output ready,input [31:0] data,input [7:0] source_id,input [7:0] msg_id); assign ready=1'b1; always @(posedge clk) if(rst_n&&valid) $display("msg_stream src=%h id=%h data=%h",source_id,msg_id,data); endmodule
