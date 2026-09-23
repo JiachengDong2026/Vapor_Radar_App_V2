@@ -7,8 +7,8 @@ module cdc_pulse_sync (
     output wire dst_pulse
 );
     reg src_toggle;
-    reg dst_sync1;
-    reg dst_sync2;
+    (* ASYNC_REG = "TRUE", SHREG_EXTRACT = "NO" *) reg dst_sync1;
+    (* ASYNC_REG = "TRUE", SHREG_EXTRACT = "NO" *) reg dst_sync2;
     reg dst_sync2_d;
 
     always @(posedge src_clk or negedge src_rst_n) begin

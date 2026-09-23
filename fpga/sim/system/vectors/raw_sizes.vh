@@ -1,0 +1,1 @@
+localparam GOLD_WORDS=107,GOLD_FRAMES=12;

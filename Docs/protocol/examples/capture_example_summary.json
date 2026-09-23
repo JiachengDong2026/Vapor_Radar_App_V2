@@ -1,0 +1,743 @@
+{
+  "bytes": 656,
+  "sha256": "88c4f2e7dbec24d7489965276ef10a419a9849169690dfff21c54499f15a9c43",
+  "frame_count": 9,
+  "crc_pass": 9,
+  "crc_fail": 0,
+  "framing_issues": [],
+  "stream_integrity_ok": true,
+  "classification_counts": {
+    "other_or_diagnostic": 2,
+    "valid_sample": 5,
+    "metadata": 1,
+    "flagged_sample": 1
+  },
+  "all_six_have_valid_samples": false,
+  "sources": {
+    "0x0040": {
+      "name": "PTB210",
+      "frames": 1,
+      "crc_fail": 0,
+      "sensor_records": 1,
+      "valid_samples": 1,
+      "flagged_samples": 0,
+      "metadata_records": 0,
+      "invalid_records": 0,
+      "health_records": 0,
+      "values": {
+        "pressure_mPa": {
+          "count": 1,
+          "min": 101450000,
+          "max": 101450000,
+          "last": 101450000
+        },
+        "pressure_Pa": {
+          "count": 1,
+          "min": 101450.0,
+          "max": 101450.0,
+          "last": 101450.0
+        }
+      },
+      "message_counts": {
+        "10/1100": 1
+      },
+      "first_sample_ticks": 78330804867,
+      "last_sample_ticks": 78330804867,
+      "latest_valid_values": {
+        "pressure_mPa": 101450000,
+        "pressure_Pa": 101450.0
+      },
+      "health_assessment": "valid_samples_observed",
+      "sample_span_seconds_at_100MHz": 0.0
+    },
+    "0x0041": {
+      "name": "HMP",
+      "frames": 0,
+      "crc_fail": 0,
+      "sensor_records": 0,
+      "valid_samples": 0,
+      "flagged_samples": 0,
+      "metadata_records": 0,
+      "invalid_records": 0,
+      "health_records": 0,
+      "values": {},
+      "message_counts": {},
+      "health_assessment": "no_valid_sample_observed",
+      "sample_span_seconds_at_100MHz": 0.0
+    },
+    "0x0042": {
+      "name": "EPSILON",
+      "frames": 1,
+      "crc_fail": 0,
+      "sensor_records": 1,
+      "valid_samples": 1,
+      "flagged_samples": 0,
+      "metadata_records": 0,
+      "invalid_records": 0,
+      "health_records": 0,
+      "values": {
+        "fdilink_sequence": {
+          "count": 1,
+          "min": 79,
+          "max": 79,
+          "last": 79
+        },
+        "payload_length": {
+          "count": 1,
+          "min": 4,
+          "max": 4,
+          "last": 4
+        }
+      },
+      "message_counts": {
+        "10/1200": 1
+      },
+      "first_sample_ticks": 77929223779,
+      "last_sample_ticks": 77929223779,
+      "latest_valid_values": {
+        "fdilink_id": "0x53",
+        "fdilink_sequence": 79,
+        "payload_length": 4,
+        "header_crc_ok": true,
+        "payload_crc_ok": true,
+        "payload_hex": "11001100",
+        "utc_initialized": false
+      },
+      "health_assessment": "valid_samples_observed",
+      "sample_span_seconds_at_100MHz": 0.0
+    },
+    "0x0043": {
+      "name": "BMP390",
+      "frames": 2,
+      "crc_fail": 0,
+      "sensor_records": 2,
+      "valid_samples": 1,
+      "flagged_samples": 0,
+      "metadata_records": 1,
+      "invalid_records": 0,
+      "health_records": 0,
+      "values": {
+        "pressure_adc_raw": {
+          "count": 1,
+          "min": 6462464,
+          "max": 6462464,
+          "last": 6462464
+        },
+        "temperature_adc_raw": {
+          "count": 1,
+          "min": 8499712,
+          "max": 8499712,
+          "last": 8499712
+        }
+      },
+      "message_counts": {
+        "10/1100": 2
+      },
+      "first_sample_ticks": 78030129079,
+      "last_sample_ticks": 78030129079,
+      "latest_valid_values": {
+        "pressure_adc_raw": 6462464,
+        "temperature_adc_raw": 8499712
+      },
+      "health_assessment": "valid_samples_observed",
+      "sample_span_seconds_at_100MHz": 0.0
+    },
+    "0x0044": {
+      "name": "SHT45",
+      "frames": 1,
+      "crc_fail": 0,
+      "sensor_records": 1,
+      "valid_samples": 1,
+      "flagged_samples": 0,
+      "metadata_records": 0,
+      "invalid_records": 0,
+      "health_records": 0,
+      "values": {
+        "temperature_mC": {
+          "count": 1,
+          "min": 23699,
+          "max": 23699,
+          "last": 23699
+        },
+        "humidity_milli_pct": {
+          "count": 1,
+          "min": 64559,
+          "max": 64559,
+          "last": 64559
+        },
+        "device_status": {
+          "count": 1,
+          "min": 0,
+          "max": 0,
+          "last": 0
+        },
+        "temperature_C": {
+          "count": 1,
+          "min": 23.699,
+          "max": 23.699,
+          "last": 23.699
+        },
+        "humidity_pct": {
+          "count": 1,
+          "min": 64.559,
+          "max": 64.559,
+          "last": 64.559
+        }
+      },
+      "message_counts": {
+        "10/1100": 1
+      },
+      "first_sample_ticks": 77929284731,
+      "last_sample_ticks": 77929284731,
+      "latest_valid_values": {
+        "temperature_mC": 23699,
+        "humidity_milli_pct": 64559,
+        "device_status": 0,
+        "temperature_C": 23.699,
+        "humidity_pct": 64.559
+      },
+      "health_assessment": "valid_samples_observed",
+      "sample_span_seconds_at_100MHz": 0.0
+    },
+    "0x0045": {
+      "name": "TFA1500",
+      "frames": 1,
+      "crc_fail": 0,
+      "sensor_records": 1,
+      "valid_samples": 1,
+      "flagged_samples": 0,
+      "metadata_records": 0,
+      "invalid_records": 0,
+      "health_records": 0,
+      "values": {
+        "distance_mm": {
+          "count": 1,
+          "min": 460,
+          "max": 460,
+          "last": 460
+        }
+      },
+      "message_counts": {
+        "10/1100": 1
+      },
+      "first_sample_ticks": 77940422610,
+      "last_sample_ticks": 77940422610,
+      "latest_valid_values": {
+        "distance_mm": 460
+      },
+      "health_assessment": "valid_samples_observed",
+      "sample_span_seconds_at_100MHz": 0.0
+    },
+    "0x0046": {
+      "name": "AI8",
+      "frames": 1,
+      "crc_fail": 0,
+      "sensor_records": 1,
+      "valid_samples": 0,
+      "flagged_samples": 1,
+      "metadata_records": 0,
+      "invalid_records": 0,
+      "health_records": 0,
+      "values": {},
+      "message_counts": {
+        "10/1100": 1
+      },
+      "health_assessment": "flagged_data_only",
+      "sample_span_seconds_at_100MHz": 0.0
+    }
+  },
+  "frames": [
+    {
+      "index": 1,
+      "offset": 0,
+      "length": 76,
+      "kind": 2,
+      "sequence": 1002,
+      "source": 1,
+      "message": 2,
+      "flags": 1,
+      "timestamp_ticks": 77927817017,
+      "cycle": 4294967295,
+      "payload_hex": "00 00 00 00 00 00 00 00 05 00 00 00 01 01 01 00 00 00 00 00 92 00 00 00 cf 00 00 00 16 09 26 20",
+      "crc_received": "4869B91F",
+      "crc_computed": "4869B91F",
+      "crc_ok": true,
+      "ping_seq1_ok": false,
+      "source_name": "other",
+      "classification": "other_or_diagnostic"
+    },
+    {
+      "index": 2,
+      "offset": 76,
+      "length": 48,
+      "kind": 2,
+      "sequence": 1009,
+      "source": 1,
+      "message": 3,
+      "flags": 1,
+      "timestamp_ticks": 77928851477,
+      "cycle": 4294967295,
+      "payload_hex": "00 00 00 00",
+      "crc_received": "37D1EE2B",
+      "crc_computed": "37D1EE2B",
+      "crc_ok": true,
+      "ping_seq1_ok": false,
+      "source_name": "other",
+      "classification": "other_or_diagnostic"
+    },
+    {
+      "index": 3,
+      "offset": 124,
+      "length": 56,
+      "kind": 16,
+      "sequence": 13151,
+      "source": 66,
+      "message": 4608,
+      "flags": 1,
+      "timestamp_ticks": 77929223779,
+      "cycle": 4294967295,
+      "payload_hex": "fc 53 04 4f c0 5d 51 11 00 11 00 fd",
+      "crc_received": "87E06105",
+      "crc_computed": "87E06105",
+      "crc_ok": true,
+      "ping_seq1_ok": false,
+      "source_name": "EPSILON",
+      "classification": "valid_sample",
+      "decoded": {
+        "values": {
+          "fdilink_id": "0x53",
+          "fdilink_sequence": 79,
+          "payload_length": 4,
+          "header_crc_ok": true,
+          "payload_crc_ok": true,
+          "payload_hex": "11001100",
+          "utc_initialized": false
+        },
+        "note": "CRC-valid FDILink proves communication only. Indoor operation without an antenna may have no GNSS fix; position/time validity is not assumed."
+      },
+      "health_reasons": []
+    },
+    {
+      "index": 4,
+      "offset": 180,
+      "length": 76,
+      "kind": 16,
+      "sequence": 13164,
+      "source": 67,
+      "message": 4352,
+      "flags": 1,
+      "timestamp_ticks": 77929950698,
+      "cycle": 4294967295,
+      "payload_hex": "01 00 01 00 00 01 0b 15 98 6d 4c 4b f9 fd 1c 4d 17 06 01 93 49 00 5a 03 fa 80 0f 08 f5 00 00 00",
+      "crc_received": "8205C4FF",
+      "crc_computed": "8205C4FF",
+      "crc_ok": true,
+      "ping_seq1_ok": false,
+      "source_name": "BMP390",
+      "classification": "metadata",
+      "decoded": {
+        "schema": 1,
+        "tlv_count": 1,
+        "tlvs": [
+          {
+            "tag": "0x0100",
+            "type": 11,
+            "length": 21,
+            "name": "calibration_raw_21bytes",
+            "value": "986d4c4bf9fd1c4d1706019349005a03fa800f08f5"
+          }
+        ],
+        "values": {
+          "calibration_raw_21bytes": "986d4c4bf9fd1c4d1706019349005a03fa800f08f5"
+        },
+        "note": "Pressure and temperature ADC counts are raw, not Pa or degrees C; Bosch calibration/compensation is not applied."
+      },
+      "health_reasons": []
+    },
+    {
+      "index": 5,
+      "offset": 256,
+      "length": 72,
+      "kind": 16,
+      "sequence": 13167,
+      "source": 68,
+      "message": 4352,
+      "flags": 1,
+      "timestamp_ticks": 77929284731,
+      "cycle": 4294967295,
+      "payload_hex": "01 00 03 00 10 00 07 04 93 5c 00 00 11 00 03 04 2f fc 00 00 01 00 03 04 00 00 00 00",
+      "crc_received": "6BBE3442",
+      "crc_computed": "6BBE3442",
+      "crc_ok": true,
+      "ping_seq1_ok": false,
+      "source_name": "SHT45",
+      "classification": "valid_sample",
+      "decoded": {
+        "schema": 1,
+        "tlv_count": 3,
+        "tlvs": [
+          {
+            "tag": "0x0010",
+            "type": 7,
+            "length": 4,
+            "name": "temperature_mC",
+            "value": 23699
+          },
+          {
+            "tag": "0x0011",
+            "type": 3,
+            "length": 4,
+            "name": "humidity_milli_pct",
+            "value": 64559
+          },
+          {
+            "tag": "0x0001",
+            "type": 3,
+            "length": 4,
+            "name": "device_status",
+            "value": 0
+          }
+        ],
+        "values": {
+          "temperature_mC": 23699,
+          "humidity_milli_pct": 64559,
+          "device_status": 0,
+          "temperature_C": 23.699,
+          "humidity_pct": 64.559
+        }
+      },
+      "health_reasons": []
+    },
+    {
+      "index": 6,
+      "offset": 328,
+      "length": 152,
+      "kind": 16,
+      "sequence": 13246,
+      "source": 70,
+      "message": 4352,
+      "flags": 17,
+      "timestamp_ticks": 77938536300,
+      "cycle": 4294967295,
+      "payload_hex": "02 00 0d 00 60 04 07 04 f5 00 00 00 61 04 07 04 90 01 00 00 62 04 07 04 f5 00 00 00 63 04 03 04 00 00 00 00 64 04 03 04 00 00 00 00 65 04 03 04 03 00 00 00 66 04 03 04 00 02 00 00 67 04 03 04 00 00 00 00 01 00 03 04 01 00 00 00 02 00 03 04 00 03 00 02 04 00 03 04 01 00 00 00 14 00 07 04 00 5a 62 02 15 00 07 04 20 d7 75 01",
+      "crc_received": "E65634F6",
+      "crc_computed": "E65634F6",
+      "crc_ok": true,
+      "ping_seq1_ok": false,
+      "source_name": "AI8",
+      "classification": "flagged_sample",
+      "decoded": {
+        "schema": 2,
+        "tlv_count": 13,
+        "tlvs": [
+          {
+            "tag": "0x0460",
+            "type": 7,
+            "length": 4,
+            "name": "pv_raw",
+            "value": 245
+          },
+          {
+            "tag": "0x0461",
+            "type": 7,
+            "length": 4,
+            "name": "sp_raw",
+            "value": 400
+          },
+          {
+            "tag": "0x0462",
+            "type": 7,
+            "length": 4,
+            "name": "sv_raw",
+            "value": 245
+          },
+          {
+            "tag": "0x0463",
+            "type": 3,
+            "length": 4,
+            "name": "op_raw",
+            "value": 0
+          },
+          {
+            "tag": "0x0464",
+            "type": 3,
+            "length": 4,
+            "name": "alarm",
+            "value": 0
+          },
+          {
+            "tag": "0x0465",
+            "type": 3,
+            "length": 4,
+            "name": "control",
+            "value": 3
+          },
+          {
+            "tag": "0x0466",
+            "type": 3,
+            "length": 4,
+            "name": "host_status",
+            "value": 512
+          },
+          {
+            "tag": "0x0467",
+            "type": 3,
+            "length": 4,
+            "name": "set_result",
+            "value": 0
+          },
+          {
+            "tag": "0x0001",
+            "type": 3,
+            "length": 4,
+            "name": "device_status",
+            "value": 1
+          },
+          {
+            "tag": "0x0002",
+            "type": 3,
+            "length": 4,
+            "name": "device_error",
+            "value": 33555200
+          },
+          {
+            "tag": "0x0004",
+            "type": 3,
+            "length": 4,
+            "name": "sample_counter",
+            "value": 1
+          },
+          {
+            "tag": "0x0014",
+            "type": 7,
+            "length": 4,
+            "name": "target_temperature_uC",
+            "value": 40000000
+          },
+          {
+            "tag": "0x0015",
+            "type": 7,
+            "length": 4,
+            "name": "actual_temperature_uC",
+            "value": 24500000
+          }
+        ],
+        "values": {
+          "pv_raw": 245,
+          "sp_raw": 400,
+          "sv_raw": 245,
+          "op_raw": 0,
+          "alarm": 0,
+          "control": 3,
+          "host_status": 512,
+          "set_result": 0,
+          "device_status": 1,
+          "device_error": 33555200,
+          "sample_counter": 1,
+          "target_temperature_uC": 40000000,
+          "actual_temperature_uC": 24500000,
+          "target_temperature_C": 40.0,
+          "actual_temperature_C": 24.5,
+          "pv_C": 24.5,
+          "sp_C": 40.0,
+          "sv_C": 24.5
+        },
+        "online": true,
+        "transport_error": 0,
+        "exception_code": 0
+      },
+      "health_reasons": [
+        "device error flag set",
+        "AI8 alarm/host error"
+      ]
+    },
+    {
+      "index": 7,
+      "offset": 480,
+      "length": 56,
+      "kind": 16,
+      "sequence": 13263,
+      "source": 69,
+      "message": 4352,
+      "flags": 1,
+      "timestamp_ticks": 77940422610,
+      "cycle": 4294967295,
+      "payload_hex": "01 00 01 00 13 00 03 04 cc 01 00 00",
+      "crc_received": "CC387CC6",
+      "crc_computed": "CC387CC6",
+      "crc_ok": true,
+      "ping_seq1_ok": false,
+      "source_name": "TFA1500",
+      "classification": "valid_sample",
+      "decoded": {
+        "schema": 1,
+        "tlv_count": 1,
+        "tlvs": [
+          {
+            "tag": "0x0013",
+            "type": 3,
+            "length": 4,
+            "name": "distance_mm",
+            "value": 460
+          }
+        ],
+        "values": {
+          "distance_mm": 460
+        }
+      },
+      "health_reasons": []
+    },
+    {
+      "index": 8,
+      "offset": 536,
+      "length": 64,
+      "kind": 16,
+      "sequence": 14585,
+      "source": 67,
+      "message": 4352,
+      "flags": 1,
+      "timestamp_ticks": 78030129079,
+      "cycle": 4294967295,
+      "payload_hex": "01 00 02 00 01 01 03 04 00 9c 62 00 02 01 03 04 00 b2 81 00",
+      "crc_received": "5B0EACAB",
+      "crc_computed": "5B0EACAB",
+      "crc_ok": true,
+      "ping_seq1_ok": false,
+      "source_name": "BMP390",
+      "classification": "valid_sample",
+      "decoded": {
+        "schema": 1,
+        "tlv_count": 2,
+        "tlvs": [
+          {
+            "tag": "0x0101",
+            "type": 3,
+            "length": 4,
+            "name": "pressure_adc_raw",
+            "value": 6462464
+          },
+          {
+            "tag": "0x0102",
+            "type": 3,
+            "length": 4,
+            "name": "temperature_adc_raw",
+            "value": 8499712
+          }
+        ],
+        "values": {
+          "pressure_adc_raw": 6462464,
+          "temperature_adc_raw": 8499712
+        },
+        "note": "Pressure and temperature ADC counts are raw, not Pa or degrees C; Bosch calibration/compensation is not applied."
+      },
+      "health_reasons": []
+    },
+    {
+      "index": 9,
+      "offset": 600,
+      "length": 56,
+      "kind": 16,
+      "sequence": 19356,
+      "source": 64,
+      "message": 4352,
+      "flags": 1,
+      "timestamp_ticks": 78330804867,
+      "cycle": 4294967295,
+      "payload_hex": "01 00 01 00 12 00 07 04 10 01 0c 06",
+      "crc_received": "979B276F",
+      "crc_computed": "979B276F",
+      "crc_ok": true,
+      "ping_seq1_ok": false,
+      "source_name": "PTB210",
+      "classification": "valid_sample",
+      "decoded": {
+        "schema": 1,
+        "tlv_count": 1,
+        "tlvs": [
+          {
+            "tag": "0x0012",
+            "type": 7,
+            "length": 4,
+            "name": "pressure_mPa",
+            "value": 101450000
+          }
+        ],
+        "values": {
+          "pressure_mPa": 101450000,
+          "pressure_Pa": 101450.0
+        }
+      },
+      "health_reasons": []
+    }
+  ],
+  "provenance": {
+    "original_file": "E:\\Documents\\Vapor_Lc_App_Test\\fx3_gpif_debug_20260918\\reports\\sensor_six_60s_01\\bulk_in.bin",
+    "original_bytes": 7278076,
+    "original_sha256": "dfd3602bbf5b19c44606c045c4aa3eaf2f999360b0d12252390d2302e6a9a5b2",
+    "original_parser_statistics": {
+      "frames": 91087,
+      "consumed_bytes": 7278076,
+      "pending_bytes": 0,
+      "discarded_bytes": 0,
+      "errors": {},
+      "recent_errors": []
+    },
+    "selected_frames": [
+      {
+        "example_offset": 0,
+        "original_offset": 10004,
+        "padded_bytes": 76,
+        "sha256": "4dbc1799ce11ebe897bb448c30fe30e396d3269e15df2ac01eae2a6a51a498f2"
+      },
+      {
+        "example_offset": 76,
+        "original_offset": 10584,
+        "padded_bytes": 48,
+        "sha256": "71153c8b9b5c4271112cf7d83509975fe9545f83ce0c2a74ab7005053a694d3a"
+      },
+      {
+        "example_offset": 124,
+        "original_offset": 10728,
+        "padded_bytes": 56,
+        "sha256": "de19fdc6163d9d09c1caa46535d4daeeef7d890b1331bf025294c260833dbc29"
+      },
+      {
+        "example_offset": 180,
+        "original_offset": 11732,
+        "padded_bytes": 76,
+        "sha256": "7e23784e96af2a2ae9145dafba9373e1d6bad0d073e35c47ad5e3614269f9f85"
+      },
+      {
+        "example_offset": 256,
+        "original_offset": 12032,
+        "padded_bytes": 72,
+        "sha256": "2bfcee4c2b833868b91ad9cec006e4ea32a9efe9d0308a52d79e421efc8ebf8c"
+      },
+      {
+        "example_offset": 328,
+        "original_offset": 19716,
+        "padded_bytes": 152,
+        "sha256": "4724e405f360cc83ad692d400dab28311dd0f79fdd677db06f2dbf96dccd8eca"
+      },
+      {
+        "example_offset": 480,
+        "original_offset": 21432,
+        "padded_bytes": 56,
+        "sha256": "91b2f6abb8486f9966ffd2061befa992fa7c85da516383808bfaf11268a1c9af"
+      },
+      {
+        "example_offset": 536,
+        "original_offset": 128080,
+        "padded_bytes": 64,
+        "sha256": "14856d01b7014c0821871cea40db0e75cae4b2c6008f31d28a0e51f22cc8006f"
+      },
+      {
+        "example_offset": 600,
+        "original_offset": 505784,
+        "padded_bytes": 56,
+        "sha256": "113fd0b514923cbf2eb034189030ddbedc8b6c93ffdba39eea15bfe1380a3fb6"
+      }
+    ],
+    "selection": "Original byte order, first structurally decoded sample for each of six sensors (AI8 is flagged, not healthy), first BMP390 metadata, and actual READ/WRITE replies at seq1002/1009. Noncontiguous excerpts concatenated without changing bytes; sequence gaps are intentional. Sample timing is unsuitable for rate/loss statistics."
+  }
+}

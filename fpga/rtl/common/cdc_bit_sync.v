@@ -7,7 +7,7 @@ module cdc_bit_sync #(
     input  wire async_in,
     output wire sync_out
 );
-    reg [STAGES-1:0] sync_ff;
+    (* ASYNC_REG = "TRUE", SHREG_EXTRACT = "NO" *) reg [STAGES-1:0] sync_ff;
     integer i;
 
     always @(posedge clk or negedge rst_n) begin

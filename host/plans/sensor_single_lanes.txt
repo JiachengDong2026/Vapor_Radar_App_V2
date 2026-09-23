@@ -1,0 +1,35 @@
+# Individual channels, global enable stays zero; no temperature commit.
+W 0x6404 1
+WAIT 6
+R 0x6400 16
+W 0x6404 0
+WAIT 1
+W 0x6304 1
+WAIT 6
+R 0x6300 17
+W 0x6304 0
+WAIT 1
+R 0x6300 4
+W 0x6004 1
+WAIT 12
+R 0x6000 15
+W 0x6004 0
+WAIT 1
+W 0x6604 1
+WAIT 8
+R 0x6600 26
+W 0x6604 0
+WAIT 1
+W 0x6204 1
+WAIT 8
+R 0x6200 16
+W 0x6204 0
+WAIT 1
+W 0x6504 1
+WAIT 8
+R 0x6500 24
+W 0x6504 0
+WAIT 2
+R 0x6500 4
+R 0x0048 2
+R 0x7000 8

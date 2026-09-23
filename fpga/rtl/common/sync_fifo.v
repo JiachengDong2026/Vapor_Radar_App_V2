@@ -46,6 +46,13 @@ module sync_fifo #(
     assign m_valid     = !empty;
     assign m_data      = mem[rd_ptr];
 
+    // Keep the RAM write port free of asynchronous reset for RAM inference.
+    // Only pointers/occupancy reset; stale memory is never visible as valid.
+    always @(posedge clk) begin
+        if (rst_n && do_write)
+            mem[wr_ptr] <= s_data;
+    end
+
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             wr_ptr          <= {ADDR_W{1'b0}};
@@ -56,7 +63,6 @@ module sync_fifo #(
             full_stall_pulse <= s_valid && !s_ready;
 
             if (do_write) begin
-                mem[wr_ptr] <= s_data;
                 if (wr_ptr == DEPTH-1)
                     wr_ptr <= {ADDR_W{1'b0}};
                 else

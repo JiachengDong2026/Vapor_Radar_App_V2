@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.work/
+output/
+reports/
+*.o
+*.a
+*.elf
+*.img
+*.map
+*.exe

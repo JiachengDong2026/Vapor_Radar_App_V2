@@ -42,6 +42,8 @@
 `define SRC_BMP390              16'h0043
 `define SRC_SHT45               16'h0044
 `define SRC_TFA1500             16'h0045
+// AI8 replaces RD105 in integration revision 20260916. Legacy alias is reserved.
+`define SRC_AI8                 16'h0046
 `define SRC_RD105               16'h0046
 `define SRC_STEPPER             16'h0047
 `define SRC_DIAGNOSTICS         16'h0050
@@ -90,6 +92,16 @@
 // tag meanings. These avoid forcing floating-point arithmetic into FPGA RTL.
 `define TLV_TAG_HMP_RH_F32          16'h0100
 `define TLV_TAG_HMP_TEMP_F32        16'h0101
+
+// AI8 schema 2: signed raw values represent tenths of one degree Celsius.
+`define TLV_TAG_AI8_PV_RAW         16'h0460
+`define TLV_TAG_AI8_SP_RAW         16'h0461
+`define TLV_TAG_AI8_SV_RAW         16'h0462
+`define TLV_TAG_AI8_OP_RAW         16'h0463
+`define TLV_TAG_AI8_ALARM          16'h0464
+`define TLV_TAG_AI8_CONTROL        16'h0465
+`define TLV_TAG_AI8_HOST           16'h0466
+`define TLV_TAG_AI8_SET_RESULT     16'h0467
 
 // Arbitration classes.
 `define ARB_PRIO_P0             2'd0

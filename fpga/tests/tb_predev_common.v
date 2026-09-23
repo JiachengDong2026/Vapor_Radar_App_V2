@@ -316,6 +316,7 @@ module tb_predev_common;
         repeat(3) @(posedge clk);
 
         // Timebase check.
+        #1; // Sample after nonblocking clock updates on both endpoints.
         ts0 = timestamp_now;
         repeat(20) @(posedge clk);
         #1;

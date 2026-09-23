@@ -1,0 +1,976 @@
+{
+  "repository": "https://github.com/nickdademo/cypress-fx3-sdk-linux",
+  "commit": "b142a1612d874e259f66cf171bf58c596bfe9dba",
+  "files": [
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/build/cyu3fw_common.mak",
+      "git_blob": "747d7ff15d2472fe411ffa300f2d66c3fc9fc546",
+      "sha256": "8616dec8413f0818036f1b43f641bf782da3f23fc095aa70762ac150a2081f59"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/build/fwconfig/fx3_debug.mak",
+      "git_blob": "22a5f8692bf363b3c925c0e80577c7221406514e",
+      "sha256": "c705cca9e5bd3f31226f5f6e870ea7c014c0da9f3cfacc980d0352aadbb1a35e"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/build/fwconfig/fx3_release.mak",
+      "git_blob": "3ad80ed02cbbdfd22c88ad3652489d420bdd8918",
+      "sha256": "88906555f47730cdcb36e249f0305db28508b15d1cb59011ef96d77478e1122f"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/build/fx3.ld",
+      "git_blob": "3e4fe905990067943eb5df4c44d73dc548774455",
+      "sha256": "058cc55d01ac0aab6e18de4174250362ac291f76d238159fde904c19a39ec265"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/build/fx3_256k.ld",
+      "git_blob": "6d53504e95ffa9b74152be4c6e53a26943080fca",
+      "sha256": "d535e1111de675eec6ec37d3b1d1c17d2b53f583c05f9abfd056bc216df09191"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/build/fx3_512k.ld",
+      "git_blob": "15f42d9b5a25751d3028923ff84d61f1a4f7e344",
+      "sha256": "6e55784543bee97fbac3b8df1a1430184ca8be6c19903f4af5d5669af950779c"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/build/fx3cpp.ld",
+      "git_blob": "433eafd346f15ca5234c1f2be9ad7ade019c7626",
+      "sha256": "7d47c7030fa7ff6c46c458048531eca339f5a6e890a30ad5e3d56bb96aacca09"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyfx3_api.h",
+      "git_blob": "3b5da946aa27398362afe9dad8f76d639c415bf3",
+      "sha256": "2d4ef6ea74e4d9e50144abef2f8fcdda4b5a788ad02a351093b0b1a86f0df7a1"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyfxapidesc.h",
+      "git_blob": "d02589fef43f390c47927a12be3c87f2aa10c20d",
+      "sha256": "eac82c719ddedaf9d4cb7dbe3f57982d908ba61ca1468208eeca7191ea52b76b"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyfxversion.h",
+      "git_blob": "71c598ea17cf5cb4f1e4c9b3ec9a8d7e058ab9b1",
+      "sha256": "c90dd718e5ba6403567ed87b0976eace95c0d3a15d1bb3d015d92c45d09de75b"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3appdefine.h",
+      "git_blob": "61077ce0da955a5ae2987733a5543f995b473431",
+      "sha256": "2919600f4f909921e24d0c2ebc23191fb3625c59c829743d64f5eaa6bcfcfb42"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3cardmgr.h",
+      "git_blob": "79ed1dd22c1af3cbd569d6aad79274f8b1eea1d9",
+      "sha256": "f0a61d332a92bf255898c94a305bfe5131314403d5cf32efd398815a47c58ba8"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3cardmgr_fx3s.h",
+      "git_blob": "a7f23f36a67fa23d767ef27e3fcc7c48a0586bad",
+      "sha256": "1fbcd4428a9c90e0027c44afce69ff394867a9f61e41cc4ca22a23673578f6cc"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3descriptor.h",
+      "git_blob": "174a524888e6e94705832fcbe8648ae60decd39f",
+      "sha256": "f5058ab96c3713dd8a3ac12ab62a47ff29a0c8d1bc179ee41b04f10cfb685e11"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3dma.h",
+      "git_blob": "975b98ecab18935941e49cc4640f87f199a6afb5",
+      "sha256": "7e4ec7cc08798b61056353ffc72aaaca5d6b76dff25765fad5398b0298e354f5"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3error.h",
+      "git_blob": "3745476d0df42ec982bc49006ce82ca8a456f9f9",
+      "sha256": "dcd7115dbb98c373858463a5ba9d0805d2ef8bb6b2c715ecaa58d961dc7fd22b"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3externcend.h",
+      "git_blob": "d983250c343860b0ba9fdb67c460ef3b2c2b4788",
+      "sha256": "2ff5b875673453cc9fcc1ee61508617589caac059015fd1b14edcdc670413442"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3externcstart.h",
+      "git_blob": "311a738853aa8572b13a125ee3f3b7fb0ba10c80",
+      "sha256": "eb968cbefaf37633ea56be678eb115069414fd1a8404c774207ee8e9e79f725d"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3gpif.h",
+      "git_blob": "a507419cd132769a9c71b649eedbf29b57250fb1",
+      "sha256": "450e955910dd6e03ee6a9948ef8c9566a96ad228debbd70efa0ffd5de1660a5a"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3gpio.h",
+      "git_blob": "cc89b14b04efafe51446fa34de2c4bca37134617",
+      "sha256": "5e09ef6f1888f9cd24ee415585f0fab120059f636a921e12506646967d95a326"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3i2c.h",
+      "git_blob": "9fb883d7bb7e90cc7b70db888c45dfafc49ce586",
+      "sha256": "ef421e0b6aad0fe53ccef719429466942ad6ef2d6ab25e8624aa4d1e0731fae4"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3i2s.h",
+      "git_blob": "91fa35daa7ed3c027652bb8fbabd0993afe468bc",
+      "sha256": "6e3810985014b7f6a0da55c1bbe9203514580d11504ce010ef0f204839a0d89d"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3lpp.h",
+      "git_blob": "d3de27ab1fc4feaed0cc7440643ec65e4f77ba6f",
+      "sha256": "f27a1f70900be9fb18fb33abf14331d5ac13ceff392a920c6c637e62ac41275f"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3mbox.h",
+      "git_blob": "229278f563a4096b9e1a4fb624954c7e807792b6",
+      "sha256": "ba62fcae2654654e82b4fdaf79f7ccad9e0e538041d7499d923d109a0153eef0"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3mmu.h",
+      "git_blob": "0ac6ff66d3cf179e1ddfbf5965711b76836da639",
+      "sha256": "902af40529c5438f06ca8c187cb1d4efdef38f8ae1bf845bd41796c1c70b6089"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3os.h",
+      "git_blob": "a9f04497e955b48d567c30aaf0aa81f94e7fd27a",
+      "sha256": "0509e760ce4a2475c4a990aea08f519015b7c5009547086c608c206d24b287c9"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3pib.h",
+      "git_blob": "31cb5e575a5596b3f9da162543f78a776789363e",
+      "sha256": "418dff3bd56ab5447593b7825473b7c49e9c9aa1ea9c1abfafd31261e49f5bda"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3protocol.h",
+      "git_blob": "534c3df3c687ad514720fc5ef822dbab1fdabfb0",
+      "sha256": "6576c3dd7bdb7ee5628b10fb1f655a3112d31b402e8ab47c6863356b391466ae"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3regs.h",
+      "git_blob": "ff010f60ffc5816c16aed6f31c0a5834e53c0deb",
+      "sha256": "2d3c721b1c8599cd61e41d107f25f7a2989ac808b41af07feaba3bceb75b0278"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3sib.h",
+      "git_blob": "a340bafc598d5ed7acf3a36dbd9258a26f170767",
+      "sha256": "bab455e97d0a21c208f2a24dede5be42020418f9f493705cf99f05974f5bf612"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3sibpp.h",
+      "git_blob": "4385ee5e52f9b892fd452f4829a458952df4ad23",
+      "sha256": "d6bd61992ff94ab3517f7a9cea3d57dbe8e77ba15b967f48cb4b686d1abe0148"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3socket.h",
+      "git_blob": "6c90efe1dcda38a34ec5e91a57556474680d1005",
+      "sha256": "8dce2f228c1aaae6fd95e399c01dfde7d4385594e5089b395120a7cc0142e565"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3spi.h",
+      "git_blob": "4233481ffb165d33b753bf7a030d884802d377cd",
+      "sha256": "16f02027379e726a2f2209d17c1ae09363c2362a01882f327ad02818c01cee84"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3standby.h",
+      "git_blob": "c408c810b2a69ebf548db26b5d97196eb404a6c3",
+      "sha256": "541302a709c955736734e21037090b078c0d03d824316a9120226632144c95dc"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3system.h",
+      "git_blob": "6f9b56df367f3d361f51bc8d12026b78d887c70d",
+      "sha256": "22255bd42b661aff331bea606878a21454258a840d6a37b77b2748471d544f37"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3tx.h",
+      "git_blob": "bce981f426a8ba4342e890aaab3fe1de60cffda0",
+      "sha256": "ac700c156699c2c0805a392b809b5f95348860d58a13b64423338c32e2c6f557"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3types.h",
+      "git_blob": "2d287789e1a142f0cfcb4da426eca964edec88e8",
+      "sha256": "89dc497ebec7132c506c36040e298435d939dd1307204b7fd8414247acd761e5"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3uart.h",
+      "git_blob": "ec735fea6d16fa3d752a6c3d04c29b82a7aa35ea",
+      "sha256": "3842674532b9742c11bcfa9b48b55ab0f80de74bec853089e490297d64a75045"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3usb.h",
+      "git_blob": "5890be63451af27891561a4fe2f7675397cc5201",
+      "sha256": "f57678a33b85cb2f73cc1fb8424ebdb25886036f9e6d2d436a29d0077e30262d"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3usbconst.h",
+      "git_blob": "5308d00a77d015ef64ffd02a01421ae5336f3cf7",
+      "sha256": "84af30af06d2b9ac3c2b1ee3beb50a630f498647c3d085f0baa96657ec879543"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3usbhost.h",
+      "git_blob": "0ec395abdae9dcb6b6a3fd233054056b81334c36",
+      "sha256": "09dd9f894801115bdf3997a1bca7cf82376fb7aaebd585b1d61a3db953d9446c"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3usbotg.h",
+      "git_blob": "e25bb825735c76c6398ff3108f27886463f43a4e",
+      "sha256": "ef6eec96ff0563417c5bdcccda79e198f9051afa91ca686937127d6ca3578076"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3usbpp.h",
+      "git_blob": "b47bcb1032026c678d3e6ca18583b92e2e0c4ae5",
+      "sha256": "ed90339a1275ae36f15e7d98824fd83f6e514b6b9f0fb9092b22a0b341e7c655"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3utils.h",
+      "git_blob": "8c4d96997678105f5fdb3330f61ce5a49ed91063",
+      "sha256": "45860306db599dffb84c37b420c7bf19065a837cd33cc9b9ae09ef42c7c5ae10"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cyu3vic.h",
+      "git_blob": "b0384f9620a2958ddf524de6f0203cedb56b4382",
+      "sha256": "2461c20e87c4e071dfe345220644f18571360c524a92624a7a32cd692d5c14d4"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/cywbpib.h",
+      "git_blob": "996813f56f7b81df37acc42841e2fe6a26ae2806",
+      "sha256": "e1671af1cf57e46bf37ece671c48f02dca3e3e03cb7d968453c38c29db1036c3"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/fx3_header_files.txt",
+      "git_blob": "0c63cad85cf998fbe1ecdce5f5a0f85c6fffc77b",
+      "sha256": "ae5a827bb69d14bfa2bfdbcf9affecbb017222756f4c7f658669e25531ebca80"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/fx3_library_files.txt",
+      "git_blob": "f5e7f8f9418870a6793fe660db540b2cab641385",
+      "sha256": "5af93a7f8fc6121d3978ad5ac3763708491c8c030ee692d2a03a6fdf1d48a56f"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/gctl_regs.h",
+      "git_blob": "f99788a7a111336bf30a6530df5d5cc346e23c8c",
+      "sha256": "7db66e11ca42257200d7982548cb30e7f301258f774ffac36844c855954f1842"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/gctlaon_regs.h",
+      "git_blob": "697fddb16cd92c1827738c6efbd12553b8c818d8",
+      "sha256": "ce3232647f70316fb37f1f1b47438547f18b8ca6fc17c278d0d022ad1afe1ae9"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/gpif_regs.h",
+      "git_blob": "c7ea7e456e5a3f2a675f70bc42c95e7cd9976fc9",
+      "sha256": "c0b83f121f787f60460e95d4bc77e0a4a50647c0c7b0152d34c4f30f05bb87c3"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/gpio_regs.h",
+      "git_blob": "93fa58fbec014d07996f9637bdc893751fd05b5e",
+      "sha256": "b1dc5b6d3825d8b95ddec07c30f6afae895273a98d18dcef0bb33cea9c04fd69"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/i2c_regs.h",
+      "git_blob": "0dbd0947e1c71dccec9142bb82114c928d1f8712",
+      "sha256": "e7de8f339d932eb522e58daaeb5a2666d3d266f6e026f146de3cc864f10a1440"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/i2s_regs.h",
+      "git_blob": "43fbd0ba6a17d76aa3e3eed7d8dc6a8effb66717",
+      "sha256": "ab94cecc4b7132b415d181b51fd0786c6e10e922717bc3d46df58ec95b661a12"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/lpp_regs.h",
+      "git_blob": "e94bdbd797b30f303e9055f7c7ee197c75b20ed4",
+      "sha256": "80557cbc52339fce2f0485d56670c6ff42b631a91aa9659b034cc271297c8a70"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/pib_regs.h",
+      "git_blob": "05794348e171d6cee72f0943cf7c3b698e96a93b",
+      "sha256": "7ba2efd9bb477e2ccfb7d6b154e42f7d162f791cbd8f397842e901403c7ee83f"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/pmmc_regs.h",
+      "git_blob": "e216aeea93151266c29faadfe85078d2e3e380f5",
+      "sha256": "a4eade491b5f5f64af9ad721c683fe1aed156293084b551cec415ca891277b17"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/pp_regs.h",
+      "git_blob": "659009b82751c97881301d2bf89165529f494a47",
+      "sha256": "923d23c051b8b90138fe73be7e2083e0e01a00da740dff379990a140fc5c3e1a"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/sib_regs.h",
+      "git_blob": "39ec683023aa746b073e5fd4ef242c4e7ad6d498",
+      "sha256": "3a881ae5822859c5067b789f5d613d4936f88f08ab6e8610276071624c15edab"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/sock_regs.h",
+      "git_blob": "f01c3a93cc053b25fc848d8ac8bf80229179e950",
+      "sha256": "5d95f1ebdfa94517d88fd1270fbaa719fd485728e035aaa3a85f04df96bf57b3"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/spi_regs.h",
+      "git_blob": "f5e42c0e0a08b693aa63929d6ec6b918c93175fc",
+      "sha256": "e09be667e2f02aa967da88baf4a0ac40855c29049893d319b7b429025741ae6a"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/tx_api.h",
+      "git_blob": "f5081372309d663b107baa9c4ba02b721155ae21",
+      "sha256": "44483f282d97f1b4df105161b7077a19312fdc72fd3448c5a0f5931d1a5236bd"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/tx_port.h",
+      "git_blob": "ba2921302285fe270bb4d69762e5fa39f1bc236f",
+      "sha256": "4d7ae85f5ee2419573daf956cb32087ee7a279609ce498f613552a7ff72b5ac0"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/uart_regs.h",
+      "git_blob": "19e461fdfee95b8527d0fd25f509b06d40e0ff11",
+      "sha256": "16f6423b65d4b5d5875e3da4ae000b2c6848906f71fc857c9ff133a0ab901302"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/uib_regs.h",
+      "git_blob": "c66892275dfab9e24ba9b05a248ece9da655c00a",
+      "sha256": "85e5404213c781c6fed7090c2dd6b6ce7ac3c6b6b6f72c83a089689b5e7ab807"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/uibin_regs.h",
+      "git_blob": "1481afb7990a0c3f75da338d0b981e1ab9cfdd6b",
+      "sha256": "1e41d904712fe114316208ed6c2a44ea76e0a7450fe62c7972cecd7ee09d871b"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/usb3lnk_regs.h",
+      "git_blob": "74f6067672110c0d1515675192fc18933bf13f1d",
+      "sha256": "9e2873ef1ccfd002ccb846eefd013f7c967ad447b5888e51a9569ec9f3da6512"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/usb3prot_regs.h",
+      "git_blob": "407326de74c6373970421f839f9978798a5d0f3b",
+      "sha256": "7b522495aa98748f3bfffcb456abfd4aabfebdf9ae7865bc35af4cfa465334f5"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/include/vic_regs.h",
+      "git_blob": "29fd7c100f85e33c673f5d218c59fd4969d71390",
+      "sha256": "d8e8e0bff5c5860deac1d93a6ecd6c2d86a335c50f1cc13e99a985f42135e5e8"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/dma/cyu3channel.c",
+      "git_blob": "327169dbed4bbcad6cfe71d4fb1c7b7c739b1623",
+      "sha256": "bcb02f578ec445e5e967b8b114e7ecc3edb6460366d6eea04df7cff85c0f46d9"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/dma/cyu3descriptor.c",
+      "git_blob": "495207a6b1871ad4b831f5f2995634586c87c565",
+      "sha256": "9a6de57231e2ad1c6698a247a095591a2b71dda2431b36be43fa6968e41f488d"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/dma/cyu3dma.c",
+      "git_blob": "b8ea940e0738d4fa82b9a194f15c287d9d7123a2",
+      "sha256": "9066add64becce275a996d3c2817f27f07750529b537335ea7d8b7e914d4e37c"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/dma/cyu3dma_lib.mak",
+      "git_blob": "48fe01362f70e046b53661fc962deffc46c83205",
+      "sha256": "92b85dd521b25f085377e0e56c8608e6d223602a17a6f221847f74b7f6329c98"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/dma/cyu3dmaint.c",
+      "git_blob": "4ea9d20b3d78eb1e05ada723d4ced7f59ed259fa",
+      "sha256": "b9494503f9a21402848ddef9f12438debf647721602c36589e19f8b09ae5b144"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/dma/cyu3dscrpool.c",
+      "git_blob": "ea5ca21b49d50e6b10b8b65330a3f84e87299f0d",
+      "sha256": "8bf87cbfc00d303c69e3769227d0b61c9037c09c7fa5ed17e97c42704ce51271"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/dma/cyu3multicast.c",
+      "git_blob": "4ba62df27a54a10ece45a917717af092ccd73467",
+      "sha256": "488f13b545a5e8af32e0121cdb4c0ea8728b267b22ecfd581837473ff1dc10b8"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/dma/cyu3multichannel.c",
+      "git_blob": "940a16dd688f567e1981726b13b2f706e698f3ca",
+      "sha256": "0ca2f4efc5d054a13a2f5d2a608d15b88a881e32ad60b419b3fa777a95cd1b9b"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/dma/cyu3multichannelutils.c",
+      "git_blob": "094cf401037657e54e487c67350afac713d87c28",
+      "sha256": "9eadee9684c2e9f3eb31a1318adb923f55bc827664fb39f8aef585370ee8f305"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/dma/cyu3socket.c",
+      "git_blob": "7f1b2c6b73858391fd83e85b9a67bd7cbbecfd7b",
+      "sha256": "8e805853a9512c577a1c0474c58d6d167630a3fd492c1b4b16b2fa7e72b35874"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/dma/makefile",
+      "git_blob": "dd996dc791145e5ad952a31fe94f71b08b5ff508",
+      "sha256": "8abc08b96b60a9e506fabed397d532b8a2b5c16d7d86d365ebf1e43364101598"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/fx3lib/source/fx3_debug/cyfx3lib.a",
+      "git_blob": "f3b186cbdf1815bcc637608cfd6df49f958e71f5",
+      "sha256": "c92ada73494abe2f57e6617c30947b3ba399793d18b0c676e5d6bd76e9987661"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/fx3lib/source/fx3_release/cyfx3lib.a",
+      "git_blob": "3ddad4a9e4fe2f72aaa04a15aefee8e72860708e",
+      "sha256": "1e8aed7a24bf22625d83348b04b7635ee0c72bd00cb284bc3cf8ec4856cd5c64"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/fxapp/cyfx_armcc_startup.S",
+      "git_blob": "d1b0c2e9186871693ef425690fa526c290b0a057",
+      "sha256": "89df5d7200450f1d0acf5c7b5bfb0e5938751969d02836f51fae99438f3027fa"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/fxapp/cyfx_gcc_startup.S",
+      "git_blob": "ce00ce03ddbd13ebe568bc0cf4c63b2b21cd6e8f",
+      "sha256": "a60131e178225ad8dd66f887abc79b62ae62e8555026ce035b1c7ae9315cae89"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/fxapp/cyfx_threadx.c",
+      "git_blob": "cebb44f8b02b56589b3e1e34816f6113c39ae93a",
+      "sha256": "c177c4a9015e3cf9e2adebc4bcd1e842adb827e437328c0d9f59f67f8bf4685e"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/fxapp/cyfxapp_exe.mak",
+      "git_blob": "9238f65858cf5b57b44c6614dbc463f304254906",
+      "sha256": "6edf498e310220792768f41fa9198f2ba3be196196531b4678efee4d6b467c4c"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/fxapp/cyfxmain.c",
+      "git_blob": "2f5f5ef149762c764adc2e431c5f8b8fc7995851",
+      "sha256": "293d41a658c0cba3bb897d886179fe79d48cb8ab434541f7d1ee95dd4b7efa71"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/fxapp/makefile",
+      "git_blob": "6d141838e28c35d7707198d1e0a8ae29776c25c8",
+      "sha256": "943392c7edb7cf78c297c88a48b5545640f597a0216ff77869fd37ddaad42fb2"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/lpp/cyu3gpio.c",
+      "git_blob": "b5953e8f66ce5f79430a4b8439eecf1df3456b30",
+      "sha256": "e1cda8eb872890a7db7fb81db2f09880bf063e61e417ddab18c5ae544a5a77fc"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/lpp/cyu3gpiocomplex.c",
+      "git_blob": "2d56df6e1b4c5c09dd966af8cb3df483a9796c9c",
+      "sha256": "99a764b97f2d335d39380081992fff7018c4c10ee00bf7b5f4671dbea15e2b7f"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/lpp/cyu3i2c.c",
+      "git_blob": "c1cdbb889cb7f62152bf75eaa4abc0923c5cf797",
+      "sha256": "9930f2d575d0ba38d21e933d5e002dc0a49bad925912fe6903903a8507e77850"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/lpp/cyu3i2s.c",
+      "git_blob": "cf3e0766cf85d3044765d8047ec49c02c5e8161a",
+      "sha256": "1f1032bb878382a596e5b1a1d88a66b88cef38906e036d2c40bdf5c59619e042"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/lpp/cyu3spi.c",
+      "git_blob": "2a979653c622df3a8961e994d6abf86688c9a722",
+      "sha256": "97ad2a3e1a65d9d110f312f84a3a01983e0c4e965fb92819d694b7d64bef7bdd"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/lpp/cyu3uart.c",
+      "git_blob": "35a784877c5ae618264db345844af0f5ce3e77ee",
+      "sha256": "1bd261647a720a679b83abf1c3ef910c12d037b6fccc9b2d761e88c3ee750625"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/lpp/lpp_lib.mak",
+      "git_blob": "bd5c9ddf087f94fa1835fdaf98db40c5a9d8f1ab",
+      "sha256": "3faa9d7024dfc535d56091235b4bd5f70ae1bcad10c2437e1f9f6a8730a5ed6d"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/lpp/makefile",
+      "git_blob": "aa1ea3ded6e0e0c7974b1b7a2910b40440eaa799",
+      "sha256": "5d2b4218c82e1104c8213a710d5cc0b678c38b7e5f6500ed25aa9c53e8d3f4fd"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/makefile",
+      "git_blob": "a05ee06164fde6b7df41d4490092c764deb3d30c",
+      "sha256": "5454e9903ce0d9c8e8ae304389591d944070dbfcfc1ce4e8757a3fe9570c30a6"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/pport/cyu3gpif.c",
+      "git_blob": "9f5dc96f037ef45f430fec3ea5cf042f23371953",
+      "sha256": "9d30132e5917ea570b4e627e36c366a5838034b31127389c57b98da79e309950"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/pport/cyu3gpifutils.c",
+      "git_blob": "7bf1880d6cb12b7daa52694446a62346de194ba2",
+      "sha256": "0131314b821375704e5a40d18f559f4a5af869c42a9b623c00016d2b1028567c"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/pport/cyu3mbox.c",
+      "git_blob": "42fe0dc64df356643ae10ef34bca6408ad83b829",
+      "sha256": "179f9fdc1f55a5f648e4fd3ac4989ffec9fa0a6aa82c8d01769cf330de1d9233"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/pport/cyu3pib.c",
+      "git_blob": "45d142a9b669b2d11794e8ec82beb35684e39bd6",
+      "sha256": "a03469f9043c96fe92b13b08df61394b45cfdd17c6ff7cb018e1be0597b972ee"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/pport/makefile",
+      "git_blob": "f2f3c46fefe6ed4d1fa89bf77437c89b2f6d81d0",
+      "sha256": "53c8f6c4d84b163ffb3f9601e74160abaedae98c43a3a142d8ee60fab3d41e8e"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/pport/pport_lib.mak",
+      "git_blob": "39616d2a6917171f343107cebf2017ffb73ab966",
+      "sha256": "4473b6aef4d056fb0de74af6cf39a323d3b9d8317b82282e9e3fe9440fd52a9e"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/rtos/fx3_debug/cyu3threadx.a",
+      "git_blob": "774a86f8f664740051318d9579bfba0f4de2f866",
+      "sha256": "0ab1d98761754953d390b7e532d92685f9c1990ac4910f13d042990b10a84ec0"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/rtos/fx3_release/cyu3threadx.a",
+      "git_blob": "bee8f4702d08aae8f7a07a8a6bfe52bb2db08223",
+      "sha256": "3cccdafc2dcb8352db16b733e7bb54bc1757fa01e5f8e216ddbc00506059a435"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/rtos/makefile",
+      "git_blob": "a9d6272230871d10b572602d7d835583b488bdf8",
+      "sha256": "665576ae2585081cb511f859c57a9a49036d63bc239389568cf37cd61f3936c2"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/storage/cyu3cardmgr_fx3.c",
+      "git_blob": "5237e52be6c944ec9bbc11535e5a9035bc27c0eb",
+      "sha256": "8ece40d7ab33971ee3564114b2e14882414d842aa3ba05efe14dd703e05f2582"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/storage/cyu3sib_fx3s.c",
+      "git_blob": "add83adda96076e5d644b31a60f5babbe535128f",
+      "sha256": "dec06720597ce249987add5c98cee5650a692eee3b2973a5ee69ad65271fce52"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/storage/makefile",
+      "git_blob": "1acb2a6bf8ab0bfc7449aacf06f0d43434ea8d74",
+      "sha256": "45e2dbb12ae12eeea27adcf156a0c1dd3002b6888952d8608e8ab1510b3dce62"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/storage/sport_lib.mak",
+      "git_blob": "6a00b6eee4acf4b0e76bed8436d310a87eeaf262",
+      "sha256": "c77dbf2e1a3d414c28818f56bf7d0b6da3014ed8c69f2ce773a396c0dbcd8a1c"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/system/cyfx3stor.c",
+      "git_blob": "e2a433cce2bdb69c957ddb6220c26d50025a969b",
+      "sha256": "ea13c9a943c59dc83aee84e0ab970552cb02599dd6e77588ca2b598be89d5073"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/system/cyfxapi_lib.mak",
+      "git_blob": "d783481f10e97ac3dafa9f2394531a7540609751",
+      "sha256": "4d2e2ec02298e7938d4f02a9ed4bbd58d0b65153abcb3104c9a8a42315ff5775"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/system/cyu3debug.c",
+      "git_blob": "7aef36fccc5b45a8615f1d5fb3fa96ce831ca605",
+      "sha256": "84e60826b66d0dd09235b9c516aa344bd673cd30a88694782f38b140dad5dc8e"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/system/cyu3device.c",
+      "git_blob": "2a97c44f4883de74f3b85171847135ba68797095",
+      "sha256": "8ba8accde031d2d810ed57ca19338a761f34796f13396103b39f1dacec445959"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/system/cyu3entry_armcc.S",
+      "git_blob": "14cfdb20547fd1b21dd4a5aff7b9082e8cc2fc9f",
+      "sha256": "c22ceee71fb0de6dd02b8a9001a8a57c2e067674315b6eb3d4ec1164c93bc169"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/system/cyu3entry_gcc.S",
+      "git_blob": "614e30d7081e3a81fcd087b5b02dcf2f0c4e3490",
+      "sha256": "ed69d7bbce6ceca6cc1f496ac7c237f53330f06c2d8e9d437898dd7422aafe02"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/system/cyu3iocfg.c",
+      "git_blob": "8fd6bc1653b1fad089cabc9e6b26ed8a7db5d80e",
+      "sha256": "c7fee14d58705c4660a4d6c214f94d96016b06f0df9cf734b74294995d6e1612"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/system/cyu3isr_armcc.S",
+      "git_blob": "942f07982754d784b338a9102ba4f395c5998792",
+      "sha256": "a5e41757a425d3c4482bd783a17584f25203aec9400890a513714a398a3f7270"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/system/cyu3isr_gcc.S",
+      "git_blob": "f383822e690a7426b17fb571e31ad9cc1c444138",
+      "sha256": "5439d17225058392a18054a2e06c58f719ab129ba77dfccf30a625d67fded9e4"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/system/cyu3lpp.c",
+      "git_blob": "c3c9ef6968de40998ba27fb50432e890b95549d9",
+      "sha256": "c72dbdd18591d5f42ddcf975645063fa3674ee4277fe874d75f00bff5acb497e"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/system/cyu3mmu.c",
+      "git_blob": "ffded05e30be64939dbf8b31f7c18ff05079bc3f",
+      "sha256": "b1ed224bf7ed9d8e0d473b1e816a4ab9854d2f029b394a53082999e8a15ed177"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/system/cyu3sibint.c",
+      "git_blob": "0bb9de1e7eb876cf91f96c0ca71ae63ffa8679f5",
+      "sha256": "9eca95f47556304f8ef23d79cd4ee879d47b887e1bf83ffe6ff6d29f4783021d"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/system/cyu3system.c",
+      "git_blob": "06773125ff4d6e18b2f06bb5888ad34032bc6ef7",
+      "sha256": "3002bb8f748824b882306348885be142e763f3de3181ab44871a1c7d706a594d"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/system/cyu3utils.c",
+      "git_blob": "6996bfac5d3c643c674492dcdf90a9010d6346a3",
+      "sha256": "f9b7cc758e2d24cd5be6060864548efae480eb052bca1b47879c14d1040d01d1"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/system/cyu3vic.c",
+      "git_blob": "8f39b6462120f6f7a25051e45cbdba412fa2f293",
+      "sha256": "416028189a916fd9f869712eede8ecc651baa37263ab7d374a59c4ec118d7a6d"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/system/makefile",
+      "git_blob": "f784e19ba4e0f1b621e69739e4c78653cd0f425b",
+      "sha256": "4b2a14df9367e9c109661ba223bbcf406391f9cc2251a1b16d122bd10c62e149"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/usb/cyu3usb.c",
+      "git_blob": "ec656483f297bbf1166378895391e2ebac61a298",
+      "sha256": "42f264eb0603cec29fb81ef22c999c5141b63741b2c796945d7cbf6681ba9125"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/usb/cyu3usbhost.c",
+      "git_blob": "7fa5b42427258a45b9a381142a467e90e77f1db0",
+      "sha256": "f323ecab78c9f662dbd9b622801898c5e8988a055b207597ddef2d3dd15eaa5a"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/usb/cyu3usbotg.c",
+      "git_blob": "6fdadad5302552aae8c0a8b38846457ba26f25d9",
+      "sha256": "974b548020f0a2c2ce50e1b4befcf8b3297e428a5912d2bf3534ded544527dd7"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/usb/cyu3usbpp.c",
+      "git_blob": "a48ad5ac77dbb27d97bdb6fd571dcdf6653ed833",
+      "sha256": "11f1ddd4445aa92099f23829d7b109743d0ebef7ff0d274caa16c79908bc61f1"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/usb/cyu3usbutil.c",
+      "git_blob": "af1484b4dfe4017cdc743fcc5b7b3a4adbc22601",
+      "sha256": "a4b437def75e6899063fbf4c1be4d36274c9f7f94c7505903c0b1900fe69d633"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/usb/makefile",
+      "git_blob": "2edd07a9742aa202af956848e4ddbdaeca11ef19",
+      "sha256": "5ecb2fdc03f3955dc6bab5d04804add80a52948d5ef0ef3d846bd01557bf45cc"
+    },
+    {
+      "path": "FX3_SDK_1_3_1_SRC/sdk/firmware/src/usb/uport_lib.mak",
+      "git_blob": "80819d7ddf86504092c8ce6a46b186b616038c92",
+      "sha256": "5ab02b64a93644a078ac8af7de01eb0fc6d7f46710970b760cbd0fb2c4fca478"
+    },
+    {
+      "path": "firmware/common/cx3_build_config.mak",
+      "git_blob": "3666071eef29055a8e08bce6f532d6efb07d45da",
+      "sha256": "9847ed59678a05a8cffab2b93c55537188c501ef65cb5613a8781cd62a0d045e"
+    },
+    {
+      "path": "firmware/common/cyfx_gcc_startup.S",
+      "git_blob": "ce00ce03ddbd13ebe568bc0cf4c63b2b21cd6e8f",
+      "sha256": "a60131e178225ad8dd66f887abc79b62ae62e8555026ce035b1c7ae9315cae89"
+    },
+    {
+      "path": "firmware/common/cyfx_startup.S",
+      "git_blob": "1ca22dc7f1ac9ff066a7de4326d3e344d0f5a2c8",
+      "sha256": "89dd5edbd266f8952a75fe609a265e4fa113bb26d3c3ee72b1cb8332bc3af83d"
+    },
+    {
+      "path": "firmware/common/cyfxtx.c",
+      "git_blob": "671a7e28aeba5b29287174ad1f7682c0c824ec2d",
+      "sha256": "6c5a70a3b94c0e2fc8d79ebe0e34459e994aac311a9d28e179151d8e6b7fe43e"
+    },
+    {
+      "path": "firmware/common/fx3.ld",
+      "git_blob": "3e4fe905990067943eb5df4c44d73dc548774455",
+      "sha256": "058cc55d01ac0aab6e18de4174250362ac291f76d238159fde904c19a39ec265"
+    },
+    {
+      "path": "firmware/common/fx3_256k.ld",
+      "git_blob": "6d53504e95ffa9b74152be4c6e53a26943080fca",
+      "sha256": "d535e1111de675eec6ec37d3b1d1c17d2b53f583c05f9abfd056bc216df09191"
+    },
+    {
+      "path": "firmware/common/fx3_512k.ld",
+      "git_blob": "15f42d9b5a25751d3028923ff84d61f1a4f7e344",
+      "sha256": "6e55784543bee97fbac3b8df1a1430184ca8be6c19903f4af5d5669af950779c"
+    },
+    {
+      "path": "firmware/common/fx3_armg++_config.mak",
+      "git_blob": "1c597ea0861a8c123d125f1f15a870a4382fb6d7",
+      "sha256": "b660e3e9c091f7698e341cce5a5dd81a71f5d29e7141bc4550b2559544b3eed0"
+    },
+    {
+      "path": "firmware/common/fx3_armgcc_config.mak",
+      "git_blob": "6d409941317087c2bfd25f7cd6869a64a56ebdc8",
+      "sha256": "766c829eac73de40a90215acc4b928e24df7c8a38523a90645de7d18571f4e62"
+    },
+    {
+      "path": "firmware/common/fx3_armrvds_config.mak",
+      "git_blob": "51f3291d94ad7ada6c25037ff544966913bc33db",
+      "sha256": "e9823ab11f3819e7ca241042b9a11c58c3d412232f87d22d0f4db37c496bbd12"
+    },
+    {
+      "path": "firmware/common/fx3_build_config.mak",
+      "git_blob": "cab7b7d1dc39a14e9598ce427aa95689f18412e1",
+      "sha256": "f3f95a90443644b494c005a814cbf5d27918918eb491b077ed791c14b35605c1"
+    },
+    {
+      "path": "firmware/common/fx3cpp.ld",
+      "git_blob": "433eafd346f15ca5234c1f2be9ad7ade019c7626",
+      "sha256": "7d47c7030fa7ff6c46c458048531eca339f5a6e890a30ad5e3d56bb96aacca09"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyfx3_api.h",
+      "git_blob": "3b5da946aa27398362afe9dad8f76d639c415bf3",
+      "sha256": "2d4ef6ea74e4d9e50144abef2f8fcdda4b5a788ad02a351093b0b1a86f0df7a1"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyfxapidesc.h",
+      "git_blob": "d02589fef43f390c47927a12be3c87f2aa10c20d",
+      "sha256": "eac82c719ddedaf9d4cb7dbe3f57982d908ba61ca1468208eeca7191ea52b76b"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyfxversion.h",
+      "git_blob": "71c598ea17cf5cb4f1e4c9b3ec9a8d7e058ab9b1",
+      "sha256": "c90dd718e5ba6403567ed87b0976eace95c0d3a15d1bb3d015d92c45d09de75b"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3cardmgr_fx3s.h",
+      "git_blob": "dc780e3d815811201646f9624b22f56dbd69a62f",
+      "sha256": "3c1c32ecafd230b80fec34d8bacf3470054f1ec43d450d75a34f1ec0f84eb206"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3descriptor.h",
+      "git_blob": "174a524888e6e94705832fcbe8648ae60decd39f",
+      "sha256": "f5058ab96c3713dd8a3ac12ab62a47ff29a0c8d1bc179ee41b04f10cfb685e11"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3dma.h",
+      "git_blob": "975b98ecab18935941e49cc4640f87f199a6afb5",
+      "sha256": "7e4ec7cc08798b61056353ffc72aaaca5d6b76dff25765fad5398b0298e354f5"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3error.h",
+      "git_blob": "4f82afee80b11b924cb3c7b38e4239ab7073aa10",
+      "sha256": "b5a542d60ce3fa9603d0b2dc30f8640336ac170ba8ad07a6878576a3feee202c"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3externcend.h",
+      "git_blob": "d983250c343860b0ba9fdb67c460ef3b2c2b4788",
+      "sha256": "2ff5b875673453cc9fcc1ee61508617589caac059015fd1b14edcdc670413442"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3externcstart.h",
+      "git_blob": "311a738853aa8572b13a125ee3f3b7fb0ba10c80",
+      "sha256": "eb968cbefaf37633ea56be678eb115069414fd1a8404c774207ee8e9e79f725d"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3gpif.h",
+      "git_blob": "16b873303e4217a4187873bf28c4c91c965462ee",
+      "sha256": "2dacad5dfc0194518ec1b491f9373d6bc8c90430aebd415b0dd5fb3981763492"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3gpifasyncadmux.h",
+      "git_blob": "192f8e6eb8f4d053d2ea321d0ce0d360fe6aedf5",
+      "sha256": "00dfe5d68da329e0bd2a89ed251fbff074a9b15b08c075732e0abd92feb881e1"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3gpifsram.h",
+      "git_blob": "2317312877880d414445da573ea397e1499672c3",
+      "sha256": "7eefe288c2d8642eb079eb47831bf0504845f482f54eae7b0d6737392432f99d"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3gpio.h",
+      "git_blob": "cc89b14b04efafe51446fa34de2c4bca37134617",
+      "sha256": "5e09ef6f1888f9cd24ee415585f0fab120059f636a921e12506646967d95a326"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3i2c.h",
+      "git_blob": "20ec260989644de3863c0a6bdc7bb2e7387bc190",
+      "sha256": "2930f780efb8b4557b0170632aa3d97d0f9f428d295d793d6b9acfba13fcac8a"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3i2s.h",
+      "git_blob": "eca9ee163a1d1d94eebe6c14ce34363465f5294d",
+      "sha256": "14d02ddbc14d67020bf10e0887b1c348ae04b8d41ecb18a78bbd9912abf408b8"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3imagesensor.h",
+      "git_blob": "ae066fcfe07d8e8adbce48d5259940eb61fb5cef",
+      "sha256": "626806d143b0134c2e449b57c12447ac1df547c6d38bc5d886cd3abd7137ae1b"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3lpp.h",
+      "git_blob": "d3de27ab1fc4feaed0cc7440643ec65e4f77ba6f",
+      "sha256": "f27a1f70900be9fb18fb33abf14331d5ac13ceff392a920c6c637e62ac41275f"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3mbox.h",
+      "git_blob": "b812ebb2bdb1f0e2b49cf2a932990a2c28bade44",
+      "sha256": "9173ef3feccf9193abfdb7c520cf0df516c399c01376db72f66eca49b3202aae"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3mipicsi.h",
+      "git_blob": "df937ec5ee972c8441b8717b5651da38c340c9d5",
+      "sha256": "afe958dc3df8c9973cb858af3a6f4934ef8f4b23b28326a9e0d6cd468171a018"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3mmu.h",
+      "git_blob": "eb9dc95e04159a78c36301d28fb6d874ba328e37",
+      "sha256": "eab1d272d2c34c52cbf7189dc019c55de28f8fcdd1e31353e180d7edf42bd1f2"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3os.h",
+      "git_blob": "a9f04497e955b48d567c30aaf0aa81f94e7fd27a",
+      "sha256": "0509e760ce4a2475c4a990aea08f519015b7c5009547086c608c206d24b287c9"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3pib.h",
+      "git_blob": "5c62b95024ab5bbc8d4300ee99283732ddffae41",
+      "sha256": "fb06c346252eb1a8d63d58eb27ced53034e808bd31071361ea7d0cd21b5e5edd"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3sib.h",
+      "git_blob": "7ca72a2a55ea9937e4ab4f9f91ec9f4b84a9583b",
+      "sha256": "73cb7b2a0b0566ce85baf1808c7fad09446ca80dcb82826cc50b1e43e2460581"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3socket.h",
+      "git_blob": "8575f95ed54b7cc8b6ed6d132934761b5346cd89",
+      "sha256": "210376c7ad62e845533798fe0c8882cd971b8745b2eddb9e74079c3944740b24"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3spi.h",
+      "git_blob": "4233481ffb165d33b753bf7a030d884802d377cd",
+      "sha256": "16f02027379e726a2f2209d17c1ae09363c2362a01882f327ad02818c01cee84"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3system.h",
+      "git_blob": "c61c56e041eb0d62ab9d1d7882a36d9315a188a7",
+      "sha256": "b50ded23674c1f0d3d811eb4c6558b96f4a8d9a17ff1d667e11358ce90404b0f"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3tx.h",
+      "git_blob": "94f1de77a3a023fcbcbbe29dc45e4fc206ae5360",
+      "sha256": "3d1458afe0da746aaf46abf81550b5c14a6ab4096e739464e03509889f3de6d8"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3types.h",
+      "git_blob": "7385ed927cad59297adee191976f15f2fc4acf6a",
+      "sha256": "048f237d9215bbca28966aa78d5e09b08d70047ef0b64d9f195e717916017ebf"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3uart.h",
+      "git_blob": "f41ff2cdf4c39cf474a51eeeaccbc75ffca6cadb",
+      "sha256": "36c922207395e336d06a32dea330cf63c929df341920d6c417a269a16f4c655f"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3usb.h",
+      "git_blob": "f19463401ae388ca971086c3676bcc117e011855",
+      "sha256": "94a926f44e34f74860f63342305880b16efbdb89c1c8f9ebbcde3defda603ace"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3usbconst.h",
+      "git_blob": "27c67052ada2ce31507b4b2f115ae5007dd57398",
+      "sha256": "fbd187e8e4ee762ac61d747139f76756fa66145fec8b4b3c1eada7f3b1f93b8d"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3usbhost.h",
+      "git_blob": "a0d63fb0784720420880f3beef5d5590cb6fdc13",
+      "sha256": "b5771a89d0ca62b4f59d3d4eb45ad966fb30eed8dd72498e696d99582fffe149"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3usbotg.h",
+      "git_blob": "5c7b8f07aeb80c231a0057c78f509ab2db719684",
+      "sha256": "095b3752f3e09c9e48b8af3cfe9df41ed6c722d9ccb5d5a79186550ea7ad3c32"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3utils.h",
+      "git_blob": "ce26e4c6c4a9ab8956e1283e9c67ec20fe62240a",
+      "sha256": "a207ca615dc534da5f8d1cb869cbaa0867c10f543ef3a69cb6afb2a67f0d70d0"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/cyu3vic.h",
+      "git_blob": "0c3530cde86f6e7b915bd442d256b485a3224a8f",
+      "sha256": "4ede57b4a597400eb36afd2aa83dc9a9497e48b7f00211132d222ced994a31d5"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/gpif_regs.h",
+      "git_blob": "c7ea7e456e5a3f2a675f70bc42c95e7cd9976fc9",
+      "sha256": "c0b83f121f787f60460e95d4bc77e0a4a50647c0c7b0152d34c4f30f05bb87c3"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/gpio_regs.h",
+      "git_blob": "93fa58fbec014d07996f9637bdc893751fd05b5e",
+      "sha256": "b1dc5b6d3825d8b95ddec07c30f6afae895273a98d18dcef0bb33cea9c04fd69"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/i2c_regs.h",
+      "git_blob": "0dbd0947e1c71dccec9142bb82114c928d1f8712",
+      "sha256": "e7de8f339d932eb522e58daaeb5a2666d3d266f6e026f146de3cc864f10a1440"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/i2s_regs.h",
+      "git_blob": "43fbd0ba6a17d76aa3e3eed7d8dc6a8effb66717",
+      "sha256": "ab94cecc4b7132b415d181b51fd0786c6e10e922717bc3d46df58ec95b661a12"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/pib_regs.h",
+      "git_blob": "05794348e171d6cee72f0943cf7c3b698e96a93b",
+      "sha256": "7ba2efd9bb477e2ccfb7d6b154e42f7d162f791cbd8f397842e901403c7ee83f"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/pp_regs.h",
+      "git_blob": "659009b82751c97881301d2bf89165529f494a47",
+      "sha256": "923d23c051b8b90138fe73be7e2083e0e01a00da740dff379990a140fc5c3e1a"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/sock_regs.h",
+      "git_blob": "f01c3a93cc053b25fc848d8ac8bf80229179e950",
+      "sha256": "5d95f1ebdfa94517d88fd1270fbaa719fd485728e035aaa3a85f04df96bf57b3"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/spi_regs.h",
+      "git_blob": "f5e42c0e0a08b693aa63929d6ec6b918c93175fc",
+      "sha256": "e09be667e2f02aa967da88baf4a0ac40855c29049893d319b7b429025741ae6a"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/tx_api.h",
+      "git_blob": "4eebccd7713d9625780695828ad4a2eef1cb6f11",
+      "sha256": "9444e8cc0d10636417520a23e70e82051288b4de022bc865a05c7a54bc639d7c"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/tx_port.h",
+      "git_blob": "6a9e169a3537944fa83ceababc226c8d9ef3d51f",
+      "sha256": "753dfeab0c9d8b71e061a8cbfe4bdd910fb91e86ed3360c6a6bf69701351a2fb"
+    },
+    {
+      "path": "firmware/u3p_firmware/inc/uart_regs.h",
+      "git_blob": "19e461fdfee95b8527d0fd25f509b06d40e0ff11",
+      "sha256": "16f6423b65d4b5d5875e3da4ae000b2c6848906f71fc857c9ff133a0ab901302"
+    },
+    {
+      "path": "license/license.txt",
+      "git_blob": "6b6a024dd4173e3db1c56db4c25065c4c709bc97",
+      "sha256": "fb61fd631cf54e0d9e3b4d3220a382138af2a3a57a7def8c1c47c6a404e1739e"
+    },
+    {
+      "path": "util/elf2img/elf2img.c",
+      "git_blob": "7677be5d89d363beaf650a96f0bdbf6181f9408a",
+      "sha256": "67ca7256e6364ef3c89f5f08503a54262ef288991dd8fada36d6e0fcc6dbec3c"
+    },
+    {
+      "path": "util/elf2img/readme.txt",
+      "git_blob": "695eb8a8aabeaba8b247c4d0e89cba9a248c1a3d",
+      "sha256": "fb41408cf0bd79a63c669ab2afd4a4ae43dfade40d64d29da3ed4b599d7ea143"
+    }
+  ]
+}

@@ -1,7 +1,12 @@
 set SCRIPT_DIR [file dirname [file normalize [info script]]]
 set ROOT [file normalize [file join $SCRIPT_DIR ..]]
-set REPORT_DIR "$ROOT/fpga/reports"
+if {[info exists ::env(VAPOR_BUILD_ROOT)]} {
+    set REPORT_DIR [file normalize "$::env(VAPOR_BUILD_ROOT)/common"]
+} else {
+    set REPORT_DIR [file normalize "$ROOT/../Vapor_Lc_App_Test/formal_build/common"]
+}
 file mkdir $REPORT_DIR
+cd $REPORT_DIR
 
 set common_rtl [list \
  "$ROOT/fpga/rtl/common/cdc_bit_sync.v" \
@@ -24,7 +29,7 @@ set sim_files [list \
  "$ROOT/fpga/sim/common/bulk_stream_sink.v" \
  "$ROOT/fpga/tests/tb_predev_common.v"]
 
-create_project -in_memory -part xcku11p-ffva1156-2-i
+create_project -force common_baseline "$REPORT_DIR/project" -part xcku11p-ffva1156-2-i
 set_property target_language Verilog [current_project]
 set_property include_dirs [list "$ROOT/fpga/rtl/include"] [get_filesets sources_1]
 set_property include_dirs [list "$ROOT/fpga/rtl/include"] [get_filesets sim_1]
@@ -34,9 +39,17 @@ add_files -fileset sources_1 $common_rtl
 add_files -fileset sim_1 $common_rtl
 add_files -fileset sim_1 $sim_files
 set_property top tb_predev_common [get_filesets sim_1]
+set_property xsim.simulate.runtime 0ns [get_filesets sim_1]
 launch_simulation -simset sim_1 -mode behavioral
 run all
 close_sim
+set simulation_log "$REPORT_DIR/project/common_baseline.sim/sim_1/behav/xsim/simulate.log"
+set handle [open $simulation_log r]
+set simulation_text [read $handle]
+close $handle
+if {[regexp -nocase {fatal:|error:} $simulation_text] || [string first "PREDEV_COMMON_V12_PASS" $simulation_text]<0} {
+    error "COMMON_REGRESSION_FAILED: see $simulation_log"
+}
 
 # Out-of-context synthesis smoke test for the reusable common RTL.
 add_files -fileset sources_1 "$ROOT/fpga/tests/common_synth_smoke.v"

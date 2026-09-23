@@ -1,0 +1,16 @@
+# Integration pin overlay; apply at the physical top with matching port names.
+# Bank 65 is 1.8 V, including DAC digital IOVCC. Do not apply LVCMOS33.
+set_property -dict {PACKAGE_PIN K21 IOSTANDARD LVCMOS18} [get_ports {dac_sclk[0]}]
+set_property -dict {PACKAGE_PIN M21 IOSTANDARD LVCMOS18} [get_ports {dac_rst_n[0]}]
+set_property -dict {PACKAGE_PIN K25 IOSTANDARD LVCMOS18} [get_ports {dac_sync_n[0]}]
+set_property -dict {PACKAGE_PIN L24 IOSTANDARD LVCMOS18} [get_ports {dac_sdin[0]}]
+set_property -dict {PACKAGE_PIN L27 IOSTANDARD LVCMOS18} [get_ports {dac_sdo[0]}]
+set_property -dict {PACKAGE_PIN H24 IOSTANDARD LVCMOS18} [get_ports {dac_clr_n[0]}]
+set_property -dict {PACKAGE_PIN H27 IOSTANDARD LVCMOS18} [get_ports {dac_ldac_n[0]}]
+set_property -dict {PACKAGE_PIN R22 IOSTANDARD LVCMOS18} [get_ports {dac_sclk[1]}]
+set_property -dict {PACKAGE_PIN G26 IOSTANDARD LVCMOS18} [get_ports {dac_rst_n[1]}]
+set_property -dict {PACKAGE_PIN J26 IOSTANDARD LVCMOS18} [get_ports {dac_sync_n[1]}]
+set_property -dict {PACKAGE_PIN G27 IOSTANDARD LVCMOS18} [get_ports {dac_sdin[1]}]
+set_property -dict {PACKAGE_PIN H26 IOSTANDARD LVCMOS18} [get_ports {dac_sdo[1]}]
+set_property -dict {PACKAGE_PIN J24 IOSTANDARD LVCMOS18} [get_ports {dac_clr_n[1]}]
+set_property -dict {PACKAGE_PIN H23 IOSTANDARD LVCMOS18} [get_ports {dac_ldac_n[1]}]

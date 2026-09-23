@@ -1,0 +1,258 @@
+{
+  "description": "GP01 project-owned additions and byte edits. Offsets address the hash-pinned external vendor example; no removed vendor source or unchanged context is embedded.",
+  "files": {
+    "src/cyfxslfifosync.c": {
+      "reference_file": "cyfxslfifosync.c",
+      "reference_sha256": "3b56bafb10bb474f625f69a211d8d41cb580cd4ff3d4bb7ddc5e5d583070b76a",
+      "result_sha256": "a7a27ab3c4b7b3835ff3fb0289c7ae8a3f47dfe64e9ed77dfb2c8379b6fd457b",
+      "changes": [
+        {
+          "offset": 665,
+          "delete_bytes": 1564,
+          "insert": " Vapor board transport. 32-bit external-clock GPIF, USB OUT 0x02 ->\r\n * PIB socket 3; PIB socket 0 -> USB IN 0x86. Two automatic DMA channels\r\n * use four 16 KiB buffers each. CPU callbacks count buffers/errors only;\r\n * no CPU buffer commit or payload copying is used. See GPIF_MAPPING.md"
+        },
+        {
+          "offset": 2471,
+          "delete_bytes": 1,
+          "insert": "\n#include \"gpif_regs.h\"\n\n/* Read-only MMIO access; host regression substitutes ordinary variables. */\n#ifndef VAPOR_GPIF_BUS_CONFIG\n#define VAPOR_GPIF_BUS_CONFIG CY_U3P_PIB_GPIF_BUS_CONFIG\n#define VAPOR_GPIF_WAVE_STATUS CY_U3P_PIB_GPIF_WAVEFORM_CTRL_STAT\n#define VAPOR_GPIF_STATUS CY_U3P_PIB_GPIF_STATUS\n#endif"
+        },
+        {
+          "offset": 2657,
+          "delete_bytes": 0,
+          "insert": "/* No UART pins are allocated in the board transport firmware. */\r\n#define CyU3PDebugPrint(...) ((void)0)\r\n"
+        },
+        {
+          "offset": 2913,
+          "delete_bytes": 205,
+          "insert": "volatile uint32_t glDMARxCount = 0;               /* Counter to track the number of buffers received from USB. */\r\nvolatile uint32_t glDMATxCount = 0;               /* Counter to track the number of buffers sent to USB. */\r\nvolatile uint32_t glPibErrors = 0, glDmaErrors = 0, glLastError = 0;\r\nuint32_t glStatus[8] __attribute__((aligned(32)));\nuint32_t glGpifStatus[8] __attribute__((aligned(32)));\nvolatile uint32_t glGpifPhase = 0, glLastPibErrorPhase = 0;\nvolatile uint32_t glErrorsBeforeStart = 0, glErrorsAfterStart = 0;"
+        },
+        {
+          "offset": 3369,
+          "delete_bytes": 54,
+          "insert": "glLastError = apiRetStatus;\r\n    /* Application failed; expose the retained status to a debugger."
+        },
+        {
+          "offset": 3620,
+          "delete_bytes": 198,
+          "insert": "Auto-signal DMA callbacks only record telemetry. Hardware forwards buffers. */\r\nvoid CyFxSlFifoUtoPDmaCallback(CyU3PDmaChannel *channel,\r\n        CyU3PDmaCbType_t type, CyU3PDmaCBInput_t *input"
+        },
+        {
+          "offset": 3828,
+          "delete_bytes": 1298,
+          "insert": "if (type == CY_U3P_DMA_CB_PROD_EVENT) ++glDMARxCount;\r\n    if (type == CY_U3P_DMA_CB_ERROR) ++glDmaErrors;"
+        },
+        {
+          "offset": 5131,
+          "delete_bytes": 230,
+          "insert": "void CyFxSlFifoPtoUDmaCallback(CyU3PDmaChannel *channel,\r\n        CyU3PDmaCbType_t type, CyU3PDmaCBInput_t *input"
+        },
+        {
+          "offset": 5371,
+          "delete_bytes": 741,
+          "insert": "if (type == CY_U3P_DMA_CB_PROD_EVENT) ++glDMATxCount;\r\n    if (type == CY_U3P_DMA_CB_ERROR) ++glDmaErrors;"
+        },
+        {
+          "offset": 6117,
+          "delete_bytes": 230,
+          "insert": "void CyFxPibCallback(CyU3PPibIntrType type, uint16_t argument"
+        },
+        {
+          "offset": 6357,
+          "delete_bytes": 735,
+          "insert": "if (type == CYU3P_PIB_INTR_ERROR) {\r\n        ++glPibErrors;\r\n        glLastError = 0x80000000u | argument;\n        glLastPibErrorPhase = glGpifPhase;"
+        },
+        {
+          "offset": 8347,
+          "delete_bytes": 0,
+          "insert": "(usbSpeed == CY_U3P_SUPER_SPEED) ? 16 : "
+        },
+        {
+          "offset": 9025,
+          "delete_bytes": 6,
+          "insert": "automatic"
+        },
+        {
+          "offset": 9114,
+          "delete_bytes": 19,
+          "insert": "CyU3PMemSet ((uint8_t *)&dmaCfg, 0, sizeof(dmaCfg));\r\n    dmaCfg.size  = VAPOR_DMA_BYTES"
+        },
+        {
+          "offset": 9434,
+          "delete_bytes": 0,
+          "insert": " | CY_U3P_DMA_CB_ERROR"
+        },
+        {
+          "offset": 9693,
+          "delete_bytes": 4,
+          "insert": "AUTO_SIGN"
+        },
+        {
+          "offset": 9928,
+          "delete_bytes": 6,
+          "insert": "automatic"
+        },
+        {
+          "offset": 10207,
+          "delete_bytes": 4,
+          "insert": "AUTO_SIGN"
+        },
+        {
+          "offset": 11165,
+          "delete_bytes": 0,
+          "insert": "    /* Arm GPIF only after both DMA channels are ready. Pin configuration is retained across USB resets. */\r\n    apiRetStatus = CyU3PGpifSocketConfigure(0, CY_U3P_PIB_SOCKET_0, VAPOR_WATERMARK, CyFalse, 1);\r\n    if (apiRetStatus != CY_U3P_SUCCESS) CyFxAppErrorHandler(apiRetStatus);\r\n    apiRetStatus = CyU3PGpifSocketConfigure(3, CY_U3P_PIB_SOCKET_3, VAPOR_WATERMARK, CyFalse, 1);\r\n    if (apiRetStatus != CY_U3P_SUCCESS) CyFxAppErrorHandler(apiRetStatus);\r\n    glErrorsBeforeStart = glPibErrors;\n    glGpifPhase = 3;\n    apiRetStatus = CyU3PGpifSMStart(SYNC_SLAVE_FIFO_2BIT_RESET, SYNC_SLAVE_FIFO_2BIT_ALPHA_RESET);\n    if (apiRetStatus != CY_U3P_SUCCESS) CyFxAppErrorHandler(apiRetStatus);\n    glErrorsAfterStart = glPibErrors;\n    glGpifPhase = 4;\n\r\n"
+        },
+        {
+          "offset": 11659,
+          "delete_bytes": 1,
+          "insert": "\n    glGpifPhase = 5;\n    CyU3PGpifDisable(CyFalse);"
+        },
+        {
+          "offset": 12967,
+          "delete_bytes": 67,
+          "insert": "Read-only vendor diagnostics are implemented below. */"
+        },
+        {
+          "offset": 13636,
+          "delete_bytes": 38,
+          "insert": "/* Read-only diagnostic request: C0 B0 0000 0000, up to 32 bytes. */\r\n    if (bReqType == 0xC0 && bRequest == 0xB0 && wValue == 0 && wIndex == 0) {\r\n        uint16_t length = (uint16_t)(setupdat1 >> 16);\r\n        glStatus[0] = VAPOR_MAPPING_VERSION;\r\n        glStatus[1] = glIsApplnActive;\r\n        glStatus[2] = glPibErrors;\r\n        glStatus[3] = glDmaErrors;\r\n        glStatus[4] = glLastError;\r\n        glStatus[5] = glDMARxCount;\r\n        glStatus[6] = glDMATxCount;\r\n        glStatus[7] = ((uint32_t)VAPOR_DMA_BYTES << 16) | VAPOR_WATERMARK;\r\n        if (length > sizeof(glStatus)) length = sizeof(glStatus);\r\n        CyU3PUsbSendEP0Data(length, (uint8_t *)glStatus);\r\n        return CyTrue;\r\n    }\r\n\r\n    /* GP01 diagnostic build: live registers and callback phase snapshots.\n     * Reading these registers neither clears errors nor restarts GPIF. */\n    if (bReqType == 0xC0 && bRequest == 0xB1 && wValue == 0 && wIndex == 0) {\n        uint16_t length = (uint16_t)(setupdat1 >> 16);\n        glGpifStatus[0] = 0x31305047u; /* ASCII GP01, little endian. */\n        glGpifStatus[1] = VAPOR_GPIF_BUS_CONFIG;\n        glGpifStatus[2] = VAPOR_GPIF_WAVE_STATUS;\n        glGpifStatus[3] = VAPOR_GPIF_STATUS;\n        glGpifStatus[4] = glGpifPhase;\n        glGpifStatus[5] = glLastPibErrorPhase;\n        glGpifStatus[6] = glErrorsBeforeStart;\n        glGpifStatus[7] = glErrorsAfterStart;\n        if (length > sizeof(glGpifStatus)) length = sizeof(glGpifStatus);\n        CyU3PUsbSendEP0Data(length, (uint8_t *)glGpifStatus);\n        return CyTrue;\n    }\n\n    if (bType == CY_U3P_USB_STANDARD_RQT)"
+        },
+        {
+          "offset": 15319,
+          "delete_bytes": 0,
+          "insert": " && (wIndex == CY_FX_EP_PRODUCER || wIndex == CY_FX_EP_CONSUMER)"
+        },
+        {
+          "offset": 16736,
+          "delete_bytes": 0,
+          "insert": "if (evdata != 0) "
+        },
+        {
+          "offset": 17682,
+          "delete_bytes": 0,
+          "insert": "glIsApplnActive ? CyFalse : "
+        },
+        {
+          "offset": 18379,
+          "delete_bytes": 646,
+          "insert": "CyU3PPibRegisterCallback(CyFxPibCallback, CYU3P_PIB_INTR_ERROR);\r\n    /* Define flag outputs before USB enumeration. Start the waveform only after SETCONF. */\n    glGpifPhase = 1;\n    apiRetStatus = CyU3PGpifLoad(&Sync_Slave_Fifo_2Bit_CyFxGpifConfig);\n    if (apiRetStatus != CY_U3P_SUCCESS) CyFxAppErrorHandler(apiRetStatus);\n    glGpifPhase = 2;"
+        },
+        {
+          "offset": 20018,
+          "delete_bytes": 4,
+          "insert": "0"
+        },
+        {
+          "offset": 20366,
+          "delete_bytes": 4,
+          "insert": "0"
+        },
+        {
+          "offset": 20696,
+          "delete_bytes": 4,
+          "insert": "0"
+        },
+        {
+          "offset": 21042,
+          "delete_bytes": 4,
+          "insert": "0"
+        },
+        {
+          "offset": 21409,
+          "delete_bytes": 4,
+          "insert": "0"
+        },
+        {
+          "offset": 21770,
+          "delete_bytes": 4,
+          "insert": "0"
+        },
+        {
+          "offset": 22129,
+          "delete_bytes": 4,
+          "insert": "0"
+        },
+        {
+          "offset": 23839,
+          "delete_bytes": 27,
+          "insert": "/* UART is disabled: status is available over the read-only EP0 request. */"
+        },
+        {
+          "offset": 27546,
+          "delete_bytes": 24,
+          "insert": "CyU3PMemSet((uint8_t *)&io_cfg, 0, sizeof(io_cfg));\r\n    io_cfg.useUart   = CyFals"
+        }
+      ]
+    },
+    "src/cyfxslfifousbdscr.c": {
+      "reference_file": "cyfxslfifousbdscr.c",
+      "reference_sha256": "b2e888c22e11c6b328b4a67b5fa118be2b8ffd6350a887c4dc6b6e2f3ff61eda",
+      "result_sha256": "00ebdfbcc23b491d0ca407042d49b25cb6e6ca4c3125c74507545cc4a0e4f2f0",
+      "changes": [
+        {
+          "offset": 7610,
+          "delete_bytes": 91,
+          "insert": "F,                           /* Max burst: 16 packets."
+        },
+        {
+          "offset": 8572,
+          "delete_bytes": 91,
+          "insert": "F,                           /* Max burst: 16 packets."
+        }
+      ]
+    },
+    "include/cyfxgpif_syncsf.h": {
+      "reference_file": "cyfxgpif_syncsf.h",
+      "reference_sha256": "f5349d2186515fab20436479c8a541df49ade508f722ad5dc931f7d6fca86328",
+      "result_sha256": "674bb3f49cb47cd4a1ce07224134e9c56a9afd548a8ce85521f0fa63bef8af72",
+      "changes": [
+        {
+          "offset": 3041,
+          "delete_bytes": 38,
+          "insert": "C,  /* DQ32 requires PIN_COUNT=0 (47 pins), matching the SDK. */"
+        },
+        {
+          "offset": 3463,
+          "delete_bytes": 163,
+          "insert": "11500,  /* CTL4/5/6/8 outputs; remaining CTLs inputs. */\r\n    0x0000FE8F,  /* Flags default low: not ready. */\r\n    0x000001FF,  /* CTL0..8 polarity inverted; flag high means available."
+        },
+        {
+          "offset": 3708,
+          "delete_bytes": 887,
+          "insert": "CTRL_SELECT[0]: unchanged input */\r\n    0x00000000,  /* CTRL_SELECT[1]: unchanged input */\r\n    0x00000000,  /* CTRL_SELECT[2]: unchanged input */\r\n    0x00000000,  /* CTRL_SELECT[3]: unchanged input */\r\n    0x00000010,  /* CTRL_SELECT[4]: thread 0 ready */\r\n    0x00000013,  /* CTRL_SELECT[5]: thread 3 ready */\r\n    0x00000014,  /* CTRL_SELECT[6]: thread 0 watermark */\r\n    0x00000000,  /* CTRL_SELECT[7]: unchanged input */\r\n    0x00000017,  /* CTRL_SELECT[8]: thread 3 watermark */\r\n    0x00000000,  /* CTRL_SELECT[9]: unchanged input */\r\n    0x00000000,  /* CTRL_SELECT[10]: unchanged input */\r\n    0x00000000,  /* CTRL_SELECT[11]: unchanged input */\r\n    0x00000000,  /* CTRL_SELECT[12]: unchanged input */\r\n    0x00000000,  /* CTRL_SELECT[13]: unchanged input */\r\n    0x00000000,  /* CTRL_SELECT[14]: unchanged input */\r\n    0x00000000,  /* CTRL_SELECT[15]: unchanged input"
+        }
+      ]
+    },
+    "include/cyfxslfifosync.h": {
+      "reference_file": "cyfxslfifosync.h",
+      "reference_sha256": "3aa3bcf13bae71e726f170163723f6b8a33f0309225fe8f8f19d425e71cba93d",
+      "result_sha256": "79fcf51a6cb9c43accf207d7811ce130a3b77d28a902067e78f51fc4175eea26",
+      "changes": [
+        {
+          "offset": 1105,
+          "delete_bytes": 1,
+          "insert": "1"
+        },
+        {
+          "offset": 1152,
+          "delete_bytes": 1,
+          "insert": "4"
+        },
+        {
+          "offset": 2263,
+          "delete_bytes": 76,
+          "insert": "2    /* EP 2 OUT */\r\n#define CY_FX_EP_CONSUMER               0x86    /* EP 6"
+        },
+        {
+          "offset": 2409,
+          "delete_bytes": 117,
+          "insert": "2    /* USB Socket 2 is producer */\r\n#define CY_FX_CONSUMER_USB_SOCKET    CY_U3P_UIB_SOCKET_CONS_6    /* USB Socket 6"
+        },
+        {
+          "offset": 3278,
+          "delete_bytes": 0,
+          "insert": "#define VAPOR_DMA_BYTES 16384\r\n#define VAPOR_WATERMARK 12\r\n#define VAPOR_MAPPING_VERSION 0x00010001u\r\n"
+        }
+      ]
+    }
+  }
+}

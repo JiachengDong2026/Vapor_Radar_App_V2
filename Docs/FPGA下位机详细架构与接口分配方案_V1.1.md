@@ -1,3 +1,5 @@
+> 2026-09-23正式集成补充：本文保留原版本需求与设计背景。当前EPSILON使用CON14 MAIN RS232，0046/6600为AI8，GPIF运行50 MHz；BMP实物地址须禁用时配置0x77。请先阅读[正式集成修订](INTEGRATION_REVISION_20260923.md)及[上位机协议1.0](protocol/FPGA_HOST_PROTOCOL_V1.0.md)，其中接口变化、六路既有实测与本轮离线验证边界优先于本文历史描述。
+
 # 机载三维水汽激光雷达 FPGA 下位机详细架构与接口分配方案
 
 > **数据通路修订 V1.1（2026-09-14）**：低速传感器使用 `msg_stream`；DILA/RAW ADC 使用 `bulk_stream`；所有 source 独立 FIFO；DILA 分片；系统消息级仲裁。

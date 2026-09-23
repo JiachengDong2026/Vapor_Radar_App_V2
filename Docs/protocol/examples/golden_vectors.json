@@ -1,0 +1,181 @@
+{
+  "protocol": "VLP 1.0",
+  "note": "Offline bytes only. Recorded response timestamps/cycles are observations, not fixed response expectations; match request sequence/source/message. Recorded READ response sequence is 1002, whereas read_system golden request sequence is 2.",
+  "requests": [
+    {
+      "name": "ping",
+      "provenance": "Generated from integrated RTL; echo=ASCII PING.",
+      "bytes": 48,
+      "sha256": "aa00e39ab7a860b00b7b175d4cdc033c0d952d5f33af641ab15771dd8ef1671b",
+      "frame_hex": "56 4c 50 31 01 00 01 0a 30 00 00 00 01 00 00 00 01 00 fe 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 04 00 00 00 50 49 4e 47 b6 d5 4c 76",
+      "decoded": {
+        "offset": 0,
+        "major": 1,
+        "minor": 0,
+        "kind": 1,
+        "header_words": 10,
+        "total": 48,
+        "sequence": 1,
+        "source": 1,
+        "message": 254,
+        "flags": 0,
+        "timestamp_ticks": 0,
+        "cycle": 0,
+        "payload_length": 4,
+        "source_name": "other",
+        "payload_hex": "50 49 4e 47",
+        "crc_hex": "764CD5B6"
+      }
+    },
+    {
+      "name": "read_system_0000",
+      "provenance": "Byte-equal to commands/read_system.bin; five registers starting at byte address 0x0000.",
+      "bytes": 52,
+      "sha256": "5803ccf50bfddbc0c4d1d95d62a928da7319e90c3c839a0041ee0a7e92fb31fa",
+      "frame_hex": "56 4c 50 31 01 00 01 0a 34 00 00 00 02 00 00 00 01 00 02 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 08 00 00 00 00 00 00 00 05 00 00 00 c6 88 b7 db",
+      "decoded": {
+        "offset": 0,
+        "major": 1,
+        "minor": 0,
+        "kind": 1,
+        "header_words": 10,
+        "total": 52,
+        "sequence": 2,
+        "source": 1,
+        "message": 2,
+        "flags": 0,
+        "timestamp_ticks": 0,
+        "cycle": 0,
+        "payload_length": 8,
+        "source_name": "other",
+        "payload_hex": "00 00 00 00 05 00 00 00",
+        "crc_hex": "DBB788C6"
+      }
+    },
+    {
+      "name": "enable_ptb210",
+      "provenance": "Byte-equal to reports/sensor_six_60s_01/request_1009.bin. Bytes only; no execution.",
+      "bytes": 56,
+      "sha256": "21171bf176c980d91101d4d5063017ef3a0cffa5cd2e12d20fefaf4dd1a1385c",
+      "frame_hex": "56 4c 50 31 01 00 01 0a 38 00 00 00 f1 03 00 00 01 00 03 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 0c 00 00 00 04 60 00 00 01 00 00 00 01 00 00 00 d3 41 3b 0a",
+      "decoded": {
+        "offset": 0,
+        "major": 1,
+        "minor": 0,
+        "kind": 1,
+        "header_words": 10,
+        "total": 56,
+        "sequence": 1009,
+        "source": 1,
+        "message": 3,
+        "flags": 0,
+        "timestamp_ticks": 0,
+        "cycle": 0,
+        "payload_length": 12,
+        "source_name": "other",
+        "payload_hex": "04 60 00 00 01 00 00 00 01 00 00 00",
+        "crc_hex": "0A3B41D3"
+      }
+    }
+  ],
+  "recorded_responses": [
+    {
+      "name": "ping_response",
+      "origin": "reports\\continuous_capture_01\\ping_response_seq1.bin",
+      "frame_hex": "56 4c 50 31 01 00 02 0a 34 00 00 00 01 00 00 00 01 00 fe 00 01 00 00 00 1d 23 94 9f 10 00 00 00 ff ff ff ff 08 00 00 00 00 00 00 00 50 49 4e 47 f3 bc be bf",
+      "bytes": 52,
+      "sha256": "4b25597cd4b0592c02fe3777f75b48370885e161ab3dbad5fc303d7f9010faf7",
+      "decoded": {
+        "offset": 0,
+        "major": 1,
+        "minor": 0,
+        "kind": 2,
+        "header_words": 10,
+        "total": 52,
+        "sequence": 1,
+        "source": 1,
+        "message": 254,
+        "flags": 1,
+        "timestamp_ticks": 71396762397,
+        "cycle": 4294967295,
+        "payload_length": 8,
+        "source_name": "other",
+        "payload_hex": "00 00 00 00 50 49 4e 47",
+        "crc_hex": "BFBEBCF3",
+        "response": {
+          "status": 0,
+          "ok": true,
+          "echo_hex": "50494e47"
+        }
+      }
+    },
+    {
+      "name": "read_response",
+      "origin": "reports\\sensor_six_60s_01\\response_1002.bin",
+      "frame_hex": "56 4c 50 31 01 00 02 0a 4c 00 00 00 ea 03 00 00 01 00 02 00 01 00 00 00 39 1f dc 24 12 00 00 00 ff ff ff ff 20 00 00 00 00 00 00 00 00 00 00 00 05 00 00 00 01 01 01 00 00 00 00 00 92 00 00 00 cf 00 00 00 16 09 26 20 1f b9 69 48",
+      "bytes": 76,
+      "sha256": "4dbc1799ce11ebe897bb448c30fe30e396d3269e15df2ac01eae2a6a51a498f2",
+      "decoded": {
+        "offset": 0,
+        "major": 1,
+        "minor": 0,
+        "kind": 2,
+        "header_words": 10,
+        "total": 76,
+        "sequence": 1002,
+        "source": 1,
+        "message": 2,
+        "flags": 1,
+        "timestamp_ticks": 77927817017,
+        "cycle": 4294967295,
+        "payload_length": 32,
+        "source_name": "other",
+        "payload_hex": "00 00 00 00 00 00 00 00 05 00 00 00 01 01 01 00 00 00 00 00 92 00 00 00 cf 00 00 00 16 09 26 20",
+        "crc_hex": "4869B91F",
+        "response": {
+          "status": 0,
+          "ok": true,
+          "address": 0,
+          "count": 5,
+          "values": [
+            65793,
+            0,
+            146,
+            207,
+            539363606
+          ]
+        }
+      }
+    },
+    {
+      "name": "enable_ptb_response",
+      "origin": "reports\\sensor_six_60s_01\\response_1009.bin",
+      "frame_hex": "56 4c 50 31 01 00 02 0a 30 00 00 00 f1 03 00 00 01 00 03 00 01 00 00 00 15 e8 eb 24 12 00 00 00 ff ff ff ff 04 00 00 00 00 00 00 00 2b ee d1 37",
+      "bytes": 48,
+      "sha256": "71153c8b9b5c4271112cf7d83509975fe9545f83ce0c2a74ab7005053a694d3a",
+      "decoded": {
+        "offset": 0,
+        "major": 1,
+        "minor": 0,
+        "kind": 2,
+        "header_words": 10,
+        "total": 48,
+        "sequence": 1009,
+        "source": 1,
+        "message": 3,
+        "flags": 1,
+        "timestamp_ticks": 77928851477,
+        "cycle": 4294967295,
+        "payload_length": 4,
+        "source_name": "other",
+        "payload_hex": "00 00 00 00",
+        "crc_hex": "37D1EE2B",
+        "response": {
+          "status": 0,
+          "ok": true,
+          "detail_hex": ""
+        }
+      }
+    }
+  ]
+}

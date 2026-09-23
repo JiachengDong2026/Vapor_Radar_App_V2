@@ -22,7 +22,8 @@
 `define REG_BASE_BMP390          32'h0000_6300
 `define REG_BASE_SHT45           32'h0000_6400
 `define REG_BASE_TFA1500         32'h0000_6500
-`define REG_BASE_RD105           32'h0000_6600
+`define REG_BASE_AI8             32'h0000_6600
+`define REG_BASE_RD105           32'h0000_6600 // Legacy alias; ID/version identifies AI8.
 `define REG_BASE_STEPPER         32'h0000_6700
 `define REG_BASE_STREAM          32'h0000_7000
 `define REG_BASE_USB_GPIF        32'h0000_8000
@@ -234,5 +235,24 @@
 `define REG_STREAM_BULK_PENDING_MASK    8'h3C
 `define REG_STREAM_ARB_GRANT_COUNT_LO   8'h40
 `define REG_STREAM_ARB_GRANT_COUNT_HI   8'h44
+
+// AI8 revision 0x0200 offsets (source 0046 / page 6600).
+`define REG_AI8_BAUD_HZ          8'h10
+`define REG_AI8_SLAVE_ADDR       8'h14
+`define REG_AI8_SERIAL_FORMAT    8'h18
+`define REG_AI8_CHANNEL          8'h1C
+`define REG_AI8_TARGET_TEMP_UC   8'h20
+`define REG_AI8_ACTUAL_TEMP_UC   8'h24
+`define REG_AI8_DEVICE_STATUS    8'h28
+`define REG_AI8_POLL_INTERVAL_MS 8'h2C
+`define REG_AI8_ACTIVE_TEMP_UC   8'h40
+`define REG_AI8_CONFIRMED_COUNT  8'h48
+`define REG_AI8_COMMAND_STATUS  8'h4C
+`define REG_AI8_TARGET_RAW       8'h50
+`define REG_AI8_SET_READBACK     8'h54
+`define REG_AI8_SP_PV_RAW        8'h58
+`define REG_AI8_SV_OP_RAW        8'h5C
+`define REG_AI8_TIMEOUT_MS       8'h60
+`define REG_AI8_RETRY_LIMIT      8'h64
 
 `endif
