@@ -18,8 +18,9 @@ module cdc_bus_handshake #(
     reg req_toggle;
     reg ack_toggle;
 
-    reg ack_sync1, ack_sync2;
-    reg req_sync1, req_sync2, req_seen;
+    (* ASYNC_REG = "TRUE", SHREG_EXTRACT = "NO" *) reg ack_sync1, ack_sync2;
+    (* ASYNC_REG = "TRUE", SHREG_EXTRACT = "NO" *) reg req_sync1, req_sync2;
+    reg req_seen;
 
     assign src_ready = (ack_sync2 == req_toggle);
 

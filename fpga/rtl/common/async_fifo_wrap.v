@@ -34,8 +34,8 @@ module async_fifo_wrap #(
 
     reg [PTR_W-1:0] wr_bin, wr_gray;
     reg [PTR_W-1:0] rd_bin, rd_gray;
-    reg [PTR_W-1:0] rd_gray_w1, rd_gray_w2;
-    reg [PTR_W-1:0] wr_gray_r1, wr_gray_r2;
+    (* ASYNC_REG = "TRUE", SHREG_EXTRACT = "NO" *) reg [PTR_W-1:0] rd_gray_w1, rd_gray_w2;
+    (* ASYNC_REG = "TRUE", SHREG_EXTRACT = "NO" *) reg [PTR_W-1:0] wr_gray_r1, wr_gray_r2;
     reg wr_full_r, rd_empty_r;
 
     wire wr_fire = wr_valid && wr_ready;
@@ -59,6 +59,11 @@ module async_fifo_wrap #(
     assign rd_valid = !rd_empty_r;
     assign rd_data  = mem[rd_bin[ADDR_W-1:0]];
 
+    always @(posedge wr_clk) begin
+        if (wr_rst_n && wr_fire)
+            mem[wr_bin[ADDR_W-1:0]] <= wr_data;
+    end
+
     always @(posedge wr_clk or negedge wr_rst_n) begin
         if (!wr_rst_n) begin
             wr_bin             <= {PTR_W{1'b0}};
@@ -71,9 +76,6 @@ module async_fifo_wrap #(
             rd_gray_w1 <= rd_gray;
             rd_gray_w2 <= rd_gray_w1;
             wr_full_stall_pulse <= wr_valid && !wr_ready;
-
-            if (wr_fire)
-                mem[wr_bin[ADDR_W-1:0]] <= wr_data;
 
             wr_bin    <= wr_bin_next;
             wr_gray   <= wr_gray_next;

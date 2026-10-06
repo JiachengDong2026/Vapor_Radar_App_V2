@@ -1,0 +1,23 @@
+{
+  "source": "fx3_gpif_debug_20260918 (board-validated GP01, 2026-09-18)",
+  "files": {
+    "src/cyfxslfifosync.c": "a7a27ab3c4b7b3835ff3fb0289c7ae8a3f47dfe64e9ed77dfb2c8379b6fd457b",
+    "src/cyfxslfifousbdscr.c": "00ebdfbcc23b491d0ca407042d49b25cb6e6ca4c3125c74507545cc4a0e4f2f0",
+    "include/cyfxgpif_syncsf.h": "674bb3f49cb47cd4a1ce07224134e9c56a9afd548a8ce85521f0fa63bef8af72",
+    "include/cyfxslfifosync.h": "79fcf51a6cb9c43accf207d7811ce130a3b77d28a902067e78f51fc4175eea26",
+    "tests/test_firmware.c": "3088ba9162b8d9a8d9f05c2a3eb60183bf90092afc92ab22c467595bf84f982e"
+  },
+  "board_validated_img": {
+    "bytes": 93724,
+    "sha256": "e705c3032aece44c2ef1890e45c9f6b5d5aa31fc6facc8ab02ddb2847e043dd5"
+  },
+  "vendor_state_graph": {
+    "reference": "Cypress SDK synchronous two-address-bit Slave FIFO example; nickdademo/cypress-fx3-sdk-linux at b142a1612d874e259f66cf171bf58c596bfe9dba, firmware/slavefifo_examples/slfifosync/cyfxgpif_syncsf.h",
+    "reference_file_sha256": "f5349d2186515fab20436479c8a541df49ade508f722ad5dc931f7d6fca86328",
+    "table_body_sha256": {
+      "CyFxGpifTransition": "59f59d0b2a861ef4cfdc4a0e0706d78f02c671973d828d9826f91650ca7e0190",
+      "CyFxGpifWavedata": "458f9c1f67952ce039e009eb57bdf64094bc494715bb55fc8de3fb706e339b95",
+      "CyFxGpifWavedataPosition": "cb79bf8c07075bac15612d428fa271f09724b5f11d7fc254a2c07792bba4ac3a"
+    }
+  }
+}

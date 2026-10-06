@@ -60,6 +60,7 @@ for p in list((ROOT/'fpga').rglob('*.v')) + list((ROOT/'fpga').rglob('*.vh')):
     text = p.read_text(encoding='utf-8')
     stripped = re.sub(r'//.*', '', text)
     stripped = re.sub(r'/\*.*?\*/', '', stripped, flags=re.S)
+    stripped = re.sub(r'"(?:\\.|[^"\\])*"', '""', stripped)
     mods = len(re.findall(r'\bmodule\b', stripped))
     endmods = len(re.findall(r'\bendmodule\b', stripped))
     if mods != endmods:

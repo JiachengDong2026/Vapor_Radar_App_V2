@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "source_report": {
+    "logical_path": "dlia_precision_20261002/build/full_build/cdc.rpt",
+    "sha256": "f0396544490bd6c36478c9e4a7c82b80a180431a3100d14dc157926b29c2f102",
+    "review": "Docs/integration/CDC_BASELINE_20261004.md; 2026-10-02 routed netlist review"
+  },
+  "fields": [
+    "id",
+    "severity",
+    "source_clock",
+    "destination_clock",
+    "cdc_type",
+    "depth",
+    "exception",
+    "source",
+    "destination"
+  ],
+  "rows": [
+    [
+      "CDC-10",
+      "Critical",
+      "board25",
+      "gpif_raw",
+      "User Ignored",
+      16,
+      "False Path",
+      "power_count_reg[7]/C",
+      "u_clock/gpif_release_reg[0]/CLR"
+    ],
+    [
+      "CDC-3",
+      "Info",
+      "gpif_pclk",
+      "sys_raw",
+      "User Ignored",
+      2,
+      "False Path",
+      "FPGA_GPIF_CTL[4]",
+      "link_sync_reg[0]/D"
+    ]
+  ]
+}

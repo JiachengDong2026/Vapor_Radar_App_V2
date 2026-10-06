@@ -1,2 +1,25 @@
 __pycache__/
 *.py[cod]
+
+# Generated implementation/runtime files belong in the external Test directory.
+.Xil/
+.work/
+xsim.dir/
+*.jou
+*.log
+*.str
+*.dcp
+*.bit
+*.ltx
+*.wdb
+*.xpr
+*.runs/
+*.cache/
+*.sim/
+*.hw/
+*.ip_user_files/
+*.exe
+*.dll
+*.o
+*.elf
+*.map
