@@ -52,10 +52,13 @@ foreach {tag port reg} {
         set al($tag,$edge) [aout $port $reg $edge max]
     }
 }
-# Exactly the four directly captured nibble bits; SDO0 also has a separate
+# All four/eight directly captured nibble bits; SDO0 also has a separate
 # configuration read path. Enumerate every endpoint and rise/fall data arc.
+set ad4630_dual [expr {[llength [get_cells -quiet "$aroot/shift_word1_reg*"]]>0}]
+set sample_lanes [expr {$ad4630_dual ? {0 1 2 3 4 5 6 7} : {0 1 2 3}}]
+puts $ar "AD4630 capture lanes=$sample_lanes"
 foreach mode {sample config} {
-    if {$mode=="sample"} {set cells [get_cells "$aroot/shift_word_reg*"];set half 2;set tmax 5.6;set tmin 1.4;set clocktag sck;set lanes {0 1 2 3}}
+    if {$mode=="sample"} {set cells [get_cells "$aroot/shift_word*_reg*"];set half 2;set tmax 5.6;set tmin 1.4;set clocktag sck;set lanes $sample_lanes}
     if {$mode=="config"} {set cells [get_cells "$aroot/u_spi/read_data_reg*"];set half 10;set tmax 9.4;set tmin 2.1;set clocktag cfg_sck;set lanes {0}}
     set seen 0
     foreach lane $lanes {

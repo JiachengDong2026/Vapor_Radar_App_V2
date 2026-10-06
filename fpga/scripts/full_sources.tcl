@@ -50,6 +50,7 @@ set sources [list \
     "$root/rtl/common/system_timebase.v" \
     "$root/rtl/adc/adc3660_ddr_rx.v" \
     "$root/rtl/adc/adc_ad4630_if.v" \
+    "$root/rtl/adc/adc_ad4630_dual_if.v" \
     "$root/rtl/adc/adc_adc3660_if.v" \
     "$root/rtl/adc/adc_channel_regs.v" \
     "$root/rtl/adc/adc_debug_uart.v" \

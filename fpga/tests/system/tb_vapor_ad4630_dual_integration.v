@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-module tb_vapor_adc_integration #(parameter integer GPIF_TEST_HZ=50000000);
+module tb_vapor_ad4630_dual_integration #(parameter integer GPIF_TEST_HZ=50000000);
     reg CLK_FPGA_25MHZ=0;
     wire [31:0] FPGA_GPIF_DQ;
     wire [12:0] FPGA_GPIF_CTL;
@@ -56,7 +56,7 @@ module tb_vapor_adc_integration #(parameter integer GPIF_TEST_HZ=50000000);
     wire ADC_ADC3660_RST;
     wire ADC_ADC3660_SYNC;
     wire ADC_ADC3660_SDIO;
-    vapor_lidar_top #(.SIMULATION(1),.DUAL_AD4630(0),.GPIF_CLK_HZ(GPIF_TEST_HZ),.RAW0_MAX_SAMPLES(512),.RAW1_MAX_SAMPLES(4096)) dut(
+    vapor_lidar_top #(.SIMULATION(1),.DUAL_AD4630(1),.GPIF_CLK_HZ(GPIF_TEST_HZ),.RAW0_MAX_SAMPLES(512),.RAW1_MAX_SAMPLES(4096)) dut(
         .CLK_FPGA_25MHZ(CLK_FPGA_25MHZ),
         .FPGA_GPIF_DQ(FPGA_GPIF_DQ),
         .FPGA_GPIF_CTL(FPGA_GPIF_CTL),
@@ -119,9 +119,8 @@ module tb_vapor_adc_integration #(parameter integer GPIF_TEST_HZ=50000000);
     wire configured0,configured1;wire [31:0] conversions,model_samples;
     ad4630_model model0(.rst_n(ADC_AD4630_RSTN),.cnv(ADC_AD4630_CNV),.cs_n(ADC_AD4630_CSN),.sck(ADC_AD4630_SCK),.sdi(ADC_AD4630_SDI),
         .stall_busy(1'b0),.busy(ADC_AD4630_BUSY),.sdo(ADC_AD4630_SDO),.conversions(conversions),.configured(configured0));
-    adc3660_model model1(.rst_n(!ADC_ADC3660_RST),.sample_clk(ADC_ADC3660_CLKP),.dclkin(ADC_ADC3660_DCLKIN),.sen(ADC_ADC3660_SEN),.sclk(ADC_ADC3660_SCLK),.sdio(ADC_ADC3660_SDIO),
-        .stop_dclk(1'b0),.slip(1'b0),.dclk(ADC_ADC3660_DCLK),.fclk(ADC_ADC3660_FCLK),.da5(ADC_ADC3660_DA5),.da6(ADC_ADC3660_DA6),.db5(ADC_ADC3660_DB5),.db6(ADC_ADC3660_DB6),
-        .configured(configured1),.sample_count(model_samples));
+    assign configured1=configured0;
+    assign {ADC_ADC3660_DA5,ADC_ADC3660_DA6,ADC_ADC3660_DB5,ADC_ADC3660_DB6,ADC_ADC3660_DCLK,ADC_ADC3660_FCLK}=6'd0;
     // Independent host command encoder; every control operation traverses pins,
     // RX FIFO, byte unpacker, VLP CRC parser, decoder and cfg arbitration.
     reg [31:0] commands[0:8191],host_payload[0:15],read_value=0;
@@ -178,7 +177,13 @@ module tb_vapor_adc_integration #(parameter integer GPIF_TEST_HZ=50000000);
     integer next_fragment[0:3],next_point[0:3],cycle_fragments[0:3],cycle_points[0:3];
     reg [31:0] stop_cycle[0:1];reg [3:0] stop_partial=0;
     reg [63:0] last_capture[0:1];reg [31:0] last_data0,last_data1;
-    integer lane,slot,fi,k,adc0_pattern_index=0;
+    integer lane,slot,fi,k,adc0_pattern_index=0,adc1_pattern_index=0;
+    reg [63:0] physical_capture_tick[0:32767];
+    integer physical_captures=0,physical_lookup;
+    always @(posedge ADC_AD4630_CNV)begin
+        physical_capture_tick[physical_captures]=dut.timestamp_now-1;
+        physical_captures=physical_captures+1;
+    end
     function [31:0] ad4630_pattern;
         input integer index;
         begin case(index%8)
@@ -186,6 +191,15 @@ module tb_vapor_adc_integration #(parameter integer GPIF_TEST_HZ=50000000);
             2:ad4630_pattern=32'h007fffff;3:ad4630_pattern=32'hff800000;
             4:ad4630_pattern=1;5:ad4630_pattern=32'hffffffff;
             6:ad4630_pattern=32'h00555555;default:ad4630_pattern=32'hffaaaaaa;
+        endcase end
+    endfunction
+    function [31:0] ad4630_ch1_pattern;
+        input integer index;
+        begin case(index%8)
+            0:ad4630_ch1_pattern=32'hff876543;1:ad4630_ch1_pattern=32'h00234567;
+            2:ad4630_ch1_pattern=32'hff800000;3:ad4630_ch1_pattern=32'h007fffff;
+            4:ad4630_ch1_pattern=32'hffffffff;5:ad4630_ch1_pattern=1;
+            6:ad4630_ch1_pattern=32'hffa5c39e;default:ad4630_ch1_pattern=32'h005a3c61;
         endcase end
     endfunction
     always @(posedge CLK_FPGA_25MHZ)if(dut.rst_adc_n)begin
@@ -202,9 +216,14 @@ module tb_vapor_adc_integration #(parameter integer GPIF_TEST_HZ=50000000);
             capture_count[0]=capture_count[0]+1;last_capture[0]=dut.raw0_capture_timestamp;
         end
         if(dut.raw1_valid&&dut.raw1_ready)begin
-            if(capture_count[1]>0 && dut.raw1_data[15:0]!==last_data1[15:0]+16'd1)$fatal(1,"ADC1 pin sample order got=%h last=%h",dut.raw1_data,last_data1);
-            if(dut.raw1_data[31:16]!=={16{dut.raw1_data[15]}})$fatal(1,"ADC1 sign extension");
-            if(capture_count[1]>0 && dut.raw1_capture_timestamp-last_capture[1]!=8)$fatal(1,"ADC1 sample spacing");
+            // START writes ADC0 and ADC1 on distinct bus cycles. CH1 may
+            // join after the first shared conversion, so match its CNV tag.
+            adc1_pattern_index=-1;
+            for(physical_lookup=0;physical_lookup<physical_captures;physical_lookup=physical_lookup+1)
+                if(physical_capture_tick[physical_lookup]===dut.raw1_capture_timestamp)adc1_pattern_index=physical_lookup;
+            if(adc1_pattern_index<0)$fatal(1,"ADC1 unknown physical capture");
+            if(dut.raw1_data!==ad4630_ch1_pattern(adc1_pattern_index))$fatal(1,"ADC1 independent pin data index=%d got=%h",adc1_pattern_index,dut.raw1_data);
+            if(capture_count[1]>0 && dut.raw1_capture_timestamp-last_capture[1]!=100)$fatal(1,"ADC1 sample spacing");
             if(dut.raw1_capture_phase_valid && dut.raw1_cycle_timestamp!==cycle_tick[64+dut.raw1_capture_cycle_id])$fatal(1,"ADC1 cycle tag");
             capture_count[1]=capture_count[1]+1;last_capture[1]=dut.raw1_capture_timestamp;last_data1=dut.raw1_data;
         end
@@ -262,7 +281,8 @@ module tb_vapor_adc_integration #(parameter integer GPIF_TEST_HZ=50000000);
                 beat_read[lane]=beat_read[lane]+1;
             end
             if(lane<2)begin
-                if(word_at(44)!==(lane==0?32'd1000000:32'd12500000))$fatal(1,"RAW actual rate");
+                if((word_at(40)>>16)!=24 || word_at(52)!=0)$fatal(1,"AD4630 RAW width/format");
+                if(word_at(44)!==32'd1000000)$fatal(1,"RAW actual rate");
                 if(frame[40]==1)begin
                     if(payload!=20+word_at(48)*4)$fatal(1,"RAW1 size");
                     frag_count=1;frag_index=0;frag_first=0;frag_points=word_at(48);
@@ -331,21 +351,21 @@ module tb_vapor_adc_integration #(parameter integer GPIF_TEST_HZ=50000000);
         write_reg(32'h5040,17,0);write_reg(32'h5140,17,0);
         write_reg(32'h5020,7,1);write_reg(32'h5120,7,1);
         polls=0;read_reg(32'h4108);
-        while(!read_value[1])begin #10000;read_reg(32'h4108);polls=polls+1;if(polls>50)$fatal(1,"ADC3660 init");end
+        while(!read_value[1])begin #10000;read_reg(32'h4108);polls=polls+1;if(polls>50)$fatal(1,"AD4630 dual init");end
         read_reg(32'h4008);if(!read_value[1]||!configured0||!configured1)$fatal(1,"pin-model initialization");
         acquisition(6);$display("ADC_TOP_START_PASS time=%t",$time);
         wait(counts[0]>0&&counts[1]>0&&counts[2]>0&&counts[3]>0);
         $display("ADC_TOP_FIRST_FRAMES_PASS time=%t",$time);
-        host_stall=1;#1400000;host_stall=0;#850000;
+        host_stall=1;#4400000;host_stall=0;#1850000;
         stop_sequence=command_sequence+1;acquisition(7);
         wait(stop_completed);repeat(50000)@(negedge CLK_FPGA_25MHZ);
         for(n=0;n<4;n=n+1)begin
             if(counts[n]<2 || partial_count[n]==0 || frame_read[n]!=frame_write[n] || beat_read[n]!=beat_write[n] || next_fragment[n]!=cycle_fragments[n])$fatal(1,"incomplete lane=%d frames=%d partial=%d pending=%d",n,counts[n],partial_count[n],frame_write[n]-frame_read[n]);
         end
-        if(fragments[1]==0||fragments[2]==0||fragments[3]==0||stalled_ticks==0||dut.raw0_drop_count==0||dut.raw1_drop_count==0)$fatal(1,"missing fragmentation/pressure coverage");
+        if(fragments[2]==0||fragments[3]==0||stalled_ticks==0||dut.raw0_drop_count==0||dut.raw1_drop_count==0)$fatal(1,"missing fragmentation/pressure coverage dlia=%0d/%0d stalled=%0d raw_drop=%0d/%0d",fragments[2],fragments[3],stalled_ticks,dut.raw0_drop_count,dut.raw1_drop_count);
         if(stop_partial!=15)$fatal(1,"STOP final cycle partial missing lanes=%b cycles=%d/%d",stop_partial,stop_cycle[0],stop_cycle[1]);
         if(dut.protocol_errors!=0||dut.crc_errors!=0||dut.packet_errors!=0)$fatal(1,"protocol errors");
-        $display("tb_vapor_adc_integration_PASS GPIF_HZ=%d SYS_HZ=100000000 DQ_MAX_NS=7 FLAG_MAX_NS=8 responses=%d frames=%d RAW=%d/%d DILA=%d/%d partial=%d/%d/%d/%d capture=%d/%d CRC_all STOP_idle pin_models pressure",GPIF_TEST_HZ,responses,frame_count,counts[0],counts[1],counts[2],counts[3],partial_count[0],partial_count[1],partial_count[2],partial_count[3],capture_count[0],capture_count[1]);$finish;
+        $display("tb_vapor_ad4630_dual_integration_PASS GPIF_HZ=%d SYS_HZ=100000000 DQ_MAX_NS=7 FLAG_MAX_NS=8 responses=%d frames=%d RAW=%d/%d DILA=%d/%d partial=%d/%d/%d/%d capture=%d/%d CRC_all STOP_idle pin_models pressure",GPIF_TEST_HZ,responses,frame_count,counts[0],counts[1],counts[2],counts[3],partial_count[0],partial_count[1],partial_count[2],partial_count[3],capture_count[0],capture_count[1]);$finish;
     end
     initial begin #15000000;$fatal(1,"ADC top timeout resp=%d seq=%d frames=%d counts=%d/%d/%d/%d state=%d",responses,command_sequence,frame_count,counts[0],counts[1],counts[2],counts[3],dut.u_actions.state);end
 endmodule

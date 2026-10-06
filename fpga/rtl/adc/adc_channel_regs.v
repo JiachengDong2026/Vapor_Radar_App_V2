@@ -5,6 +5,7 @@ module adc_channel_regs #(
     parameter integer CHANNEL = 0,
     parameter integer SYS_CLK_HZ = 100000000,
     parameter integer DEFAULT_RATE = 1000000,
+    parameter integer SHARED_AD4630 = 0,
     parameter [31:0] BASE_ADDR = 32'h4000
 )(
     input wire clk, input wire rst_n, input wire scan_start,
@@ -20,10 +21,15 @@ module adc_channel_regs #(
     output reg [31:0] rate_actual, output reg [31:0] cnv_ticks,
     output reg [31:0] busy_timeout, output reg [31:0] expected_per_cycle,
     output reg [31:0] error_status,
-    output reg [3:0] cfg_error_code
+    output reg [3:0] cfg_error_code,
+    input wire shared_peer_enable, input wire shared_timing_pending,
+    input wire [31:0] shared_rate_actual,
+    input wire [31:0] shared_cnv_ticks, input wire [31:0] shared_busy_timeout,
+    output wire timing_pending
 );
     reg [31:0] requested, cnv_shadow, timeout_shadow, expected_shadow;
     reg pending;
+    assign timing_pending=pending;
     reg div_start;
     reg [1:0] div_state;
     reg [31:0] div_num,div_den,period_next,rate_next;
@@ -47,8 +53,22 @@ module adc_channel_regs #(
         cfg_rdata=0; cfg_error=0; merged=0;
         if(hit) begin
             case(ofs)
-                8'h00: begin cfg_rdata=CHANNEL==0 ? 32'h00200100:32'h00210100; cfg_error=cfg_write; end
-                8'h04: begin cfg_rdata={31'd0,enable};if(cfg_write && ((wd[2] && pending) || |wd[31:4]))cfg_error=1;end
+                8'h00: begin
+                    cfg_rdata=SHARED_AD4630 ? (CHANNEL==0 ? `ADC_DUAL_AD4630_ID0:`ADC_DUAL_AD4630_ID1) :
+                        (CHANNEL==0 ? 32'h00200100:32'h00210100);
+                    cfg_error=cfg_write;
+                end
+                8'h04: begin
+                    cfg_rdata={31'd0,enable};
+                    if(cfg_write && ((wd[2] && pending) || |wd[31:4]))cfg_error=1;
+                    // Channel zero owns the shared PHY. Require a stopped,
+                    // drained conversion before resetting or committing it.
+                    if(SHARED_AD4630 && cfg_write)begin
+                        if(wd[0] && shared_timing_pending)cfg_error=1;
+                        if(CHANNEL==0 && (wd[1] || wd[2]) &&
+                           (enable || shared_peer_enable || phy_busy || wd[0]))cfg_error=1;
+                    end
+                end
                 8'h08: begin
                     cfg_rdata[0]=enable; cfg_rdata[1]=initialized;
                     cfg_rdata[2]=pending; cfg_rdata[3]=phy_busy;
@@ -60,9 +80,10 @@ module adc_channel_regs #(
                 8'h10: begin
                     cfg_rdata=requested; merged=(requested & ~mask)|wd;
                     if(cfg_write && (CHANNEL==0 ? (merged<1000 || merged>1000000) : merged!=DEFAULT_RATE)) cfg_error=1;
+                    if(SHARED_AD4630 && CHANNEL==1)begin cfg_rdata=shared_rate_actual;cfg_error=cfg_write;end
                 end
-                8'h14: begin cfg_rdata=rate_actual;cfg_error=cfg_write;end
-                8'h18: begin cfg_rdata=CHANNEL==0?32'h00011800:32'h00011000;cfg_error=cfg_write;end
+                8'h14: begin cfg_rdata=(SHARED_AD4630 && CHANNEL==1)?shared_rate_actual:rate_actual;cfg_error=cfg_write;end
+                8'h18: begin cfg_rdata=(CHANNEL==0 || SHARED_AD4630)?32'h00011800:32'h00011000;cfg_error=cfg_write;end
                 8'h1c: cfg_rdata=expected_shadow;
                 8'h20: begin cfg_rdata=fifo_level;cfg_error=cfg_write;end
                 8'h24: cfg_rdata=drops;
@@ -72,15 +93,17 @@ module adc_channel_regs #(
                     cfg_rdata=CHANNEL==0?cnv_shadow:32'h00000210;
                     merged=(cnv_shadow & ~mask)|wd;
                     if(cfg_write && (CHANNEL==0 ? (merged<2 || merged>20) : wd!=32'h210)) cfg_error=1;
+                    if(SHARED_AD4630 && CHANNEL==1)begin cfg_rdata=shared_cnv_ticks;cfg_error=cfg_write;end
                 end
                 8'h34: begin
                     cfg_rdata=CHANNEL==0?timeout_shadow:{31'd0,initialized};
                     merged=(timeout_shadow & ~mask)|wd;
                     if(cfg_write && (CHANNEL!=0 || merged<40 || merged>1000000)) cfg_error=1;
+                    if(SHARED_AD4630 && CHANNEL==1)begin cfg_rdata=shared_busy_timeout;cfg_error=cfg_write;end
                 end
-                8'h38: begin cfg_rdata=CHANNEL==0?32'h80:sync_count;cfg_error=cfg_write;end
+                8'h38: begin cfg_rdata=(CHANNEL==0 || SHARED_AD4630)?32'h80:sync_count;cfg_error=cfg_write;end
                 8'h3c: begin cfg_rdata={31'd0,raw_enable};if(cfg_write && |wd[31:1])cfg_error=1;end
-                8'h40: begin cfg_rdata=5000000;cfg_error=cfg_write || CHANNEL==0;end
+                8'h40: begin cfg_rdata=5000000;cfg_error=cfg_write || CHANNEL==0 || SHARED_AD4630;end
                 default:cfg_error=1;
             endcase
         end
@@ -91,9 +114,10 @@ module adc_channel_regs #(
         if(hit && cfg_error)case(ofs)
             8'h00,8'h08,8'h14,8'h18,8'h20,8'h28,8'h2c,8'h38:cfg_error_code=6;
             8'h04:cfg_error_code=(|wd[31:4])?7:8;
-            8'h10,8'h30,8'h3c:cfg_error_code=7;
+            8'h10,8'h30:cfg_error_code=(SHARED_AD4630 && CHANNEL==1)?6:7;
+            8'h3c:cfg_error_code=7;
             8'h34:cfg_error_code=CHANNEL==0?7:6;
-            8'h40:cfg_error_code=CHANNEL==0?5:6;
+            8'h40:cfg_error_code=(CHANNEL==0 || SHARED_AD4630)?5:6;
             default:cfg_error_code=5;
         endcase
     end

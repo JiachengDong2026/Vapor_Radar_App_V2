@@ -61,7 +61,7 @@ module dila_core #(
     always @*begin
         cfg_rdata=0;cfg_error=0;merged=0;
         if(hit)case(ofs)
-            8'h00:begin cfg_rdata={SOURCE_ID,16'h0100};cfg_error=cfg_write;end
+            8'h00:begin cfg_rdata={SOURCE_ID,16'h0101};cfg_error=cfg_write;end
             8'h04:begin cfg_rdata={31'd0,enable};if(cfg_write && ((wd[2] && pending) || |wd[31:4]))cfg_error=1;end
             8'h08:begin cfg_rdata={23'd0,time_sync_valid,|error_status,error_status[2],frame_level>=MAX_POINTS,enable,1'b0,pending,1'b1,enable};cfg_error=cfg_write;end
             8'h0c:cfg_rdata=error_status;
@@ -70,7 +70,7 @@ module dila_core #(
             8'h18:cfg_rdata=phase2_shadow;
             8'h1c:begin cfg_rdata=rate_shadow;merged=(rate_shadow&~mask)|wd;if(cfg_write && (merged==0 || merged>(input_rate>>3)))cfg_error=1;end
             8'h20:begin cfg_rdata=mode_shadow;merged=(mode_shadow&~mask)|wd;if(cfg_write && (|merged[31:3] || (OUTPUT_FORMAT!=1 && !merged[1])))cfg_error=1;end
-            8'h24:begin cfg_rdata=INPUT_RATE_HZ==12500000?32'h00020102:32'h00020101;cfg_error=cfg_write;end
+            8'h24:begin cfg_rdata=INPUT_RATE_HZ==12500000?32'h00040102:32'h00040101;cfg_error=cfg_write;end
             8'h28:begin cfg_rdata=32'h20112e10;cfg_error=cfg_write;end
             8'h2c:cfg_rdata=in_sat_count;
             8'h30:cfg_rdata=mix_sat_count;
@@ -108,16 +108,31 @@ module dila_core #(
     dila_mixer u_mix(.clk(sys_clk),.rst_n(local_rst_n),.in_valid(ref_valid),.sample(ref_sample),
         .cos_1f(cos1),.sin_1f(sin1),.cos_2f(cos2),.sin_2f(sin2),.in_tag(ref_tag),
         .out_valid(mix_valid),.out_iq(mix_iq),.out_tag(mix_tag),.saturation(mix_sat));
-    localparam signed [47:0] B0=INPUT_RATE_HZ==12500000?48'sd4443295:48'sd691437427;
-    localparam signed [47:0] B1=INPUT_RATE_HZ==12500000?48'sd8886591:48'sd1382874854;
+    // Fourth-order Butterworth, 1 kHz cutoff. Each Q2.46 biquad has
+    // unity DC gain: B0+B1+B2 = 2^46+A1+A2 after coefficient rounding.
+    // Put the lower-Q section first to retain headroom at the cascade input.
+    localparam signed [47:0] B0=INPUT_RATE_HZ==12500000?48'sd4442812:48'sd690501114;
+    localparam signed [47:0] B1=INPUT_RATE_HZ==12500000?48'sd8885622:48'sd1381002230;
     localparam signed [47:0] B2=B0;
-    localparam signed [47:0] A1=INPUT_RATE_HZ==12500000?-48'sd140687465942571:-48'sd140112212256429;
-    localparam signed [47:0] A2=INPUT_RATE_HZ==12500000?48'sd70318739538089:48'sd69746233828473;
+    localparam signed [47:0] A1=INPUT_RATE_HZ==12500000?-48'sd140672143489574:-48'sd139922478782895;
+    localparam signed [47:0] A2=INPUT_RATE_HZ==12500000?48'sd70303417083156:48'sd69556496609689;
+    localparam signed [47:0] C0=INPUT_RATE_HZ==12500000?48'sd4444020:48'sd692843472;
+    localparam signed [47:0] C1=INPUT_RATE_HZ==12500000?48'sd8888039:48'sd1385686942;
+    localparam signed [47:0] C2=C0;
+    localparam signed [47:0] D1=INPUT_RATE_HZ==12500000?-48'sd140710403851039:-48'sd140397131718583;
+    localparam signed [47:0] D2=INPUT_RATE_HZ==12500000?48'sd70341677449454:48'sd70031158914805;
+    wire first_filtered_valid,first_filter_sat,first_filter_busy;
+    wire [127:0] first_filtered_iq;
+    wire [193:0] first_filtered_tag;
     wire filtered_valid,filter_sat,filter_busy;
     wire [127:0] filtered_iq;
     wire [193:0] filtered_tag;
     dila_lpf #(.B0(B0),.B1(B1),.B2(B2),.A1(A1),.A2(A2)) u_filter(
         .clk(sys_clk),.rst_n(local_rst_n),.clear(1'b0),.in_valid(mix_valid),.in_iq(mix_iq),.in_tag(mix_tag),
+        .bypass(mode_active[2]),.out_valid(first_filtered_valid),.out_iq(first_filtered_iq),.out_tag(first_filtered_tag),
+        .saturation(first_filter_sat),.busy(first_filter_busy));
+    dila_lpf #(.B0(C0),.B1(C1),.B2(C2),.A1(D1),.A2(D2)) u_filter_second(
+        .clk(sys_clk),.rst_n(local_rst_n),.clear(1'b0),.in_valid(first_filtered_valid),.in_iq(first_filtered_iq),.in_tag(first_filtered_tag),
         .bypass(mode_active[2]),.out_valid(filtered_valid),.out_iq(filtered_iq),.out_tag(filtered_tag),.saturation(filter_sat),.busy(filter_busy));
     wire filter_new_cycle=!have_filter_cycle || filtered_tag[31:0]!=last_filter_cycle;
     wire point_due=filtered_valid && ((filter_new_cycle?32'd1:decim_count+1'b1)>=decimation);
@@ -143,13 +158,14 @@ module dila_core #(
     wire [191:0] point_data=mode_active[1]?mag_data:{64'd0,direct_iq};
     wire [193:0] point_tag=mode_active[1]?mag_tag:direct_tag;
     assign point_valid=mode_active[1]?mag_valid:direct_valid;
-    assign config_pipeline_idle=!ref_valid && !mix_valid && !filter_busy && !filtered_valid && !magnitude_busy && !mag_valid && !direct_valid;
+    assign config_pipeline_idle=!ref_valid && !mix_valid && !first_filter_busy && !first_filtered_valid &&
+        !filter_busy && !filtered_valid && !magnitude_busy && !mag_valid && !direct_valid;
     assign output_queue_level=frame_level;
     assign datapath_idle=!enable && !sample_valid && config_pipeline_idle && frame_level==0 && !m_valid && !flush_pending && !drain_pending;
     dila_magnitude u_magnitude(.clk(sys_clk),.rst_n(local_rst_n),.start(point_due && mode_active[1] && !magnitude_busy),
         .iq(filtered_iq),.tag(filtered_tag),.valid(mag_valid),.busy(magnitude_busy),.point(mag_data),.point_tag(mag_tag));
     wire boundary_fire=flush_pending && flush_timer==0 && !sample_valid && !ref_valid && !mix_valid &&
-        !filter_busy && !filtered_valid && !magnitude_busy && !point_valid;
+        !first_filter_busy && !first_filtered_valid && !filter_busy && !filtered_valid && !magnitude_busy && !point_valid;
     dila_block_framer #(.MAX_POINTS(MAX_POINTS),.OUTPUT_FORMAT(OUTPUT_FORMAT),.SOURCE_ID(SOURCE_ID)) u_frame(
         .clk(sys_clk),.rst_n(local_rst_n),.clear(clear_fifo),.point_valid(point_valid),.point_data(point_data),.point_tag(point_tag),
         .point_flags((|error_status?32'h10:0)|(cycle_partial?32'h20:0)),.output_rate(rate_actual),.fragment_points(frag_active),
@@ -227,7 +243,9 @@ module dila_core #(
             end
             if(input_overflow_pulse)begin error_status[2]<=1;cycle_partial<=1;end
             if(mix_sat)mix_sat_count<=mix_sat_count+1'b1;
-            if(filter_sat)begin lpf_sat_count<=lpf_sat_count+1'b1;error_status[6]<=1;end
+            if(first_filter_sat || filter_sat)begin
+                lpf_sat_count<=lpf_sat_count+{31'd0,first_filter_sat}+{31'd0,filter_sat};error_status[6]<=1;
+            end
             if(point_due && magnitude_busy)begin error_status[5]<=1;cycle_partial<=1;end
             if(point_valid)out_count<=out_count+1'b1;
             if(frame_drops!=0)begin error_status[2]<=1;cycle_partial<=1;end

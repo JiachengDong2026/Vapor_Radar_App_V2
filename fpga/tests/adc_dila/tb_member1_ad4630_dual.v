@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-module tb_member1_adc_dila;
+module tb_member1_ad4630_dual;
     reg  sys_clk=0;
     reg  rst_sys_n=0;
     reg [63:0] timestamp_now=0;
@@ -96,7 +96,7 @@ module tb_member1_adc_dila;
     wire [15:0] cfg_error_code;
     always #5 sys_clk=~sys_clk;
     always @(posedge sys_clk)if(rst_sys_n)timestamp_now<=timestamp_now+1'b1;
-    member1_adc_dila #(.SIMULATION(1)) dut(
+    member1_adc_dila #(.SIMULATION(1),.DUAL_AD4630(1)) dut(
         .sys_clk(sys_clk),
         .rst_sys_n(rst_sys_n),
         .timestamp_now(timestamp_now),
@@ -194,9 +194,7 @@ module tb_member1_adc_dila;
     wire configured0,configured1;wire [31:0] conversions,model_samples;
     ad4630_model model0(.rst_n(ADC_AD4630_RSTN),.cnv(ADC_AD4630_CNV),.cs_n(ADC_AD4630_CSN),.sck(ADC_AD4630_SCK),.sdi(ADC_AD4630_SDI),
         .stall_busy(1'b0),.busy(ADC_AD4630_BUSY),.sdo(ADC_AD4630_SDO),.conversions(conversions),.configured(configured0));
-    adc3660_model model1(.rst_n(!ADC_ADC3660_RST),.sample_clk(ADC_ADC3660_CLKP),.dclkin(ADC_ADC3660_DCLKIN),.sen(ADC_ADC3660_SEN),.sclk(ADC_ADC3660_SCLK),.sdio(ADC_ADC3660_SDIO),
-        .stop_dclk(1'b0),.slip(1'b0),.dclk(ADC_ADC3660_DCLK),.fclk(ADC_ADC3660_FCLK),.da5(ADC_ADC3660_DA5),.da6(ADC_ADC3660_DA6),.db5(ADC_ADC3660_DB5),.db6(ADC_ADC3660_DB6),
-        .configured(configured1),.sample_count(model_samples));
+    assign {ADC_ADC3660_DA5,ADC_ADC3660_DA6,ADC_ADC3660_DB5,ADC_ADC3660_DB6,ADC_ADC3660_DCLK,ADC_ADC3660_FCLK}=6'd0;
     task write_reg;
         input [31:0] a,d;
         begin @(negedge sys_clk);cfg_valid=1;cfg_write=1;cfg_addr=a;cfg_wdata=d;cfg_wstrb=15;#1;
@@ -243,8 +241,8 @@ module tb_member1_adc_dila;
         write_reg(32'h5020,7);write_reg(32'h5120,7);
         write_reg(32'h501c,100000);write_reg(32'h511c,100000);
         write_reg(32'h5004,4);write_reg(32'h5104,4);
-        wait(dut.g_legacy_adc.u_adc0.initialized&&dut.g_legacy_adc.u_adc1.initialized);
-        if(raw0_sample_rate_hz!=1000000 || raw1_sample_rate_hz!=12500000)$fatal(1,"sample rate export");
+        wait(dut.g_dual.u_adc_dual.initialized);
+        if(raw0_sample_rate_hz!=1000000 || raw1_sample_rate_hz!=1000000)$fatal(1,"sample rate export");
         write_reg(32'h4004,1);write_reg(32'h4104,1);write_reg(32'h5004,1);write_reg(32'h5104,1);
         start_cycle(1);repeat(20000)@(negedge sys_clk);
         start_cycle(2);repeat(20000)@(negedge sys_clk);
@@ -257,7 +255,7 @@ module tb_member1_adc_dila;
         write_reg(32'h4004,8);write_reg(32'h5004,8);repeat(5)@(negedge sys_clk);
         if(raw0_valid||dila0_valid||dut.din0_valid)$fatal(1,"clear left queued data");
         if(!raw0_idle || !raw1_idle || !dila0_idle || !dila1_idle || raw0_fifo_level!=0 || raw1_fifo_level!=0 || dila0_fifo_level!=0 || dila1_fifo_level!=0)$fatal(1,"exported idle/levels after STOP/CLEAR");
-        $display("MEMBER1_ADC_DILA_PASS dual_pin_models raw_independence cfg metadata stop frames=%0d/%0d",frames0,frames1);$finish;
+        $display("MEMBER1_AD4630_DUAL_PASS shared_pin_model raw_independence cfg metadata stop frames=%0d/%0d",frames0,frames1);$finish;
     end
     initial begin #3000000;$fatal(1,"wrapper timeout");end
 endmodule

@@ -1,5 +1,5 @@
 """Run formal RTL testbenches using the installed Vivado simulator."""
-import argparse, json, os, shutil, subprocess, time
+import argparse, json, os, shutil, subprocess, sys, time
 from pathlib import Path
 
 def main():
@@ -21,6 +21,10 @@ def main():
     unknown=set(selected)-tests.keys()
     if unknown: ap.error('Unknown tests: '+', '.join(sorted(unknown)))
     work=output/'work';work.mkdir(exist_ok=True)
+    if 'tb_dila_filter_precision' in selected:
+        with (output/'precision_vectors.log').open('w',encoding='utf8') as fp:
+            subprocess.run([sys.executable, str(root/'scripts/generate_dlia_precision_vectors.py'),
+                            '--output', str(work)], stdout=fp, stderr=subprocess.STDOUT, check=True)
     for f in [root/'rtl/wms/sine_q31.mem']+list((root/'sim').glob('*/vectors/*')):
         if f.is_file():shutil.copyfile(f,work/f.name)
     inc=[root/'rtl/include',root/'rtl/adc',root/'rtl/dila',root/'sim/system/vectors']

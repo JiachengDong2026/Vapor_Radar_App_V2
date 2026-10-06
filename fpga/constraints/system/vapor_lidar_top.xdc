@@ -10,9 +10,16 @@ set_clock_uncertainty -hold 0.050 [get_clocks {board25}]
 # AD4630 H2 capture/config and complete routed round-trip contract is sourced below.
 # BUSY remains an asynchronous handshake input.
 
+# Discover the optional legacy ADC3660 PHY. The formal dual-AD4630 build
+# has no high-speed capture clock or data-domain CDC endpoints.
+set adc3660_rx_pin [get_pins -hier -quiet -filter {NAME =~ */u_adc1/u_rx/g_hw.u_mmcm/CLKOUT0}]
+set adc1root ""
+if {[llength $adc3660_rx_pin]} {
+    if {[llength $adc3660_rx_pin]!=1} {error "Ambiguous ADC3660 PHY"}
+    set adc1root [file dirname [file dirname [file dirname [get_property NAME $adc3660_rx_pin]]]]
 # ADC3660 two-lane DDR input, 50 MHz DCLK with 90-degree local receive MMCM.
 if {![llength [get_clocks -quiet adc_dclk]]} {create_clock -name adc_dclk -period 20.000 [get_ports ADC_ADC3660_DCLK]}
-set rxclock [get_clocks -of_objects [get_pins u_member1/u_adc1/u_rx/g_hw.u_mmcm/CLKOUT0]]
+set rxclock [get_clocks -of_objects [get_pins "$adc1root/u_rx/g_hw.u_mmcm/CLKOUT0"]]
 set_input_delay -clock adc_dclk -min -0.55 [get_ports {ADC_ADC3660_DA5 ADC_ADC3660_DA6 ADC_ADC3660_FCLK}]
 set_input_delay -clock adc_dclk -max 0.35 [get_ports {ADC_ADC3660_DA5 ADC_ADC3660_DA6 ADC_ADC3660_FCLK}]
 set_input_delay -clock adc_dclk -clock_fall -add_delay -min -0.55 [get_ports {ADC_ADC3660_DA5 ADC_ADC3660_DA6 ADC_ADC3660_FCLK}]
@@ -25,11 +32,14 @@ set_false_path -hold -from $sysclock -to $rxclock
 set_false_path -hold -from $rxclock -to $sysclock
 # FCLK also feeds an independent SYS diagnostic synchronizer. Only its first
 # capture is asynchronous; the FCLK-to-IDDRE1 DDR timing above remains active.
-set_false_path -from [get_ports ADC_ADC3660_FCLK] -to [get_pins u_member1/u_adc1/fc_meta_reg/D]
+set_false_path -from [get_ports ADC_ADC3660_FCLK] -to [get_pins "$adc1root/fc_meta_reg/D"]
+}
 # MMCM LOCKED is asynchronous status, captured through dedicated two-flop chains.
 # Vivado 2020.2 does not allow an MMCM LOCKED output as a -from startpoint.
 # These exact first-stage flops capture only the respective asynchronous status.
-foreach endpoint {u_clock_health/locked_meta_reg/D u_member1/u_adc1/lock_meta_reg/D} {
+set locked_endpoints [list u_clock_health/locked_meta_reg/D]
+if {$adc1root ne ""} {lappend locked_endpoints "$adc1root/lock_meta_reg/D"}
+foreach endpoint $locked_endpoints {
     set capture [get_pins -quiet $endpoint]
     if {[llength $capture]!=1 || ![get_property ASYNC_REG [get_cells -of_objects $capture]]} {error "Missing LOCKED first-stage synchronizer $endpoint"}
     set_false_path -to $capture
@@ -55,9 +65,7 @@ proc gray_actual_launch {label pattern expected_count} {
     set_bus_skew 10.000 -from $launch -to $first
     puts "GRAY_SKEW_COVERAGE $label bits=$expected_count launches=$launch"
 }
-foreach {label pattern bits} {
-    adc_read {u_member1/u_adc1/u_word_cdc/rd_gray_w1_reg*} 9
-    adc_write {u_member1/u_adc1/u_word_cdc/wr_gray_r1_reg*} 9
+set gray_specs {
     transport_rx_read {u_transport/u_rx/u_fifo/rd_gray_w1_reg*} 12
     transport_rx_write {u_transport/u_rx/u_fifo/wr_gray_r1_reg*} 12
     transport_tx_read {u_transport/u_tx/u_fifo/rd_gray_w1_reg*} 12
@@ -72,7 +80,12 @@ foreach {label pattern bits} {
     usb2 {u_usb_counter2/gray_meta_reg*} 32
     usb3 {u_usb_counter3/gray_meta_reg*} 32
     usb4 {u_usb_counter4/gray_meta_reg*} 32
-} {
+}
+if {$adc1root ne ""} {
+    lappend gray_specs adc_read "$adc1root/u_word_cdc/rd_gray_w1_reg*" 9
+    lappend gray_specs adc_write "$adc1root/u_word_cdc/wr_gray_r1_reg*" 9
+}
+foreach {label pattern bits} $gray_specs {
     # Occupancy Gray counters are separate from u_fifo pointers. The unused
     # GPIF TX-level view may remove only its write-counter synchronizer.
     if {![llength [get_cells -hier -quiet -filter "NAME =~ $pattern"]] && ([string match usb* $label] || $label eq "transport_tx_level_write")} {
@@ -96,7 +109,6 @@ foreach {port endpoint} {
     BMP390_INT u_member3/u_3/int_meta_reg/D
     I2C_SCL u_member3/u_i2c_master/scl_meta_reg/D
     I2C_SDA u_member3/u_i2c_master/sda_meta_reg/D
-    ADC_AD4630_BUSY u_member1/u_adc0/busy_meta_reg/D
 } {
     set_input_delay -clock $sysclock -max 0 [get_ports $port]
     set_input_delay -clock $sysclock -min 0 [get_ports $port]
@@ -105,9 +117,17 @@ foreach {port endpoint} {
     set_false_path -from [get_ports $port] -to $capture
 }
 
+# One physical AD4630 BUSY synchronizer serves both channels in dual mode.
+set ad_busy [get_pins -hier -quiet -filter {NAME =~ */busy_meta_reg/D && NAME =~ u_member1/*}]
+if {[llength $ad_busy]!=1 || ![get_property ASYNC_REG [get_cells -of_objects $ad_busy]]} {error "Expected one AD4630 BUSY synchronizer"}
+set_input_delay -clock $sysclock -max 0 [get_ports ADC_AD4630_BUSY]
+set_input_delay -clock $sysclock -min 0 [get_ports ADC_AD4630_BUSY]
+set_false_path -from [get_ports ADC_AD4630_BUSY] -to $ad_busy
+
 # Deliberately unused physical inputs: channel-B ADC lanes; ADC SPI readback is
 # disabled (read_enable=0), DAC readback unsupported, CTL15 interrupt reserved.
 set unused_inputs [get_ports {ADC_ADC3660_DB5 ADC_ADC3660_DB6 ADC_ADC3660_SDIO dac_sdo[*] FPGA_GPIF_INTN FPGA_RS422_RXD_L}]
+if {$adc1root eq ""} {set unused_inputs [concat $unused_inputs [get_ports {ADC_ADC3660_DA5 ADC_ADC3660_DA6 ADC_ADC3660_DCLK ADC_ADC3660_FCLK}]]}
 set_input_delay -clock $sysclock -max 0 $unused_inputs
 set_input_delay -clock $sysclock -min 0 $unused_inputs
 set_false_path -from $unused_inputs

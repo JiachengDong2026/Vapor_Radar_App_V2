@@ -1,3 +1,5 @@
+> 2026-10-04：已将2026-10-02上板验证的DLIA精度版本同步至正式V2，当前ID/profile为0101/00040101。历史构建记录保留；本次范围及验证见[同步记录](../MERGE_MANIFEST_20261004.md)。
+
 # 成员1 FPGA 开发任务书——双 ADC（AD4630 + ADC3660）与双路 DILA
 
 > 文档版本：V1.3  
@@ -436,6 +438,8 @@ Q2_raw = x * sin(2f)
 - 仿真需与 Python/MATLAB golden model 对比。
 
 ## 10.3 低通滤波 `dila_lpf`
+
+2026-10-02隔离候选实现说明：`dila_core`串联两个既有`dila_lpf`，实现四阶1kHz Butterworth，每级单位DC增益。模块`0101`与profile`00040101/00040102`、系数、累加位宽、舍入、饱和、附加3clk流水及基带群延迟见[DLIA精度修订](../INTEGRATION_REVISION_20261002_DLIA_PRECISION.md)。下列V1.3任务要求作为历史基线保留。
 
 V1.3 延续主指南：
 

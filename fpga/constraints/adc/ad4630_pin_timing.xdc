@@ -10,7 +10,7 @@ set_output_delay -clock $ad4630_sys -min 0.000 $ad4630_outputs
 set_load 10.000 $ad4630_outputs
 set_input_delay -clock $ad4630_sys -max 16.000 [get_ports {ADC_AD4630_SDO[*]}]
 set_input_delay -clock $ad4630_sys -min 1.400 [get_ports {ADC_AD4630_SDO[*]}]
-set ad4630_sample_regs [get_cells -hier -filter {NAME =~ */shift_word_reg*}]
+set ad4630_sample_regs [get_cells -hier -filter {NAME =~ */shift_word*_reg*}]
 set ad4630_spi_regs [get_cells -hier -filter {NAME =~ */u_spi/read_data_reg*}]
 set_multicycle_path 2 -setup -from [get_ports {ADC_AD4630_SDO[*]}] -to $ad4630_sample_regs
 set_multicycle_path 1 -hold -from [get_ports {ADC_AD4630_SDO[*]}] -to $ad4630_sample_regs

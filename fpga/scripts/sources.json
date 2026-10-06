@@ -41,6 +41,7 @@
     "rtl/common/system_timebase.v",
     "rtl/adc/adc3660_ddr_rx.v",
     "rtl/adc/adc_ad4630_if.v",
+    "rtl/adc/adc_ad4630_dual_if.v",
     "rtl/adc/adc_adc3660_if.v",
     "rtl/adc/adc_channel_regs.v",
     "rtl/adc/adc_debug_uart.v",

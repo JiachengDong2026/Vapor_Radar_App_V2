@@ -1,3 +1,7 @@
+> 2026-10-04：已将2026-10-02上板验证的DLIA精度版本同步至正式V2，当前ID/profile为0101/00040101。历史构建记录保留；本次范围及验证见[同步记录](MERGE_MANIFEST_20261004.md)。
+
+> 2026-09-28 更新：正式工程第二路 ADC 已改用 CON16 / AD4630 CH1，与 ADC0 共用采样时钟；当前映射和寄存器语义以[双低速 ADC 修订](INTEGRATION_REVISION_20260928_DUAL_AD4630.md)为准。
+
 > 2026-09-23正式集成补充：本文保留原版本需求与设计背景。当前EPSILON使用CON14 MAIN RS232，0046/6600为AI8，GPIF运行50 MHz；BMP实物地址须禁用时配置0x77。请先阅读[正式集成修订](INTEGRATION_REVISION_20260923.md)及[上位机协议1.0](protocol/FPGA_HOST_PROTOCOL_V1.0.md)，其中接口变化、六路既有实测与本轮离线验证边界优先于本文历史描述。
 
 # 机载三维水汽激光雷达 FPGA 下位机 Verilog 开发指南
@@ -1389,6 +1393,8 @@ timestamp_now
 ### 滤波器约束
 
 V1.1 Butterworth 阶数/系数固定为 compile-time profile。寄存器只暴露 `LPF_PROFILE` 只读 ID，避免上位机误以为系数可任意修改。
+
+2026-10-02隔离实现补充：当前候选为四阶1kHz Butterworth，两级biquad各自单位DC增益；模块版本`0x0101`，1MHz/12.5MHz的`LPF_PROFILE`分别为`0x00040101/0x00040102`。参考发生器采用1024点Q1.17 LUT加12位线性插值。第二级增加3clk流水，滤波群延迟变化与原相位定义分开处理；完整系数、饱和规则、频响及验证见[精度修订](INTEGRATION_REVISION_20261002_DLIA_PRECISION.md)。原二阶`0x00020101/0x00020102`仅用于历史构建识别。
 
 ---
 

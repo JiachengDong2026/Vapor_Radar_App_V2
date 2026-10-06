@@ -1,3 +1,7 @@
+> 2026-10-04：已将2026-10-02上板验证的DLIA精度版本同步至正式V2，当前ID/profile为0101/00040101。历史构建记录保留；本次范围及验证见[同步记录](../MERGE_MANIFEST_20261004.md)。
+
+> 2026-09-28 硬件映射修订（VLP1 帧版本不变）：ADC1 改为 CON16 / AD4630 CH1，24位，共同1MS/s；见[修订说明](../INTEGRATION_REVISION_20260928_DUAL_AD4630.md)。
+
 > 2026-09-23正式归档：线协议和payload语义维持1.0。正文BIT哈希标识2026-09-18实测旧产物；本轮新BIT身份由新的构建清单记录，尚未上板。当前GP01固件源码位于[firmware/fx3](../../firmware/fx3)，协议正文的e705…镜像哈希仍是固件基线。详见[正式集成修订](../INTEGRATION_REVISION_20260923.md)。本仓库维护Markdown及离线示例，不包含旧Word排版产物。
 
 # FPGA 下位机—上位机通信协议说明
@@ -761,14 +765,14 @@ source=0x0020或0x0021，msg=0x1000，type=DATA。不超过2043点时，payload�
 | payload偏移 | 类型 | 定义 |
 |---:|---|---|
 | 0 | u16 | schema=1 |
-| 2 | u16 | adc_bits，当前ADC0=24、ADC1=16 |
+| 2 | u16 | adc_bits，当前ADC0=24、ADC1=24；旧ADC3660版ADC1=16，以本字段为准 |
 | 4 | u32 | sample_rate_hz，实际采样率 |
 | 8 | u32 | sample_count=N |
 | 12 | u32 | sample_format，0=signed32，1=unsigned32 |
 | 16 | u32 | reserved=0 |
 | 20 | 4×N字节 | samples |
 
-当前两路有符号原码都扩展到32位：ADC0为AD4630 CH0，ADC1为ADC3660 CHA。长度应为20+4N。外层timestamp和cycle_id来自采集时保存的WMS周期标签，不是USB发送时刻。近似第k点时间为`cycle_tick + round(k*100000000/sample_rate_hz)`；出现丢点或PARTIAL标志时不得据此构造无缺口的真实时间轴。原码转V或浓度还需前端量程与校准，不由VLP协议定义。
+当前两路有符号原码都扩展到32位：ADC0为CON15/AD4630 CH0，ADC1为CON16/AD4630 CH1，均为24位。旧高速ADC版source0021为16位，上位机须按adc_bits解码量程。长度应为20+4N。外层timestamp和cycle_id来自采集时保存的WMS周期标签，不是USB发送时刻。近似第k点时间为`cycle_tick + round(k*100000000/sample_rate_hz)`；出现丢点或PARTIAL标志时不得据此构造无缺口的真实时间轴。原码转V或浓度还需前端量程与校准，不由VLP协议定义。
 
 ### DILA schema 2
 
@@ -815,7 +819,7 @@ WMS0/1的页为0x2000/0x2100；DAC0/1为0x3000/0x3100。波形及DAC映射参数
 | ADC页offset（0x4000/0x4100） | 含义 |
 |---|---|
 | +0x04 | bit0 enable、bit1 reset、bit2 commit、bit3 clear；发脉冲时保留enable |
-| +0x10 / +0x14 | 请求/实际采样率Hz；ADC0请求1000..1000000，ADC1固定12500000 |
+| +0x10 / +0x14 | 请求/实际采样率Hz；ADC0请求1000..1000000并控制共同采样率，ADC1两字段只读共同实际率（默认1000000） |
 | +0x1C | 周期预期样本数；0关闭DILA数量检查 |
 | +0x20 / +0x24 | FIFO level / sample drop计数 |
 | +0x28 / +0x2C | sample count低/高，未锁存；高/低/高复读 |
@@ -825,18 +829,21 @@ RAW上传还需要raw_stream_mask对应bit32/33、global_enable及STREAM/USB使�
 
 | DILA页offset（0x5000/0x5100） | 含义 |
 |---|---|
+| +0x00 | 2026-10-02隔离精度版：0x00300101 / 0x00310101，模块版本0x0101 |
 | +0x10 | 独立参考频率mHz |
 | +0x14 / +0x18 | 1f相位/2f独立修正，U32整圈 |
 | +0x1C | 请求输出Hz（1..input_rate/8） |
 | +0x20 | MODE bit0用WMS参考、bit1启用幅值计算、bit2旁路低通；当前format0要求bit1=1 |
-| +0x24 / +0x28 | 固定低通profile / 数值格式描述0x20112E10 |
+| +0x24 / +0x28 | 四阶1kHz低通profile：0x00040101（1MHz）或0x00040102（12.5MHz）；数值格式描述仍为0x20112E10 |
 | +0x2C / +0x30 / +0x34 | 输入/混频/滤波饱和计数 |
 | +0x38 / +0x3C | 输出点计数 / 排队点数 |
 | +0x40 | 分片点数1..256 |
 | +0x44 / +0x48 | 最近片数 / 周期容量drop计数 |
 | +0x4C / +0x50 / +0x54 | 实际输出Hz / decimation / 独立参考相位增量 |
 
-ADC/DILA同样shadow→commit→active。DILA实际点率为整数抽取后的读回值，不能总等于请求值。START选择某通道任一WMS/ADC/DILA位会启用完整通道，不能把三者视为互不相关的启动动作。未来高频开发的详细DAC限制与数值规则另见包内source_reference附录。
+ADC/DILA同样shadow→commit→active。双AD4630版ADC0共享时序commit/reset要求两ADC均停止且PHY空闲，pending时拒绝启动；ADC1reset仅清本路。改变共同采样率前须排空旧队列，之后重新commit两DLIA。ADC1的4130/4134为只读共同CNV/BUSY参数，4138=80，4140不再映射。DILA实际点率为整数抽取后的读回值，不能总等于请求值。START选择某通道任一WMS/ADC/DILA位会启用完整通道，不能把三者视为互不相关的启动动作。未来高频开发的详细DAC限制与数值规则另见包内source_reference附录。
+
+2026-10-02隔离精度版采用参考LUT线性插值及两级单位DC增益biquad；旧模块0x0100/二阶profile0x00020101、0x00020102保留为历史构建标识。此修订不改变VLP、DILA schema2、寄存器地址/位域或H2参考相位公式。运算流水增加3个100MHz时钟，基带滤波群延迟也增加，主机不得把曲线响应延后解释为H2相位寄存器改义；详见[精度修订与验证边界](../INTEGRATION_REVISION_20261002_DLIA_PRECISION.md)。本段只描述隔离候选源码，不构成已烧录或实板通过的声明。
 
 <a id="section-14"></a>
 

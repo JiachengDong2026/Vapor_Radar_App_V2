@@ -95,6 +95,9 @@ foreach {label port base} {
     if {[get_property SLACK $path]<0 || [get_property EXCEPTION $path] ne ""} {error "UART second stage is excepted or failing"}
     puts $task_fh "$label raw_port=$starts two_async_stages=1 direct_driver=1 setup_slack=[get_property SLACK $path]"
 }
+# Dual AD4630 has one SYS-domain PHY and no ADC3660 Gray crossing.
+set adc_gray_cells [get_cells -hier -quiet -filter {NAME =~ */u_adc1/u_word_cdc/rd_gray_w1_reg*}]
+if {[llength $adc_gray_cells]} {
 foreach {prefix first_suffix second_suffix src_clock dst_clock} {
  rd w1 w2 sys_raw g_hw.shifted
  wr r1 r2 g_hw.shifted sys_raw
@@ -118,6 +121,9 @@ foreach {prefix first_suffix second_suffix src_clock dst_clock} {
         if {[get_property SLACK $path]<0 || [get_property EXCEPTION $path] ne ""} {error "Gray second stage is excepted or failing"}
         puts $task_fh "GRAY_${prefix}_$bit first=$first source=$start second=$second two_async_stages=1 slack=[get_property SLACK $path]"
     }
+}
+} else {
+    puts $task_fh "ADC3660_CDC_ABSENT dual_AD4630_uses_SYS_clock"
 }
 close $task_fh
 report_bus_skew -file "$task_review_dir/bus_skew.rpt"

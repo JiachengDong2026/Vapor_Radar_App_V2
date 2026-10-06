@@ -91,7 +91,14 @@
 `define REG_ADC0_IF_MODE            8'h38
 `define REG_ADC0_RAW_STREAM_ENABLE  8'h3C
 
-// ADC1 ADC3660 offsets.
+// ADC1 offsets. Formal DUAL_AD4630=1: AD4630 CH1, 24-bit shared-rate.
+// +10/+14 read the ADC0 active rate; +30/+34 read shared CNV/timeout.
+// +38 reads MODES=0x80; +40 is absent. Legacy ADC3660 aliases below remain.
+`define ADC_DUAL_AD4630_ID0        32'h0020_0101
+`define ADC_DUAL_AD4630_ID1        32'h0021_0101
+`define REG_ADC1_SHARED_CNV_TICKS  8'h30
+`define REG_ADC1_SHARED_BUSY_TICKS 8'h34
+`define REG_ADC1_AD4630_IF_MODE    8'h38
 `define REG_ADC1_SAMPLE_RATE_REQ_HZ 8'h10
 `define REG_ADC1_SAMPLE_RATE_ACT_HZ 8'h14
 `define REG_ADC1_SAMPLE_FORMAT      8'h18

@@ -29,7 +29,7 @@ proc full_hold_pin_repair {out exact_scope} {
     if {![llength $paths] || [llength $paths]>=100} {error "Hold repair requires 1..99 bounded endpoints"}
     if {$exact_scope && [llength $paths]!=46} {error "Resumed hold scope differs from the recorded 46 endpoints"}
     set target_pins {}
-    set group_counts [dict create usb0 0 usb1 0 usb3 0 usb4 0 tx 0]
+    set group_counts [dict create usb0 0 usb1 0 usb3 0 usb4 0 tx 0 rx 0 tx_fifo 0 rx_fifo 0]
     set detail [open "$out/hold_repair_endpoints.tsv" w]
     foreach path $paths {
         set start [get_property STARTPOINT_PIN $path]
@@ -46,8 +46,43 @@ proc full_hold_pin_repair {out exact_scope} {
         if {$source_clock ne "gpif_raw" || $dest_clock ne "sys_raw"} {error "Unexpected hold clock pair: $source_clock -> $dest_clock"}
         if {[regexp {^u_usb_counter(0|1|3|4)/gray_meta_reg\[([0-9]+)\]/D$} $destination match instance bit] && $bit<32} {
             dict incr group_counts usb$instance
-        } elseif {[regexp {^u_transport/u_tx/rd_gray_meta_reg\[(5|11)\]/D$} $destination]} {
-            dict incr group_counts tx
+        } elseif {[regexp {^u_transport/u_(tx|rx)/(rd|wr)_gray_meta_reg\[([0-9]+)\]/D$} $destination match fifo pointer bit] && $bit<12} {
+            if {!(($fifo eq "tx" && $pointer eq "rd") || ($fifo eq "rx" && $pointer eq "wr"))} {error "Unexpected USB occupancy crossing direction"}
+            set base u_transport/u_$fifo
+            set expected_start [format {%s/%s_gray_reg[%d]/C} $base $pointer $bit]
+            set expected_msb [format {%s/%s_count_reg[%d]/C} $base $pointer $bit]
+            set second [get_cells -quiet [format {%s/%s_gray_sync_reg[%d]} $base $pointer $bit]]
+            if {($start ne $expected_start && !($bit==11 && $start eq $expected_msb)) || [llength $second]!=1 || ![get_property ASYNC_REG $second]} {error "Unexpected USB occupancy Gray synchronizer"}
+            set second_d [get_pins -of_objects $second -filter {REF_PIN_NAME == D}]
+            set second_driver [get_pins -of_objects [get_nets -of_objects $second_d] -filter {DIRECTION == OUT}]
+            if {[llength $second_driver]!=1 || [get_property NAME $second_driver] ne [format {%s/%s_gray_meta_reg[%d]/Q} $base $pointer $bit]} {error "USB occupancy second stage is not direct"}
+            if {[get_clocks -of_objects [get_pins -of_objects $second -filter {REF_PIN_NAME == C}]] ne "sys_raw"} {error "USB occupancy second stage clock changed"}
+            set second_path [get_timing_paths -from [get_pins [string range $destination 0 end-1]C] -to $second_d -delay_type max -max_paths 1]
+            if {[llength $second_path]!=1 || [get_property SLACK $second_path]<0 || [get_property EXCEPTION $second_path] ne ""} {error "USB occupancy second stage is failing or excepted"}
+            dict incr group_counts $fifo
+        } elseif {[regexp {^u_transport/u_(tx|rx)/u_fifo/(rd_gray_w1|wr_gray_r1)_reg\[([0-9]+)\]/D$} $destination match fifo first bit] && $bit<12} {
+            # Existing 2048-entry USB FIFO Gray synchronizers. Only the
+            # GPIF50 -> SYS100 direction is eligible; validate both stages
+            # and the direct registered Gray source before changing routing.
+            if {$fifo eq "tx" && $first eq "rd_gray_w1"} {
+                set pointer rd;set stage2 rd_gray_w2
+            } elseif {$fifo eq "rx" && $first eq "wr_gray_r1"} {
+                set pointer wr;set stage2 wr_gray_r2
+            } else {error "Unexpected USB FIFO crossing direction"}
+            set base u_transport/u_$fifo/u_fifo
+            set expected_start [format {%s/%s_gray_reg[%d]/C} $base $pointer $bit]
+            set expected_msb [format {%s/%s_bin_reg[%d]/C} $base $pointer $bit]
+            set second [get_cells -quiet [format {%s/%s_reg[%d]} $base $stage2 $bit]]
+            if {($start ne $expected_start && !($bit==11 && $start eq $expected_msb)) || [llength $second]!=1 || ![get_property ASYNC_REG $second]} {error "Unexpected USB FIFO Gray synchronizer"}
+            set second_d [get_pins -of_objects $second -filter {REF_PIN_NAME == D}]
+            set second_net [get_nets -of_objects $second_d]
+            set second_driver [get_pins -of_objects $second_net -filter {DIRECTION == OUT}]
+            set expected_driver [format {%s/%s_reg[%d]/Q} $base $first $bit]
+            if {[llength $second_driver]!=1 || [get_property NAME $second_driver] ne $expected_driver} {error "USB FIFO Gray second stage is not direct"}
+            if {[get_clocks -of_objects [get_pins -of_objects $second -filter {REF_PIN_NAME == C}]] ne "sys_raw"} {error "USB FIFO Gray second stage clock changed"}
+            set second_path [get_timing_paths -from [get_pins [string range $destination 0 end-1]C] -to $second_d -delay_type max -max_paths 1]
+            if {[llength $second_path]!=1 || [get_property SLACK $second_path]<0 || [get_property EXCEPTION $second_path] ne ""} {error "USB FIFO Gray second stage is failing or excepted"}
+            dict incr group_counts ${fifo}_fifo
         } else {error "Hold endpoint outside reviewed repair scope: $destination"}
         set slack [get_property SLACK $path]
         if {$slack>=0} {error "Hold endpoint is no longer negative: $destination"}
@@ -57,7 +92,7 @@ proc full_hold_pin_repair {out exact_scope} {
     close $detail
     set target_pins [lsort -unique $target_pins]
     if {[llength $target_pins]!=[llength $paths]} {error "Duplicate hold endpoints"}
-    if {$exact_scope && $group_counts ne [dict create usb0 14 usb1 13 usb3 3 usb4 14 tx 2]} {error "Resumed hold endpoint groups changed: $group_counts"}
+    if {$exact_scope && $group_counts ne [dict create usb0 14 usb1 13 usb3 3 usb4 14 tx 2 rx 0 tx_fifo 0 rx_fifo 0]} {error "Resumed hold endpoint groups changed: $group_counts"}
     puts "POST_ROUTE_HOLD_PIN_SCOPE_VERIFIED $group_counts"
     set target_count [llength $target_pins]
     set before_hold [get_property SLACK [get_timing_paths -delay_type min -max_paths 1]]
@@ -211,6 +246,8 @@ if {[catch {
         # The original clock, setup/hold and IO constraints remain unchanged.
         set pre_hold_slack [get_property SLACK [get_timing_paths -delay_type min -max_paths 1]]
         if {$pre_hold_slack<0} {
+            write_checkpoint -force "$out/pre_hold_repair.dcp"
+            report_timing -delay_type min -slack_lesser_than 0 -max_paths 100 -nworst 1 -file "$out/pre_hold_violations.rpt"
             puts "POST_ROUTE_HOLD_FIX_START WHS=$pre_hold_slack"
             full_hold_pin_repair $out $resume_route
         }

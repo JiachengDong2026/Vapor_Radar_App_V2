@@ -175,6 +175,7 @@ module tb_vapor_lidar_top;
     end
     initial begin
         $readmemh("top_commands.hex",commands);
+        // Dual AD4630: vector 46 writes ADC1 rate (0x4110), now READ_ONLY=6.
         $readmemh("top_responses.hex",expected);
         $readmemh("top_response_masks.hex",masks);
         $readmemh("top_response_lengths.hex",lengths);

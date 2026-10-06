@@ -32,6 +32,7 @@ module ad4630_model #(
     reg [7:0] modes;
     reg [23:0] command;
     reg [23:0] conversion_word;
+    reg [23:0] conversion_word_ch1;
     reg [5:0] edges;
     reg [2:0] group;
     reg [7:0] read_word;
@@ -47,17 +48,30 @@ module ad4630_model #(
             endcase
         end
     endfunction
-    initial begin register_mode=0;modes=0;command=0;conversion_word=0;edges=0;group=0;read_word=0;reading=0;busy=0;sdo=0;conversions=0;configured=0;end
+    // Independent CH1 stimulus: negative values and signed boundaries deliberately
+    // differ from CH0 at every conversion, detecting swapped/duplicated lanes.
+    function [23:0] pattern_ch1;
+        input [31:0] index;
+        begin
+            case(index%8)
+                0:pattern_ch1=24'h876543;1:pattern_ch1=24'h234567;
+                2:pattern_ch1=24'h800000;3:pattern_ch1=24'h7fffff;
+                4:pattern_ch1=24'hffffff;5:pattern_ch1=24'h000001;
+                6:pattern_ch1=24'ha5c39e;default:pattern_ch1=24'h5a3c61;
+            endcase
+        end
+    endfunction
+    initial begin register_mode=0;modes=0;command=0;conversion_word=0;conversion_word_ch1=0;edges=0;group=0;read_word=0;reading=0;busy=0;sdo=0;conversions=0;configured=0;end
     always @(negedge pin_rst)begin register_mode=0;modes=0;configured=0;conversions=0;busy=0;end
     always @(posedge pin_cnv)if(pin_rst)begin
         if(!configured)$fatal(1,"AD4630 conversion before explicit mode initialization");
-        conversion_word=pattern(conversions);conversions=conversions+1;busy=1;
+        conversion_word=pattern(conversions);conversion_word_ch1=pattern_ch1(conversions);conversions=conversions+1;busy=1;
         #(CONVERSION_MAX_NS+BOARD_FLIGHT_NS);if(!stall_busy)busy=0;
     end
     always @(negedge pin_csn)begin
         command=0;edges=0;group=0;reading=0;sdo=0;last_cs_fall=$realtime;
         if(!register_mode)begin
-            sdo <= #(CSEN_DELAY_NS+BOARD_FLIGHT_NS) {4'd0,conversion_word[20],conversion_word[21],conversion_word[22],conversion_word[23]};
+            sdo <= #(CSEN_DELAY_NS+BOARD_FLIGHT_NS) {conversion_word_ch1[20],conversion_word_ch1[21],conversion_word_ch1[22],conversion_word_ch1[23],conversion_word[20],conversion_word[21],conversion_word[22],conversion_word[23]};
         end
     end
     always @(posedge pin_sck)if(!pin_csn)begin
@@ -74,7 +88,7 @@ module ad4630_model #(
             if(reading && edges>=16 && edges<24)sdo[0] <= #(REGISTER_DELAY_NS+BOARD_FLIGHT_NS) read_word[23-edges];
         end else if(edges<6)begin
             group=edges;
-            next_sdo={4'd0,conversion_word[20-group*4],conversion_word[21-group*4],conversion_word[22-group*4],conversion_word[23-group*4]};
+            next_sdo={conversion_word_ch1[20-group*4],conversion_word_ch1[21-group*4],conversion_word_ch1[22-group*4],conversion_word_ch1[23-group*4],conversion_word[20-group*4],conversion_word[21-group*4],conversion_word[22-group*4],conversion_word[23-group*4]};
             sdo <= #(DATA_DELAY_NS+BOARD_FLIGHT_NS) next_sdo;
         end
     end
