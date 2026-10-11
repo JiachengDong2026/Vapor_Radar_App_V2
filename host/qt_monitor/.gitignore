@@ -1,0 +1,9 @@
+/build/
+/dist/
+/release/
+/CMakeFiles/
+/CMakeCache.txt
+/.qt/
+/Testing/
+*.user
+*.png

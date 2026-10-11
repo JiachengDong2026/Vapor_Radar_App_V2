@@ -1,3 +1,9 @@
+# 主机工具与 Qt 上位机参考实现
+
+- **最新 Qt 上位机 V0.2.5**：[源码及构建](qt_monitor/README.md)、[正式开发对接](../Docs/protocol/QT_HOST_HANDOFF_20261011.md)。
+- [BIN 数据存储说明](../Docs/protocol/BIN_STORAGE_FORMAT_V1.0.md)。
+- 以下命令行工具与板测描述保留为历史六传感器联调参考，不代表最新 Qt 界面的行为。
+
 # USB 六传感器联调工具
 
 本目录保存已用于 GP01 六路采集的 C# 源码、Python VLP 分析器和测试计划。依赖 Windows .NET Framework 4、Cypress 驱动及本机 SDK 的 CyUSB.dll；Python 分析器仅使用标准库。仓库不分发 DLL 或 EXE。

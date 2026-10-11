@@ -1,6 +1,10 @@
 # Vapor_Radar_App_V2
 
-## 2026-10-04 最新同步
+## 2026-10-11 上位机参考源码
+
+新增 [Qt 上位机 V0.2.5](host/qt_monitor/README.md)，包含六传感器、双 ADC/DLIA、独立 WMS 电压控制、固定坐标绘图与 BIN 记录/回放。正式版开发入口见 [开发交接](Docs/protocol/QT_HOST_HANDOFF_20261011.md)。构建产物放到外部测试目录，不在仓库分发 Qt/Cypress DLL 或 EXE。
+
+## 2026-10-04 下位机同步
 正式源码已同步已上板的双AD4630/DLIA精度版本：插值参考、四阶固定1kHz低通，ID `00300101/00310101`、1MS/s profile `00040101`。详见 [同步范围及复验](Docs/MERGE_MANIFEST_20261004.md)。构建、仿真和Flash导出产物统一放到外部 `Vapor_Lc_App_Test`；现有硬件参数与Git工作树状态不由同步操作重置。
 
 以下2026-09-23记录保留为历史；最新验证范围以上述同步记录为准。
