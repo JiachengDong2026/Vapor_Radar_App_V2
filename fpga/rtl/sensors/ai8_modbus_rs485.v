@@ -26,6 +26,15 @@ module ai8_modbus_rs485 #(
     reg [3:0] result,transport_error;
     reg [7:0] result_exception;
     reg [31:0] crc_errors,timeout_count,frame_count,confirmed_count;
+    reg scan_enable,param_pending,param_submitted,param_write,param_valid_result;
+    reg [7:0] target_channel,pending_channel,cache_channel;
+    reg [15:0] param_address,param_value,param_readback;
+    reg [3:0] param_result,param_error;
+    reg [7:0] param_exception;
+    reg [31:0] param_count;
+    reg [31:0] cache_pvsp[0:7],cache_svop[0:7],cache_status[0:7],cache_quality[0:7];
+    reg [63:0] cache_time[0:7];
+    integer cache_i;
     wire hit=cfg_addr[31:8]==24'h000066;
     wire [7:0] ofs=cfg_addr[7:0];
     wire [31:0] mask={{8{cfg_wstrb[3]}},{8{cfg_wstrb[2]}},{8{cfg_wstrb[1]}},{8{cfg_wstrb[0]}}};
@@ -40,7 +49,7 @@ module ai8_modbus_rs485 #(
     // shadow write must not enter the high-fanout reset/enable cone.
     wire ctrl_range_error=|(cfg_wdata & mask & 32'hfffffff0) ||
         (cfg_wstrb[0] && cfg_wdata[2] && !cfg_wdata[0]);
-    wire ctrl_busy_error=cfg_wstrb[0] && cfg_wdata[2] && pending;
+    wire ctrl_busy_error=cfg_wstrb[0] && cfg_wdata[2] && (pending || param_pending);
     wire ctrl_write_fire=cfg_valid && hit && cfg_write && ofs==8'h04 &&
         !ctrl_range_error && !ctrl_busy_error;
     wire soft_reset=ctrl_write_fire && cfg_wstrb[0] && cfg_wdata[1];
@@ -60,6 +69,23 @@ module ai8_modbus_rs485 #(
     wire [3:0] core_error,core_result,core_set_error;
     wire [63:0] core_ticks;
     wire [31:0] core_good,core_bad;
+    wire [7:0] core_channel;
+    wire core_param_ready,core_param_rsp;
+    wire [3:0] core_param_result,core_param_error;
+    wire [7:0] core_param_exception;
+    wire [15:0] core_param_readback;
+    wire param_go=write_fire && ofs==8'h80;
+    function parameter_address_ok;
+        input [15:0] address;input writing;
+        begin
+            parameter_address_ok=(address<=16'h04df || (address>=16'h0600 && address<=16'h06ef) ||
+                (address>=16'h0800 && address<=16'h085f));
+            if(writing)parameter_address_ok=parameter_address_ok &&
+                !(address>=16'h0480 && address<16'h0800) &&
+                !(address>=16'h0842 && address<=16'h0844) && address!=16'h0851 &&
+                !(address>=16'h0853 && address<=16'h0855);
+        end
+    endfunction
     reg record_valid;
     reg [2175:0] record_data;
     reg [8:0] record_length;
@@ -110,6 +136,22 @@ module ai8_modbus_rs485 #(
             92:cfg_rdata={sv,op};
             96:begin cfg_rdata=timeout_ms;writable=1;config_busy=enabled;end
             100:begin cfg_rdata=retry_limit;writable=1;config_busy=enabled;end
+            8'h68:begin cfg_rdata={31'd0,scan_enable};writable=1;config_busy=enabled;end
+            8'h6c:begin cfg_rdata={24'd0,target_channel};writable=1;config_busy=pending;end
+            8'h80:begin cfg_rdata=0;writable=1;config_busy=param_pending || pending || !enabled;end
+            8'h84:begin cfg_rdata={16'd0,param_address};writable=1;config_busy=param_pending;end
+            8'h88:begin cfg_rdata={16'd0,param_value};writable=1;config_busy=param_pending;end
+            8'h8c:cfg_rdata={14'd0,param_valid_result,param_pending,param_exception, param_error,param_result};
+            8'h90:cfg_rdata={16'd0,param_readback};
+            8'h94:cfg_rdata=param_count;
+            8'h98:begin cfg_rdata={24'd0,cache_channel};writable=1;end
+            8'ha0:cfg_rdata=cache_quality[cache_channel-1];
+            8'ha4:cfg_rdata=cache_pvsp[cache_channel-1];
+            8'ha8:cfg_rdata=cache_svop[cache_channel-1];
+            8'hac:cfg_rdata=cache_status[cache_channel-1];
+            8'hb0:cfg_rdata=cache_time[cache_channel-1][31:0];
+            8'hb4:cfg_rdata=cache_time[cache_channel-1][63:32];
+            8'hfc:cfg_rdata=32'h0000000f; // scan, channel TLV, parameter R/W, verified writes
             default:known=0;
         endcase
         cfg_error=0;cfg_error_code=`SENSOR_CFG_OK;
@@ -131,6 +173,15 @@ module ai8_modbus_rs485 #(
                     80:if($signed(raw_merged)<-9990 || $signed(raw_merged)>32000)cfg_error=1;
                     96:if(merged<1 || merged>65535)cfg_error=1;
                     100:if(merged>3)cfg_error=1;
+                    8'h68:if(merged>1)cfg_error=1;
+                    8'h6c:if(merged>CHANNEL_COUNT)cfg_error=1;
+                    8'h80:begin
+                        if(cfg_wstrb!=15 || (cfg_wdata!=1 && cfg_wdata!=2))begin
+                            cfg_error=1;cfg_error_code=cfg_wdata==3 ? 4'd13 : `SENSOR_CFG_RANGE;
+                        end else if(!parameter_address_ok(param_address,cfg_wdata==2))cfg_error=1;
+                    end
+                    8'h84,8'h88:if(merged>65535)cfg_error=1;
+                    8'h98:if(merged<1 || merged>CHANNEL_COUNT)cfg_error=1;
                     default:;
                 endcase
                 if(config_busy && !cfg_error)begin cfg_error=1;cfg_error_code=`SENSOR_CFG_BUSY;end
@@ -138,7 +189,7 @@ module ai8_modbus_rs485 #(
             end
         end
     end
-    ai8_poll_core #(.SYS_CLK_HZ(SYS_CLK_HZ),.SHARED_BUS(SHARED_BUS)) core (
+    ai8_poll_core #(.SYS_CLK_HZ(SYS_CLK_HZ),.SHARED_BUS(SHARED_BUS),.CHANNEL_COUNT(CHANNEL_COUNT)) core (
         .clk(sys_clk),.rst_n(local_rst_n),.enable(enabled),.baud_hz(baud),.slave_addr(slave[7:0]),.channel(channel[7:0]),
         .parity_mode({1'b0,format[1]}),.stop_bits(format[0]?2'd2:2'd1),
         .poll_interval_ms(interval_ms),.timeout_ms(timeout_ms[15:0]),.retry_limit(retry_limit[1:0]),
@@ -150,7 +201,12 @@ module ai8_modbus_rs485 #(
         .sample_ticks(core_ticks),.now_ticks(timestamp_now),.time_sync_valid(time_sync_valid),.sample_time_sync(core_sample_sync),
         .set_valid(pending && !submitted),.set_ready(core_set_ready),
         .set_raw(pending_raw),.set_rsp_valid(core_rsp_valid),.set_rsp_ready(1'b1),.set_result(core_result),
-        .set_error(core_set_error),.set_exception(core_set_exception),.set_requested(core_requested),.set_readback(core_readback)
+        .set_error(core_set_error),.set_exception(core_set_exception),.set_requested(core_requested),.set_readback(core_readback),
+        .scan_enable(scan_enable),.set_channel(pending_channel),.sample_channel(core_channel),
+        .param_valid(param_pending && !param_submitted),.param_ready(core_param_ready),
+        .param_write(param_write),.param_address(param_address),.param_value(param_value),
+        .param_rsp_valid(core_param_rsp),.param_result(core_param_result),.param_error(core_param_error),
+        .param_exception(core_param_exception),.param_readback(core_param_readback)
     );
     always @* begin
         next_record=0;cursor=4;tlvs=0;
@@ -162,6 +218,7 @@ module ai8_modbus_rs485 #(
         put_tlv(`TLV_TAG_AI8_CONTROL,`TLV_TYPE_U32,{24'd0,core_control});
         put_tlv(`TLV_TAG_AI8_HOST,`TLV_TYPE_U32,{16'd0,core_host});
         put_tlv(`TLV_TAG_AI8_SET_RESULT,`TLV_TYPE_U32,command_status);
+        if(scan_enable)put_tlv(`TLV_TAG_AI8_CHANNEL,`TLV_TYPE_U32,{24'd0,core_channel});
         put_tlv(`TLV_TAG_DEVICE_STATUS,`TLV_TYPE_U32,{19'd0,core_exception,core_error,core_online});
         put_tlv(`TLV_TAG_DEVICE_ERROR,`TLV_TYPE_U32,{core_host,core_control,core_alarm});
         put_tlv(`TLV_TAG_SAMPLE_COUNTER,`TLV_TYPE_U32,core_good);
@@ -169,7 +226,7 @@ module ai8_modbus_rs485 #(
             put_tlv(`TLV_TAG_TARGET_TEMP_UC,`TLV_TYPE_I32,$signed(core_sp)*32'sd100000);
         if($signed(core_pv)>=-21474 && $signed(core_pv)<=21474)
             put_tlv(`TLV_TAG_ACTUAL_TEMP_UC,`TLV_TYPE_I32,$signed(core_pv)*32'sd100000);
-        next_record[15:0]=2;next_record[31:16]=tlvs;
+        next_record[15:0]=scan_enable ? 3 : 2;next_record[31:16]=tlvs;
     end
     sensor_record_fifo #(.SOURCE_ID(`SRC_AI8),.FIFO_DEPTH(FIFO_DEPTH)) records(
         .sys_clk(sys_clk),.rst_sys_n(local_rst_n),.clear_fifo(clear_fifo),.record_valid(record_valid),
@@ -187,6 +244,12 @@ module ai8_modbus_rs485 #(
             result<=0;transport_error<=0;result_exception<=0;errors<=0;
             crc_errors<=0;timeout_count<=0;frame_count<=0;confirmed_count<=0;
             record_valid<=0;record_data<=0;record_length<=0;record_timestamp<=0;record_flags<=0;
+            scan_enable<=0;target_channel<=0;pending_channel<=1;cache_channel<=1;
+            param_pending<=0;param_submitted<=0;param_write<=0;param_valid_result<=0;
+            param_address<=0;param_value<=0;param_readback<=0;param_result<=0;param_error<=0;param_exception<=0;param_count<=0;
+            for(cache_i=0;cache_i<8;cache_i=cache_i+1)begin
+                cache_pvsp[cache_i]<=0;cache_svop[cache_i]<=0;cache_status[cache_i]<=0;cache_quality[cache_i]<=0;cache_time[cache_i]<=0;
+            end
         end else begin
             record_valid<=0;
             if(access && cfg_error)errors<=errors|`ERR_CONFIG_RANGE;
@@ -203,9 +266,24 @@ module ai8_modbus_rs485 #(
                     else shadow_uc_cached<=0;
                 end
                 96:timeout_ms<=merged;100:retry_limit<=merged;
+                8'h68:scan_enable<=merged[0];
+                8'h6c:target_channel<=merged[7:0];
+                8'h84:param_address<=merged[15:0];
+                8'h88:param_value<=merged[15:0];
+                8'h98:cache_channel<=merged[7:0];
                 default:;
             endcase
-            if(commit)begin pending<=1;submitted<=0;pending_raw<=shadow_raw;result_valid<=0;end
+            if(commit)begin
+                pending<=1;submitted<=0;pending_raw<=shadow_raw;result_valid<=0;
+                pending_channel<=target_channel==0 ? channel[7:0] : target_channel;
+            end
+            if(param_go)begin param_pending<=1;param_submitted<=0;param_write<=cfg_wdata==2;param_valid_result<=0;end
+            if(param_pending && !param_submitted && core_param_ready)param_submitted<=1;
+            if(core_param_rsp)begin
+                param_pending<=0;param_submitted<=0;param_valid_result<=1;
+                param_result<=core_param_result;param_error<=core_param_error;param_exception<=core_param_exception;
+                param_readback<=core_param_readback;param_count<=param_count+1'b1;
+            end
             if(pending && !submitted && core_set_ready)submitted<=1;
             if(core_rsp_valid)begin
                 pending<=0;submitted<=0;result_valid<=1;result<=core_result;
@@ -218,6 +296,10 @@ module ai8_modbus_rs485 #(
                 else errors[1]<=1;
             end
             if(core_sample_valid)begin
+                cache_pvsp[core_channel-1]<={core_sp,core_pv};cache_svop[core_channel-1]<={core_sv,core_op};
+                cache_status[core_channel-1]<={core_host,core_control,core_alarm};
+                cache_quality[core_channel-1]<={18'd0,core_exception,core_error,1'b1,core_online};
+                cache_time[core_channel-1]<=core_ticks;
                 pv<=core_pv;sp<=core_sp;sv<=core_sv;op<=core_op;host<=core_host;
                 alarm<=core_alarm;control<=core_control;sample_online<=core_online;
                 if(core_online)frame_count<=frame_count+1'b1;
@@ -229,6 +311,10 @@ module ai8_modbus_rs485 #(
                     ((!core_online || core_alarm!=0 || core_host[9:8]!=0)?32'd16:0);
             end
             if(!enabled && !commit)begin
+                if(param_pending)begin
+                    param_pending<=0;param_submitted<=0;param_valid_result<=1;param_result<=5;param_error<=6;
+                    param_exception<=0;param_readback<=0;param_count<=param_count+1'b1;
+                end
                 sample_online<=0;
                 if(pending)begin
                     pending<=0;submitted<=0;result_valid<=1;result<=5;transport_error<=6;

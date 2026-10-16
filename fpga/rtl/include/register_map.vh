@@ -23,7 +23,7 @@
 `define REG_BASE_SHT45           32'h0000_6400
 `define REG_BASE_TFA1500         32'h0000_6500
 `define REG_BASE_AI8             32'h0000_6600
-`define REG_BASE_RD105           32'h0000_6600 // Legacy alias; ID/version identifies AI8.
+`define REG_BASE_RD105           32'h0000_6800
 `define REG_BASE_STEPPER         32'h0000_6700
 `define REG_BASE_STREAM          32'h0000_7000
 `define REG_BASE_USB_GPIF        32'h0000_8000
@@ -261,5 +261,48 @@
 `define REG_AI8_SV_OP_RAW        8'h5C
 `define REG_AI8_TIMEOUT_MS       8'h60
 `define REG_AI8_RETRY_LIMIT      8'h64
+
+// VLP1 host extensions, 2026-10-17. The legacy defaults remain unchanged.
+`define REG_AI8_SCAN_ENABLE       8'h68
+`define REG_AI8_SET_CHANNEL       8'h6C
+`define REG_AI8_PARAM_CONTROL     8'h80
+`define REG_AI8_PARAM_ADDRESS     8'h84
+`define REG_AI8_PARAM_VALUE       8'h88
+`define REG_AI8_PARAM_STATUS      8'h8C
+`define REG_AI8_PARAM_READBACK    8'h90
+`define REG_AI8_PARAM_COUNT       8'h94
+`define REG_AI8_CACHE_CHANNEL     8'h98
+`define REG_AI8_CACHE_QUALITY     8'hA0
+`define REG_AI8_CACHE_SP_PV       8'hA4
+`define REG_AI8_CACHE_SV_OP       8'hA8
+`define REG_AI8_CACHE_STATUS      8'hAC
+`define REG_AI8_CACHE_TICKS_LO    8'hB0
+`define REG_AI8_CACHE_TICKS_HI    8'hB4
+`define REG_AI8_FEATURES          8'hFC
+`define REG_DILA_CUTOFF_SHADOW    8'h58
+`define REG_DILA_CUTOFF_ACTIVE    8'h5C
+`define REG_EPSILON_TX_CONTROL   8'h40
+`define REG_EPSILON_TX_LENGTH    8'h44
+`define REG_EPSILON_TX_KIND      8'h48
+`define REG_EPSILON_TX_STATUS    8'h4C
+`define REG_EPSILON_TX_BYTES     8'h50
+`define REG_EPSILON_TX_COMPLETE  8'h54
+`define REG_EPSILON_TX_FAILED    8'h58
+`define REG_EPSILON_RX_LENGTH    8'h5C
+`define REG_EPSILON_RX_INDEX     8'h60
+`define REG_EPSILON_RX_DATA      8'h64
+`define REG_EPSILON_TX_DATA      8'h68
+`define REG_EPSILON_TX_LOADED    8'h6C
+`define REG_EPSILON_RX_TIMEOUT   8'h70
+`define REG_EPSILON_TX_TARGET    8'h74
+`define REG_EPSILON_RTCM_BAUD    8'h78
+`define REG_EPSILON_RTCM_BYTES   8'h7C
+`define REG_RD105_PARAM_CONTROL  8'h80
+`define REG_RD105_PARAM_ADDRESS  8'h84
+`define REG_RD105_PARAM_QUANTITY 8'h88
+`define REG_RD105_PARAM_STATUS   8'h8C
+`define REG_RD105_PARAM_COUNT    8'h90
+`define REG_RD105_PARAM_TX_BASE  8'hC0
+`define REG_RD105_PARAM_RX_BASE  8'hE0
 
 `endif

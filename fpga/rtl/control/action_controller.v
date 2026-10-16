@@ -64,7 +64,7 @@ module action_controller #(
         input [15:0] s;
         begin case(s)
             16'h10,16'h11,16'h20,16'h21,16'h30,16'h31,
-            16'h40,16'h41,16'h42,16'h43,16'h44,16'h45,16'h46,16'h47:source_in_modules=1;
+            16'h40,16'h41,16'h42,16'h43,16'h44,16'h45,16'h46,16'h47,16'h48:source_in_modules=1;
             default:source_in_modules=0;
         endcase end
     endfunction
@@ -95,6 +95,7 @@ module action_controller #(
         if(code==6 || code==7)legal_mask=ACQ_MASK;
         case(code)
             5,6,7,8,9:begin
+                if(source==16'h48)legal_mask=64'h100;
                 if(source==2 && (code==8 || code==9))begin
                     legal_mask=64'h4;
                     if(args[63:0]==64'hffffffffffffffff)normalized_mask=legal_mask;
@@ -112,13 +113,14 @@ module action_controller #(
                 if(|(args[127:64]&~64'h0000000300000000))validation_error=7;
             end
             11:begin
-                if(source<16'h40 || source>16'h46)validation_error=4;
+                if((source<16'h40 || source>16'h46) && source!=16'h48)validation_error=4;
                 case(args[31:0])
                     1:if(args[63:32]>1)validation_error=7;
                     2,3,4:if(args[63:32]!=0)validation_error=7;
                     5:begin end
                     16:if(source!=16'h41)validation_error=4;
                     17:if(source!=16'h46)validation_error=4;
+                    18:if(source!=16'h48)validation_error=4;
                     32:begin if(source!=16'h45)validation_error=4;if(args[63:32]>2)validation_error=7;end
                     33:begin if(source!=16'h45)validation_error=4;if(args[63:32]<1 || args[63:32]>4)validation_error=7;end
                     default:validation_error=13;
@@ -324,14 +326,14 @@ module action_controller #(
                             endcase
                         end else op=FINISH;
                     end
-                    2,16,17:begin
+                    2,16,17,18:begin
                         case(pc)
                             0:begin op=POLL;address=address+8;mask=4;value=0;end
                             1:if(args[31:0]!=2)begin op=WRITE;address=address+(source==16'h41 ? 32'h34 : 32'h20);value=args[63:32];end
-                            2:if(source==16'h41 || source==16'h46)begin op=SAVE_ACK;address=address+32'h48;end
+                            2:if(source==16'h41 || source==16'h46 || source==16'h48)begin op=SAVE_ACK;address=address+32'h48;end
                             3:begin op=RMW;address=address+4;mask=4;value=4;end
                             4:begin op=POLL;address=address+8;mask=4;value=0;end
-                            5:if(source==16'h41 || source==16'h46)begin op=CHECK_ACK;address=address+32'h48;end
+                            5:if(source==16'h41 || source==16'h46 || source==16'h48)begin op=CHECK_ACK;address=address+32'h48;end
                             default:op=FINISH;
                         endcase
                     end
@@ -380,6 +382,28 @@ module action_controller #(
             end
             default:op=FINISH;
         endcase
+        // Keep the historical broadcast masks stable. The extension source is
+        // addressed explicitly and never aliases TIME/EPSILON or the motor.
+        if(source==16'h48 && code>=5 && code<=9)begin
+            op=FINISH;address=32'h6804;mask=0;value=0;
+            if(selected[8])case(code)
+                5:case(pc)
+                    0:begin op=SAVE_ACK;address=32'h6848;end
+                    1:begin op=RMW;mask=4;value=4;end
+                    2:begin op=POLL;address=32'h6808;mask=4;end
+                    3:begin op=CHECK_ACK;address=32'h6848;end
+                    default:op=FINISH;
+                endcase
+                6:case(pc)
+                    0:begin op=RMW;address=4;mask=1;value=1;end
+                    1:begin op=RMW;mask=1;value=1;end
+                    default:op=FINISH;
+                endcase
+                7:if(pc==0)begin op=RMW;mask=1;end
+                8:if(pc==0)begin op=RMW;mask=3;value=2;end
+                9:if(pc==0)begin op=WRITE;address=32'h680c;value=32'hffffffff;end
+            endcase
+        end
     end
     always @(posedge sys_clk or negedge rst_sys_n)begin
         if(!rst_sys_n)begin

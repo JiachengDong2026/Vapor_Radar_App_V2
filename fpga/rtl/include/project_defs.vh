@@ -42,9 +42,9 @@
 `define SRC_BMP390              16'h0043
 `define SRC_SHT45               16'h0044
 `define SRC_TFA1500             16'h0045
-// AI8 replaces RD105 in integration revision 20260916. Legacy alias is reserved.
+// AI8 keeps its existing source; RD105 has an independent extension source.
 `define SRC_AI8                 16'h0046
-`define SRC_RD105               16'h0046
+`define SRC_RD105               16'h0048
 `define SRC_STEPPER             16'h0047
 `define SRC_DIAGNOSTICS         16'h0050
 `define SRC_BROADCAST           16'hFFFF
@@ -102,6 +102,7 @@
 `define TLV_TAG_AI8_CONTROL        16'h0465
 `define TLV_TAG_AI8_HOST           16'h0466
 `define TLV_TAG_AI8_SET_RESULT     16'h0467
+`define TLV_TAG_AI8_CHANNEL        16'h0468
 
 // Arbitration classes.
 `define ARB_PRIO_P0             2'd0

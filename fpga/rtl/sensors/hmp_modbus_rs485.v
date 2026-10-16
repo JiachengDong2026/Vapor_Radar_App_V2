@@ -43,12 +43,29 @@ module modbus_sensor_driver #(
     output wire bus_request,bus_busy,input wire bus_grant
 );
     localparam HMP=DEVICE_KIND==0;
-    localparam [23:0] PAGE=HMP ? 24'h000061 : 24'h000066;
+    localparam [23:0] PAGE=HMP ? 24'h000061 : 24'h000068;
     localparam [15:0] SOURCE_ID=HMP ? `SRC_HMP : `SRC_RD105;
     localparam OFF=0,IDLE=1,WRITE_REQ=2,WRITE_WAIT=3,TARGET_REQ=4,TARGET_WAIT=5,
-        MEAS_REQ=6,MEAS_WAIT=7,ERROR_REQ=8,ERROR_WAIT=9,EMIT=10;
-    reg [3:0] state;
+        MEAS_REQ=6,MEAS_WAIT=7,ERROR_REQ=8,ERROR_WAIT=9,EMIT=10,
+        PARAM_REQ=11,PARAM_WAIT=12,PARAM_VERIFY_REQ=13,PARAM_VERIFY_WAIT=14,SP_VERIFY_REQ=15,SP_VERIFY_WAIT=16;
+    reg [4:0] state;
+    wire [255:0] read_data;
     reg enabled,pending;
+    reg param_pending,param_write,param_result_valid;
+    reg [15:0] param_address;
+    reg [4:0] param_quantity;
+    reg [255:0] param_payload,param_readback;
+    reg [3:0] param_result,param_error;
+    reg [7:0] param_exception;
+    reg [31:0] param_count;
+    reg readback_matches;
+    integer byte_index;
+    wire param_active=state==PARAM_REQ || state==PARAM_WAIT || state==PARAM_VERIFY_REQ || state==PARAM_VERIFY_WAIT;
+    always @* begin
+        readback_matches=1;
+        for(byte_index=0;byte_index<32;byte_index=byte_index+1)
+            if(byte_index<param_quantity*2 && read_data[byte_index*8+:8]!=param_payload[byte_index*8+:8])readback_matches=0;
+    end
     reg [31:0] baud,slave,serial_format,channel,interval_ms,meas_mask,shadow_value,pending_value,active_value;
     reg [31:0] rh_bits,temp_bits,actual_uc,device_error,crc_errors,timeout_count,frame_count,write_count;
     reg [31:0] ms_div,elapsed_ms;
@@ -69,19 +86,19 @@ module modbus_sensor_driver #(
     wire commit=write_fire && ofs==4 && cfg_wstrb[0] && cfg_wdata[2];
     wire local_rst_n=rst_sys_n && !soft_reset;
     wire ms_tick=ms_div==SYS_CLK_HZ/1000-1;
-    wire req_valid=state==WRITE_REQ || state==TARGET_REQ || state==MEAS_REQ || state==ERROR_REQ;
+    wire req_valid=state==WRITE_REQ || state==TARGET_REQ || state==MEAS_REQ || state==ERROR_REQ || state==PARAM_REQ || state==PARAM_VERIFY_REQ || state==SP_VERIFY_REQ;
     wire req_ready,done,busy;
     wire [3:0] mb_error,attempt_error;
     wire attempt_error_pulse;
     wire [7:0] exception_code;
-    wire [255:0] read_data;
+
     reg [255:0] write_data;
     wire [63:0] response_timestamp;
     wire response_sync;
-    wire [7:0] req_function=state==WRITE_REQ ? 8'h10 : 8'h03;
-    wire [15:0] req_address=HMP ? (state==WRITE_REQ ? 16'h0300 : 16'h0000) :
+    wire [7:0] req_function=(state==WRITE_REQ || (state==PARAM_REQ && param_write)) ? 8'h10 : 8'h03;
+    wire [15:0] req_address=param_active ? param_address : HMP ? (state==WRITE_REQ ? 16'h0300 : 16'h0000) :
         (state==ERROR_REQ ? 16'h0007 : {channel[3:0],12'd0}+(state==MEAS_REQ ? 16'd2 : 16'd0));
-    wire [4:0] req_quantity=HMP ? (state==WRITE_REQ ? 5'd2 : 5'd4) : (state==ERROR_REQ ? 5'd1 : 5'd2);
+    wire [4:0] req_quantity=param_active ? param_quantity : HMP ? (state==WRITE_REQ ? 5'd2 : 5'd4) : (state==ERROR_REQ ? 5'd1 : 5'd2);
     wire [1:0] parity=HMP ? serial_format[2:1] : 2'd0;
     wire [1:0] stops=HMP ? (serial_format[0] ? 2'd2 : 2'd1) : 2'd1;
     wire [31:0] hmp_rh={read_data[23:16],read_data[31:24],read_data[7:0],read_data[15:8]};
@@ -99,6 +116,7 @@ module modbus_sensor_driver #(
         write_data=0;
         if(HMP)write_data[31:0]={pending_value[23:16],pending_value[31:24],pending_value[7:0],pending_value[15:8]};
         else write_data[31:0]={native_write[7:0],native_write[15:8],native_write[23:16],native_write[31:24]};
+        if(param_active)write_data=param_payload;
     end
     always @*begin
         cfg_rdata=0;known=1;writable=0;
@@ -126,6 +144,17 @@ module modbus_sensor_driver #(
             64:cfg_rdata=active_value;
             68:cfg_rdata=frame_count;
             72:cfg_rdata=write_count;
+            8'h80:begin cfg_rdata=0;writable=1;known=!HMP;end
+            8'h84:begin cfg_rdata={16'd0,param_address};writable=1;known=!HMP;end
+            8'h88:begin cfg_rdata={27'd0,param_quantity};writable=1;known=!HMP;end
+            8'h8c:begin cfg_rdata={14'd0,param_result_valid,param_pending,param_exception,param_error,param_result};known=!HMP;end
+            8'h90:begin cfg_rdata=param_count;known=!HMP;end
+            8'hc0,8'hc4,8'hc8,8'hcc,8'hd0,8'hd4,8'hd8,8'hdc:begin
+                cfg_rdata=param_payload[(ofs-8'hc0)*8+:32];writable=1;known=!HMP;
+            end
+            8'he0,8'he4,8'he8,8'hec,8'hf0,8'hf4,8'hf8,8'hfc:begin
+                cfg_rdata=param_readback[(ofs-8'he0)*8+:32];known=!HMP;
+            end
             default:known=0;
         endcase
         cfg_error=0;
@@ -134,7 +163,7 @@ module modbus_sensor_driver #(
             if(cfg_write)case(ofs)
                 4:begin
                     if(|(cfg_wdata & mask & 32'hfffffff0))cfg_error=1;
-                    if(cfg_wstrb[0] && cfg_wdata[2] && pending)cfg_error=1;
+                    if(cfg_wstrb[0] && cfg_wdata[2] && (pending || param_pending || (!HMP && !cfg_wdata[0])))cfg_error=1;
                 end
                 16:if((SHARED_BUS && merged!=19200) || enabled || merged<1200 || merged>115200 || merged>SYS_CLK_HZ/16)cfg_error=1;
                 20:if(enabled || merged==0 || merged>247)cfg_error=1;
@@ -144,14 +173,25 @@ module modbus_sensor_driver #(
                     else if($signed(merged)<-32'sd400000000 || $signed(merged)>32'sd1000000000 || $signed(merged)%10!=0)cfg_error=1;
                 44:if(!HMP && (enabled || merged==0 || merged>3600000))cfg_error=1;
                 52:if(HMP && (merged[31] || merged[30:23]==255 || merged[30:0]==0))cfg_error=1;
+                8'h80:begin
+                    if(cfg_wstrb!=15 || (cfg_wdata!=1 && cfg_wdata!=2 && cfg_wdata!=3))cfg_error=1;
+                    if(!enabled || pending || param_pending)cfg_error=1;
+                    // Factory reset is write-only; require the exact manual tuple.
+                    if(cfg_wdata==3 && (param_address!=0 || param_quantity!=1 || param_payload[15:0]!=16'h0100))cfg_error=1;
+                    if(cfg_wdata==2 && param_address==0)cfg_error=1;
+                end
+                8'h84:if(param_pending || merged>65535)cfg_error=1;
+                8'h88:if(param_pending || merged==0 || merged>16)cfg_error=1;
+                8'hc0,8'hc4,8'hc8,8'hcc,8'hd0,8'hd4,8'hd8,8'hdc:if(param_pending)cfg_error=1;
                 default:begin end
             endcase
+            if(!HMP && cfg_write && param_pending && ofs!=12 && ofs!=4)cfg_error=1;
         end
     end
     modbus_rtu_master #(.SYS_CLK_HZ(SYS_CLK_HZ),.SHARED_BUS(SHARED_BUS)) transport(
         .sys_clk(sys_clk),.rst_sys_n(local_rst_n),.enable(enabled),.baud_hz(baud),.parity_mode(parity),.stop_bits(stops),
         .req_valid(req_valid),.req_ready(req_ready),.req_slave(slave[7:0]),.req_function(req_function),
-        .req_address(req_address),.req_quantity(req_quantity),.req_write_data(write_data),.timeout_ms(16'd200),.retry_limit(2'd1),
+        .req_address(req_address),.req_quantity(req_quantity),.req_write_data(write_data),.timeout_ms(16'd200),.retry_limit(!HMP && (param_active || state==WRITE_REQ || state==SP_VERIFY_REQ) ? 2'd0 : 2'd1),
         .timestamp_now(timestamp_now),.time_sync_valid(time_sync_valid),.done(done),.error(mb_error),.exception_code(exception_code),
         .read_data(read_data),.response_timestamp(response_timestamp),.response_time_sync(response_sync),
         .attempt_error_pulse(attempt_error_pulse),.attempt_error(attempt_error),
@@ -189,12 +229,14 @@ module modbus_sensor_driver #(
         .m_source_id(m_source_id),.m_msg_id(m_msg_id),.m_timestamp(m_timestamp),.m_cycle_id(m_cycle_id),.m_flags(m_flags));
     always @(posedge sys_clk)begin
         if(!local_rst_n)begin
-            state<=OFF;enabled<=0;pending<=0;baud<=HMP ? 19200 : 38400;slave<=HMP ? 240 : 1;
+            state<=OFF;enabled<=0;pending<=0;baud<=HMP || SHARED_BUS ? 19200 : 38400;slave<=HMP ? 240 : SHARED_BUS ? 2 : 1;
             serial_format<=HMP && !SHARED_BUS ? 1 : 0;channel<=1;interval_ms<=1000;meas_mask<=3;
             shadow_value<=HMP ? 32'h447d5000 : 32'd25000000;pending_value<=0;active_value<=0;
             rh_bits<=0;temp_bits<=0;actual_uc<=0;actual_valid<=0;device_error<=0;
             crc_errors<=0;timeout_count<=0;frame_count<=0;write_count<=0;ms_div<=0;elapsed_ms<=0;native_write<=0;
-            sample_timestamp<=0;sample_sync<=0;record_valid<=0;record_data<=0;record_length<=0;record_flags<=0;
+            sample_timestamp<=0;sample_sync<=0;
+            param_pending<=0;param_write<=0;param_result_valid<=0;param_address<=0;param_quantity<=1;
+            param_payload<=0;param_readback<=0;param_result<=0;param_error<=0;param_exception<=0;param_count<=0;record_valid<=0;record_data<=0;record_length<=0;record_flags<=0;
             online<=0;errors<=0;
         end else begin
             record_valid<=0;
@@ -208,19 +250,55 @@ module modbus_sensor_driver #(
                 32:if(HMP)meas_mask<=merged;else shadow_value<=merged;
                 44:if(!HMP)interval_ms<=merged;
                 52:if(HMP)shadow_value<=merged;
+                8'h80:begin param_pending<=1;param_write<=cfg_wdata!=1;param_result_valid<=0;end
+                8'h84:param_address<=merged[15:0];
+                8'h88:param_quantity<=merged[4:0];
+                8'hc0,8'hc4,8'hc8,8'hcc,8'hd0,8'hd4,8'hd8,8'hdc:param_payload[(ofs-8'hc0)*8+:32]<=merged;
                 default:begin end
             endcase
             if(commit)begin pending<=1;pending_value<=shadow_value;native_write<=$signed(shadow_value)/10;end
-            if(!enabled)begin state<=OFF;online<=0;elapsed_ms<=0;end
+            if(!enabled)begin
+                state<=OFF;online<=0;elapsed_ms<=0;
+                if(!HMP && !commit)begin
+                    pending<=0;
+                    if(param_pending)begin param_pending<=0;param_result_valid<=1;param_result<=5;param_error<=6;param_count<=param_count+1'b1;end
+                end
+            end
             else case(state)
                 OFF:begin state<=IDLE;elapsed_ms<=interval_ms;end
-                IDLE:if(pending)state<=WRITE_REQ;
+                IDLE:if(param_pending)state<=PARAM_REQ;else if(pending)state<=WRITE_REQ;
                     else if(elapsed_ms>=interval_ms)state<=HMP ? MEAS_REQ : TARGET_REQ;
                 WRITE_REQ:if(req_ready)state<=WRITE_WAIT;
                 WRITE_WAIT:if(done)begin
-                    pending<=0;
-                    if(mb_error==0)begin active_value<=pending_value;write_count<=write_count+1'b1;online<=1;end
-                    state<=IDLE;elapsed_ms<=interval_ms;
+                    if(!HMP && mb_error==0)state<=SP_VERIFY_REQ;
+                    else begin
+                        pending<=0;
+                        if(mb_error==0)begin active_value<=pending_value;write_count<=write_count+1'b1;online<=1;end
+                        state<=IDLE;elapsed_ms<=interval_ms;
+                    end
+                end
+                SP_VERIFY_REQ:if(req_ready)state<=SP_VERIFY_WAIT;
+                SP_VERIFY_WAIT:if(done)begin
+                    pending<=0;state<=IDLE;elapsed_ms<=interval_ms;
+                    if(mb_error==0 && native_read==$signed(native_write))begin
+                        active_value<=pending_value;write_count<=write_count+1'b1;online<=1;
+                    end else begin errors[6]<=1;online<=0;end
+                end
+                PARAM_REQ:if(req_ready)state<=PARAM_WAIT;
+                PARAM_WAIT:if(done)begin
+                    if(mb_error==0 && param_write && param_address!=0)state<=PARAM_VERIFY_REQ;
+                    else begin
+                        param_pending<=0;param_result_valid<=1;param_error<=mb_error;param_exception<=exception_code;
+                        param_readback<=read_data;param_count<=param_count+1'b1;state<=IDLE;
+                        param_result<=mb_error!=0 ? 1 : param_write ? 6 : 0;
+                        if(mb_error==0 && param_write && param_address==0)begin enabled<=0;online<=0;end
+                    end
+                end
+                PARAM_VERIFY_REQ:if(req_ready)state<=PARAM_VERIFY_WAIT;
+                PARAM_VERIFY_WAIT:if(done)begin
+                    param_pending<=0;param_result_valid<=1;param_error<=mb_error;param_exception<=exception_code;
+                    param_readback<=read_data;param_count<=param_count+1'b1;state<=IDLE;
+                    param_result<=mb_error!=0 ? 2 : readback_matches ? 0 : 3;
                 end
                 TARGET_REQ:if(req_ready)state<=TARGET_WAIT;
                 TARGET_WAIT:if(done)begin
@@ -272,7 +350,7 @@ module modbus_sensor_driver #(
             if(!known || cfg_addr[1:0]!=0)cfg_error_code=`SENSOR_CFG_BAD_ADDRESS;
             else if(cfg_write && !writable)cfg_error_code=`SENSOR_CFG_READ_ONLY;
             else if(cfg_write)case(ofs)
-                4:if(!(cfg_wdata & mask & 32'hfffffff0) && cfg_wstrb[0] && cfg_wdata[2] && pending)
+                4:if(!(cfg_wdata & mask & 32'hfffffff0) && cfg_wstrb[0] && cfg_wdata[2] && (pending || param_pending))
                     cfg_error_code=`SENSOR_CFG_BUSY;
                 16:if(enabled && merged>=1200 && merged<=115200 && merged<=SYS_CLK_HZ/16 && (!SHARED_BUS || merged==19200))
                     cfg_error_code=`SENSOR_CFG_BUSY;
@@ -282,6 +360,12 @@ module modbus_sensor_driver #(
                     cfg_error_code=`SENSOR_CFG_BUSY;
                 32:if(HMP && enabled && merged!=0 && merged<=3)cfg_error_code=`SENSOR_CFG_BUSY;
                 44:if(!HMP && enabled && merged!=0 && merged<=3600000)cfg_error_code=`SENSOR_CFG_BUSY;
+                8'h80:if((cfg_wdata==1 || cfg_wdata==2 || cfg_wdata==3) && (param_pending || pending || !enabled))
+                    cfg_error_code=`SENSOR_CFG_BUSY;
+                8'h84:if(param_pending && merged<=65535)cfg_error_code=`SENSOR_CFG_BUSY;
+                8'h88:if(param_pending && merged>=1 && merged<=16)cfg_error_code=`SENSOR_CFG_BUSY;
+                8'hc0,8'hc4,8'hc8,8'hcc,8'hd0,8'hd4,8'hd8,8'hdc:
+                    if(param_pending)cfg_error_code=`SENSOR_CFG_BUSY;
                 default:;
             endcase
         end

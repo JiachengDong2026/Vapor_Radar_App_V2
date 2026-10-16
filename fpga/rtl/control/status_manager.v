@@ -54,7 +54,7 @@ module status_manager #(
             8'h41:source_for_page=16'h21;
             8'h50:source_for_page=16'h30;
             8'h51:source_for_page=16'h31;
-            8'h60,8'h61,8'h62,8'h63,8'h64,8'h65,8'h66,8'h67:source_for_page={8'd0,page}-16'h20;
+            8'h60,8'h61,8'h62,8'h63,8'h64,8'h65,8'h66,8'h67,8'h68:source_for_page={8'd0,page}-16'h20;
             default:source_for_page=16'h50;
         endcase
     end endfunction

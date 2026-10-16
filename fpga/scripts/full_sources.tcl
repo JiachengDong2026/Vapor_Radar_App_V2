@@ -59,6 +59,7 @@ set sources [list \
     "$root/rtl/dila/dila_block_framer.v" \
     "$root/rtl/dila/dila_core.v" \
     "$root/rtl/dila/dila_lpf.v" \
+    "$root/rtl/dila/dila_lpf_coefficients.v" \
     "$root/rtl/dila/dila_magnitude.v" \
     "$root/rtl/dila/dila_mixer.v" \
     "$root/rtl/dila/dila_ref_gen.v" \
@@ -80,6 +81,7 @@ set sources [list \
     "$root/rtl/sensors/crc16_modbus.v" \
     "$root/rtl/sensors/epsilon_link_recovery.v" \
     "$root/rtl/sensors/epsilon_rs232.v" \
+    "$root/rtl/sensors/epsilon_command_mailbox.v" \
     "$root/rtl/sensors/epsilon_rs422.v" \
     "$root/rtl/sensors/hmp_modbus_rs485.v" \
     "$root/rtl/sensors/i2c_arbiter_2.v" \

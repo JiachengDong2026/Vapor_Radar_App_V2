@@ -14,7 +14,7 @@ import struct
 from analyze_capture import analyze as analyze_vlp
 
 SOURCES = {0x40: 'PTB210', 0x41: 'HMP', 0x42: 'EPSILON', 0x43: 'BMP390',
-           0x44: 'SHT45', 0x45: 'TFA1500', 0x46: 'AI8'}
+           0x44: 'SHT45', 0x45: 'TFA1500', 0x46: 'AI8', 0x48: 'RD105'}
 EXPECTED = [0x40, 0x42, 0x43, 0x44, 0x45, 0x46]
 ERRORS = ['timeout', 'protocol_or_crc', 'fifo_overflow', 'device_not_ready',
           'config_range', 'cdc_or_internal', 'device_reported_error', 'data_format']
@@ -23,7 +23,7 @@ TAGS = {1: 'device_status', 2: 'device_error', 3: 'raw_frame', 4: 'sample_counte
         0x12: 'pressure_mPa', 0x13: 'distance_mm', 0x14: 'target_temperature_uC',
         0x15: 'actual_temperature_uC', 0x460: 'pv_raw', 0x461: 'sp_raw',
         0x462: 'sv_raw', 0x463: 'op_raw', 0x464: 'alarm', 0x465: 'control',
-        0x466: 'host_status', 0x467: 'set_result'}
+        0x466: 'host_status', 0x467: 'set_result', 0x468: 'channel'}
 FORMATS = {1: 'B', 2: 'H', 3: 'I', 4: 'Q', 5: 'b', 6: 'h', 7: 'i', 8: 'q',
            9: 'f', 10: 'd', 13: 'B'}
 
@@ -69,7 +69,7 @@ def tlv_decode(payload, source):
     if len(payload) < 4:
         raise ValueError('missing TLV record header')
     schema, count = struct.unpack_from('<HH', payload)
-    if schema != (2 if source == 0x46 else 1):
+    if schema not in ((2, 3) if source == 0x46 else (1,)):
         raise ValueError('unexpected sensor schema %d' % schema)
     cursor, entries, values = 4, [], {}
     for _ in range(count):
@@ -82,7 +82,7 @@ def tlv_decode(payload, source):
             expected_type = 11 if tag == 0x100 else 3
             if tag == 0x100 and length != 21:
                 raise ValueError('BMP390 calibration must contain 21 bytes')
-        if source == 0x46 and 0x460 <= tag <= 0x467:
+        if source == 0x46 and 0x460 <= tag <= 0x468:
             expected_type = 7 if tag <= 0x462 else 3
         if expected_type is not None and kind != expected_type:
             raise ValueError('unexpected type for known TLV tag %04X' % tag)
@@ -118,6 +118,11 @@ def tlv_decode(payload, source):
         entries.append(dict(tag='0x%04X' % tag, type=kind, length=length, name=name, value=value))
     if cursor != len(payload):
         raise ValueError('bytes remaining after TLV record')
+    if source == 0x46:
+        if schema == 3 and not 1 <= values.get('channel', 0) <= 8:
+            raise ValueError('AI8 scan record requires channel 1..8')
+        if schema == 2 and 'channel' in values:
+            raise ValueError('channel tag requires AI8 schema 3')
     scales = {'temperature_mC': ('temperature_C', 1000),
               'humidity_milli_pct': ('humidity_pct', 1000),
               'pressure_mPa': ('pressure_Pa', 1000),
@@ -246,6 +251,11 @@ def analyze(data):
                         reasons.append('AI8 offline/transport failure; numeric values may be stale')
                     if values.get('alarm', 0) or values.get('host_status', 0) & 0x300:
                         reasons.append('AI8 alarm/host error')
+                if source == 0x48:
+                    if 'target_temperature_uC' not in values or 'device_error' not in values:
+                        raise ValueError('required RD105 fields missing')
+                    if 'actual_temperature_uC' not in values or values['device_error']:
+                        reasons.append('RD105 measurement unavailable/device error')
                 metadata = source == 0x43 and 'calibration_raw_21bytes' in values
                 if source == 0x43:
                     decoded['note'] = 'Pressure and temperature ADC counts are raw, not Pa or degrees C; Bosch calibration/compensation is not applied.'
@@ -254,6 +264,10 @@ def analyze(data):
                 frame['classification'] = 'metadata' if metadata else ('flagged_sample' if reasons else 'valid_sample')
                 frame['health_reasons'] = reasons
                 stat['metadata_records' if metadata else ('flagged_samples' if reasons else 'valid_samples')] += 1
+                if source == 0x46 and decoded['schema'] == 3:
+                    stat.setdefault('channels', {})[str(values['channel'])] = dict(
+                        timestamp_ticks=frame['timestamp_ticks'], valid=not reasons,
+                        values=values, health_reasons=reasons)
                 if not metadata and not reasons:
                     stat.setdefault('first_sample_ticks', frame['timestamp_ticks'])
                     stat['last_sample_ticks'] = frame['timestamp_ticks']

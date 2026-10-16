@@ -4,12 +4,12 @@ module tb_sensor_bank_merge;
     reg rst=0;reg [63:0] now=0;always @(posedge clk)now<=now+1'b1;
     reg cv=0,cw=0;reg [31:0] ca=0,cd=0;wire cr,ce;wire [31:0] rd;
     wire ptb_rx,ptb_tx,bus_rx,bus_tx,bus_de,eps_tx,tfa_hf,tfa_lf,tfa_tx;
-    wire [27:0] cfg_codes;
+    wire [31:0] cfg_codes;
     reg eps_rx=1,sync_pulse=0;
     wire scl_low,sda_low;tri1 scl,sda;assign scl=scl_low?0:1'bz;assign sda=sda_low?0:1'bz;
-    wire [6:0] mv,ms,ml,online;reg [6:0] ready=0;
-    wire [223:0] data,cycle,flags,errors,drops,levels;
-    wire [27:0] keep;wire [111:0] source_id,msg_id;wire [447:0] timestamp;
+    wire [7:0] mv,ms,ml,online;reg [7:0] ready=0;
+    wire [255:0] data,cycle,flags,errors,drops,levels;
+    wire [31:0] keep;wire [127:0] source_id,msg_id;wire [511:0] timestamp;
     wire [63:0] tag;wire tag_valid;
     member3_sensor_bank #(.SYS_CLK_HZ(25000000),.PTB_BOOT_MS(1))dut(
         .sys_clk(clk),.rst_sys_n(rst),.timestamp_now(now),.time_sync_valid(1'b1),.time_sync_seq(32'd42),
@@ -65,9 +65,10 @@ module tb_sensor_bank_merge;
     reg [15:0] lfsr=16'hbeef;reg random_ready=1;
     always @(negedge clk)if(rst)begin
         lfsr={lfsr[14:0],lfsr[15]^lfsr[13]^lfsr[12]^lfsr[10]};
-        if(random_ready)ready=lfsr[6:0];else ready=0;
+        if(random_ready)ready={1'b1,lfsr[6:0]};else ready=0;
     end
     always @(posedge clk)if(rst)begin
+        if(mv[7] || online[7])$fatal(1,"unrequested RD105 activity");
         if(tag_valid)begin tags=tags+1;if(tag!=64'd1700000000123456)$fatal(1,"UTC tag");end
         for(k=0;k<7;k=k+1)begin
             bundle={flags[k*32+:32],cycle[k*32+:32],timestamp[k*64+:64],msg_id[k*16+:16],source_id[k*16+:16],ml[k],ms[k],keep[k*4+:4],data[k*32+:32]};

@@ -6,7 +6,7 @@ module epsilon_rs232 #(
     parameter integer PASSIVE_MS=2500,RESPONSE_MS=500,QUIET_MS=50,ONLINE_MS=2500,
     parameter integer RECOVERY_ENABLE=1
 )(
-    input wire sys_clk,rst_sys_n,uart_rxd,output wire uart_txd,
+    input wire sys_clk,rst_sys_n,uart_rxd,output wire uart_txd,correction_txd,
     input wire [63:0] timestamp_now,input wire time_sync_valid,input wire [31:0] time_sync_seq,
     input wire sync_event_pulse,
     output reg [63:0] gnss_time_tag,output reg gnss_time_tag_valid,
@@ -39,11 +39,22 @@ module epsilon_rs232 #(
     wire [7:0] byte_data;
     wire selected=cfg_addr[31:8]==24'h000062;
     wire [7:0] offset=cfg_addr[7:0];
-    wire access=cfg_valid&&selected;
+    wire access=cfg_valid&&selected && offset<8'h40;
     wire write_fire=access&&cfg_write&&!cfg_error;
     wire local_rst_n=rst_sys_n&&!soft_reset;
     wire accepted,drop_pulse,afull;
     reg [31:0] mask,merged;
+    wire mailbox_ready,mailbox_error,mailbox_busy,mailbox_reserve,mailbox_txd;
+    wire [31:0] mailbox_rdata;
+    wire [3:0] mailbox_error_code;
+    wire recovery_txd,recovery_busy;
+    assign uart_txd=mailbox_busy ? mailbox_txd : recovery_txd;
+    epsilon_command_mailbox #(.SYS_CLK_HZ(SYS_CLK_HZ)) command_mailbox(
+        .clk(sys_clk),.rst_n(local_rst_n),.enable(enabled),.blocked(recovery_busy),.baud_hz(baud),
+        .cfg_valid(cfg_valid),.cfg_write(cfg_write),.cfg_addr(cfg_addr),.cfg_wdata(cfg_wdata),.cfg_wstrb(cfg_wstrb),
+        .cfg_ready(mailbox_ready),.cfg_error(mailbox_error),.cfg_rdata(mailbox_rdata),.cfg_error_code(mailbox_error_code),
+        .rx_valid(byte_valid && !framing_error && !parity_error),.rx_data(byte_data),
+        .txd(mailbox_txd),.correction_txd(correction_txd),.busy(mailbox_busy),.reserve_uart(mailbox_reserve));
     integer j;
     function [7:0] crc8_step;
         input [7:0] previous,data;
@@ -62,7 +73,7 @@ module epsilon_rs232 #(
     wire utc_frame=(id==8'h50&&length==102&&frame[(7+2)*8+3])||
         (id==8'h51&&length==8&&utc_initialized)||(id==8'h59&&length==74&&frame[(7+72)*8+5]);
     wire utc_range=utc_seconds>=32'd946684800&&utc_us<1000000;
-    wire recovery_busy;
+
     // Health is based on any CRC-correct FDILink frame, independent of forwarding.
     wire recovery_good_frame=enabled && byte_valid && !framing_error && !parity_error &&
         position>=7 && position==({1'b0,length}+9'd7) && byte_data==8'hfd &&
@@ -73,18 +84,18 @@ module epsilon_rs232 #(
     generate if (RECOVERY_ENABLE != 0) begin : g_recovery
     epsilon_link_recovery #(.SYS_CLK_HZ(SYS_CLK_HZ),.PASSIVE_MS(PASSIVE_MS),
         .RESPONSE_MS(RESPONSE_MS),.QUIET_MS(QUIET_MS)) u_recovery(
-        .sys_clk(sys_clk),.rst_sys_n(local_rst_n),.enable(enabled),.baud_hz(baud),
+        .sys_clk(sys_clk),.rst_sys_n(local_rst_n),.enable(enabled),.tx_inhibit(mailbox_reserve),.baud_hz(baud),
         .rx_valid(byte_valid && !framing_error && !parity_error),.rx_data(byte_data),
-        .good_frame(recovery_good_frame),.txd(uart_txd),.busy(recovery_busy),
+        .good_frame(recovery_good_frame),.txd(recovery_txd),.busy(recovery_busy),
         .debug_state(debug_probe_state),.attempts(debug_attempts));
     end else begin : g_passive
-        // CON14 debug uses the physical TX line; the sensor is receive-only.
-        assign uart_txd = 1'b1;
+        // Disable automatic probing; mailbox TX still requires a host START.
+        assign recovery_txd = 1'b1;
         assign recovery_busy = 1'b0;
         assign debug_probe_state = !enabled ? 4'd0 : online ? 4'd9 : 4'd1;
         assign debug_attempts = 16'd0;
     end endgenerate
-    assign cfg_ready=access;
+    assign cfg_ready=access || mailbox_ready;
     uart_rx #(.SYS_CLK_HZ(SYS_CLK_HZ))u_rx(
         .sys_clk(sys_clk),.rst_sys_n(local_rst_n),.enable(enabled || recovery_busy),.baud_hz(baud),
         .data_bits(4'd8),.parity_mode(2'd0),.stop_bits(2'd1),.rxd(uart_rxd),
@@ -114,11 +125,12 @@ module epsilon_rs232 #(
         if(cfg_write)case(offset)
             4:if(merged>15)cfg_error=1;
             12,20,24:;
-            16:if(enabled||recovery_busy||merged<9600||merged>SYS_CLK_HZ/16)cfg_error=1;
+            16:if(enabled||recovery_busy||mailbox_busy||merged<9600||merged>SYS_CLK_HZ/16)cfg_error=1;
             28:if(merged>1)cfg_error=1;
             default:cfg_error=1;
         endcase
-        if(!access)begin cfg_error=0;cfg_rdata=0;end
+        if(access && cfg_write && offset==4 && merged[1] && mailbox_busy)cfg_error=1;
+        if(!access)begin cfg_error=mailbox_error;cfg_rdata=mailbox_rdata;end
     end
     always @(posedge sys_clk)begin
         if(!rst_sys_n)begin soft_reset<=0;clear_fifo<=0;end
@@ -206,6 +218,8 @@ module epsilon_rs232 #(
                 default:cfg_error_code=`SENSOR_CFG_READ_ONLY;
             endcase
         end
+        if(mailbox_ready)cfg_error_code=mailbox_error_code;
+        if(access && cfg_write && offset==4 && merged[1] && mailbox_busy)cfg_error_code=`SENSOR_CFG_BUSY;
     end
 
 endmodule

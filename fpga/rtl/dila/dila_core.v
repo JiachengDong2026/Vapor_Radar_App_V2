@@ -24,6 +24,8 @@ module dila_core #(
     output reg [3:0] cfg_error_code
 );
     reg enable,pending,prepared,div_start,phase_start;
+    reg [31:0] cutoff_shadow,cutoff_commit,cutoff_active;
+    wire cutoff_changed=cutoff_active!=cutoff_commit;
     reg [1:0] calc_state;
     reg [31:0] frequency_shadow,phase1_shadow,phase2_shadow,rate_shadow,mode_shadow,frag_shadow;
     reg [31:0] frequency_commit,phase1_commit,phase2_commit,rate_commit,mode_commit,frag_commit,input_rate_commit;
@@ -83,8 +85,14 @@ module dila_core #(
             8'h4c:begin cfg_rdata=rate_actual;cfg_error=cfg_write;end
             8'h50:begin cfg_rdata=decimation;cfg_error=cfg_write;end
             8'h54:begin cfg_rdata=phase_step;cfg_error=cfg_write;end
+            8'h58:begin
+                cfg_rdata=cutoff_shadow;merged=(cutoff_shadow&~mask)|wd;
+                if(cfg_write && merged!=100 && merged!=250 && merged!=500 && merged!=1000 && merged!=2000 && merged!=5000 && merged!=10000)cfg_error=1;
+            end
+            8'h5c:begin cfg_rdata=cutoff_active;cfg_error=cfg_write;end
             default:cfg_error=1;
         endcase
+        if(hit && cfg_write && ofs==4 && wd[2] && cutoff_shadow!=1000 && input_rate!=INPUT_RATE_HZ)cfg_error=1;
     end
     wire [193:0] sample_tag=USE_CAPTURE_TAGS?capture_tag:
         {time_sync_valid,wms_phase_valid,wms_scan_start?timestamp_now:cycle_timestamp,
@@ -127,12 +135,20 @@ module dila_core #(
     wire filtered_valid,filter_sat,filter_busy;
     wire [127:0] filtered_iq;
     wire [193:0] filtered_tag;
-    dila_lpf #(.B0(B0),.B1(B1),.B2(B2),.A1(A1),.A2(A2)) u_filter(
-        .clk(sys_clk),.rst_n(local_rst_n),.clear(1'b0),.in_valid(mix_valid),.in_iq(mix_iq),.in_tag(mix_tag),
+    wire signed [47:0] coeff_b0[0:1],coeff_b1[0:1],coeff_a1[0:1],coeff_a2[0:1];
+    genvar section;
+    generate for(section=0;section<2;section=section+1)begin : lpf_profiles
+        dila_lpf_coefficients #(.INPUT_RATE_HZ(INPUT_RATE_HZ),.SECTION(section)) coefficients(
+            .cutoff_hz(cutoff_active),.b0(coeff_b0[section]),.b1(coeff_b1[section]),.a1(coeff_a1[section]),.a2(coeff_a2[section]));
+    end endgenerate
+    dila_lpf #(.CONFIGURABLE(1),.B0(B0),.B1(B1),.B2(B2),.A1(A1),.A2(A2)) u_filter(
+        .clk(sys_clk),.rst_n(local_rst_n),.clear(apply_config && cutoff_changed),.in_valid(mix_valid),
+        .coefficient_b0(coeff_b0[0]),.coefficient_b1(coeff_b1[0]),.coefficient_a1(coeff_a1[0]),.coefficient_a2(coeff_a2[0]),.in_iq(mix_iq),.in_tag(mix_tag),
         .bypass(mode_active[2]),.out_valid(first_filtered_valid),.out_iq(first_filtered_iq),.out_tag(first_filtered_tag),
         .saturation(first_filter_sat),.busy(first_filter_busy));
-    dila_lpf #(.B0(C0),.B1(C1),.B2(C2),.A1(D1),.A2(D2)) u_filter_second(
-        .clk(sys_clk),.rst_n(local_rst_n),.clear(1'b0),.in_valid(first_filtered_valid),.in_iq(first_filtered_iq),.in_tag(first_filtered_tag),
+    dila_lpf #(.CONFIGURABLE(1),.B0(C0),.B1(C1),.B2(C2),.A1(D1),.A2(D2)) u_filter_second(
+        .clk(sys_clk),.rst_n(local_rst_n),.clear(apply_config && cutoff_changed),.in_valid(first_filtered_valid),
+        .coefficient_b0(coeff_b0[1]),.coefficient_b1(coeff_b1[1]),.coefficient_a1(coeff_a1[1]),.coefficient_a2(coeff_a2[1]),.in_iq(first_filtered_iq),.in_tag(first_filtered_tag),
         .bypass(mode_active[2]),.out_valid(filtered_valid),.out_iq(filtered_iq),.out_tag(filtered_tag),.saturation(filter_sat),.busy(filter_busy));
     wire filter_new_cycle=!have_filter_cycle || filtered_tag[31:0]!=last_filter_cycle;
     wire point_due=filtered_valid && ((filter_new_cycle?32'd1:decim_count+1'b1)>=decimation);
@@ -149,7 +165,7 @@ module dila_core #(
     always @*begin
         cfg_error_code=0;
         if(hit && cfg_error)case(ofs)
-            8'h00,8'h08,8'h24,8'h28,8'h38,8'h3c,8'h44,8'h48,8'h4c,8'h50,8'h54:cfg_error_code=6;
+            8'h00,8'h08,8'h24,8'h28,8'h38,8'h3c,8'h44,8'h48,8'h4c,8'h50,8'h54,8'h5c:cfg_error_code=6;
             8'h04:cfg_error_code=(|wd[31:4])?7:8;
             8'h10,8'h1c,8'h20,8'h40:cfg_error_code=7;
             default:cfg_error_code=5;
@@ -175,6 +191,7 @@ module dila_core #(
     always @(posedge sys_clk or negedge rst_sys_n)begin
         if(!rst_sys_n)begin
             enable<=0;pending<=0;prepared<=0;calc_state<=0;div_start<=0;phase_start<=0;
+            cutoff_shadow<=1000;cutoff_commit<=1000;cutoff_active<=1000;
             frequency_shadow<=1000000;phase1_shadow<=0;phase2_shadow<=0;rate_shadow<=10000;mode_shadow<=3;frag_shadow<=256;
             frequency_commit<=1000000;phase1_commit<=0;phase2_commit<=0;rate_commit<=10000;mode_commit<=3;frag_commit<=256;input_rate_commit<=INPUT_RATE_HZ;
             phase1_active<=0;phase2_active<=0;mode_active<=3;frag_active<=256;
@@ -198,7 +215,7 @@ module dila_core #(
                 8'h04:begin
                     enable<=(enable&~mask[0])|wd[0];
                     if(wd[2])begin
-                        pending<=1;prepared<=0;frequency_commit<=frequency_shadow;phase1_commit<=phase1_shadow;phase2_commit<=phase2_shadow;
+                        pending<=1;prepared<=0;cutoff_commit<=cutoff_shadow;frequency_commit<=frequency_shadow;phase1_commit<=phase1_shadow;phase2_commit<=phase2_shadow;
                         rate_commit<=rate_shadow;mode_commit<=mode_shadow;frag_commit<=frag_shadow;input_rate_commit<=input_rate;
                     end
                 end
@@ -211,6 +228,7 @@ module dila_core #(
                 8'h2c:in_sat_count<=in_sat_count&~wd;
                 8'h30:mix_sat_count<=mix_sat_count&~wd;
                 8'h34:lpf_sat_count<=lpf_sat_count&~wd;
+                8'h58:cutoff_shadow<=(cutoff_shadow&~mask)|wd;
                 8'h40:frag_shadow<=(frag_shadow&~mask)|wd;
                 default:begin end
             endcase
@@ -224,6 +242,7 @@ module dila_core #(
             if(div_done && calc_state==2)begin rate_next<=div_result;calc_state<=3;end
             if(calc_state==3 && !phase_busy)begin prepared<=1;calc_state<=0;end
             if(apply_config)begin
+                cutoff_active<=cutoff_commit;
                 phase1_active<=phase1_commit;phase2_active<=phase2_commit;mode_active<=mode_commit;frag_active<=frag_commit;
                 decimation<=factor_next;rate_actual<=rate_next;phase_step<=phase_next;pending<=0;prepared<=0;
             end

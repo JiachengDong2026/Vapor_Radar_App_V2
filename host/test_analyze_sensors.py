@@ -28,6 +28,30 @@ def fdi(payload=b'\0'*8):
 
 
 class SensorAnalysisTests(unittest.TestCase):
+    def test_ai8_scan_channel_isolation(self):
+        raw = b''.join(frame(0x46, record((0x460, 7, 200+c), (0x461, 7, 250),
+                                         (1, 3, 1), (0x468, 3, c), schema=3), sequence=c)
+                       for c in range(1, 9))
+        raw += frame(0x46, record((0x460, 7, 0), (0x461, 7, 0), (1, 3, 2),
+                                  (0x468, 3, 2), schema=3), sequence=9, flags=17)
+        result = analyze(raw)
+        channels = result['sources']['0x0046']['channels']
+        self.assertEqual(len(channels), 8)
+        self.assertEqual(channels['8']['values']['pv_C'], 20.8)
+        self.assertTrue(channels['1']['valid'])
+        self.assertFalse(channels['2']['valid'])
+        for channel in (0, 9):
+            invalid = analyze(frame(0x46, record((0x468, 3, channel), schema=3)))
+            self.assertEqual(invalid['sources']['0x0046']['invalid_records'], 1)
+
+    def test_independent_rd105(self):
+        result = analyze(frame(0x48, record((0x14, 7, 25000000), (0x15, 7, 24000000), (2, 3, 0))))
+        rd = result['sources']['0x0048']
+        self.assertEqual(rd['name'], 'RD105')
+        self.assertEqual(rd['valid_samples'], 1)
+        self.assertEqual(rd['latest_valid_values']['actual_temperature_C'], 24)
+        self.assertEqual(result['sources']['0x0046']['valid_samples'], 0)
+
     def test_six_sensors_and_units(self):
         raw = b''.join([
             frame(0x40, record((0x12, 7, 101325000))),

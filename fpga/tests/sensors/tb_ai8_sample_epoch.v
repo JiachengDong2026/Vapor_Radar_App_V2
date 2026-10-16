@@ -13,6 +13,7 @@ module tb_ai8_sample_epoch;
     integer i;
     ai8_poll_core #(.SYS_CLK_HZ(2000000)) core(
         .clk(clk),.rst_n(rst_n),.enable(1'b1),.baud_hz(32'd100000),.slave_addr(slave_address),.channel(8'd1),
+        .scan_enable(1'b0),.set_channel(8'd1),.param_valid(1'b0),.param_write(1'b0),.param_address(16'd0),.param_value(16'd0),
         .parity_mode(2'd0),.stop_bits(2'd1),.retry_limit(2'd1),.poll_interval_ms(32'd1),.timeout_ms(16'd5),
         .uart_rxd(rxd),.uart_txd(txd),.rs485_de(de),.bus_request(),.bus_busy(),.bus_grant(1'b1),
         .sample_ready(ready),.sample_valid(valid),.pv_raw(),.sp_raw(),.sv_raw(),.op_raw(),

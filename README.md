@@ -1,5 +1,9 @@
 # Vapor_Radar_App_V2
 
+## 2026-10-17 下位机能力扩展
+
+按 VaporView 缺失清单增加 AI8 八通道扫描与参数读写核验、EPSILON MAIN 参数/RTCM 下行邮箱、独立 RD105 共享总线接入及 DLIA 截止频率档位。默认 VLP1 行为保持兼容；新能力需上位机按 capability 适配。契约、AI8 恢复出厂的资料限制和实板检查见 [扩展交接](Docs/protocol/HOST_EXTENSIONS_20261017.md)，本轮软件验证见 [验证记录](Docs/HOST_EXTENSIONS_VALIDATION_20261017.md)。本轮未生成经 Vivado 实现验证的新 BIT。
+
 ## 2026-10-11 上位机参考源码
 
 新增 [Qt 上位机 V0.2.5](host/qt_monitor/README.md)，包含六传感器、双 ADC/DLIA、独立 WMS 电压控制、固定坐标绘图与 BIN 记录/回放。正式版开发入口见 [开发交接](Docs/protocol/QT_HOST_HANDOFF_20261011.md)。构建产物放到外部测试目录，不在仓库分发 Qt/Cypress DLL 或 EXE。

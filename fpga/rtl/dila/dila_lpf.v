@@ -1,4 +1,5 @@
 module dila_lpf #(
+    parameter integer CONFIGURABLE=0,
     parameter signed [47:0] B0=48'sd0,
     parameter signed [47:0] B1=48'sd0,
     parameter signed [47:0] B2=48'sd0,
@@ -8,6 +9,7 @@ module dila_lpf #(
     input wire clk,input wire rst_n,input wire clear,
     input wire in_valid,input wire [127:0] in_iq,input wire [193:0] in_tag,
     input wire bypass,
+    input wire signed [47:0] coefficient_b0,coefficient_b1,coefficient_a1,coefficient_a2,
     output reg out_valid,output reg [127:0] out_iq,output reg [193:0] out_tag,
     output reg saturation,output wire busy
 );
@@ -36,9 +38,11 @@ module dila_lpf #(
                 0:if(in_valid)begin
                     tag_reg<=in_tag;bypass_iq<=in_iq;bypass_reg<=bypass;
                     for(k=0;k<4;k=k+1)begin
-                        p0[k]<=$signed({in_iq[k*32+:32],16'd0})*B0;
-                        p1[k]<=x1[k]*B1;p2[k]<=x2[k]*B2;
-                        p3[k]<=y1[k]*A1;p4[k]<=y2[k]*A2;
+                        p0[k]<=$signed({in_iq[k*32+:32],16'd0})*(CONFIGURABLE ? coefficient_b0 : B0);
+                        p1[k]<=x1[k]*(CONFIGURABLE ? coefficient_b1 : B1);
+                        p2[k]<=x2[k]*(CONFIGURABLE ? coefficient_b0 : B2);
+                        p3[k]<=y1[k]*(CONFIGURABLE ? coefficient_a1 : A1);
+                        p4[k]<=y2[k]*(CONFIGURABLE ? coefficient_a2 : A2);
                         x2[k]<=x1[k];x1[k]<=$signed({in_iq[k*32+:32],16'd0});
                     end
                     stage<=1;

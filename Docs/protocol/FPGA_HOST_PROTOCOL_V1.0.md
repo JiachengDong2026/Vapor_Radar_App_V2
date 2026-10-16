@@ -1,3 +1,5 @@
+> 2026-10-17：新增能力位、AI8 扫描/参数事务、EPSILON MAIN 下行/RTCM、独立 RD105 source 0048/page 6800 和 DLIA 截止频率档位。VLP1 外层和旧默认行为不变；新增字段以[扩展交接](HOST_EXTENSIONS_20261017.md)为准，未上板验证。
+
 > 2026-10-04：已将2026-10-02上板验证的DLIA精度版本同步至正式V2，当前ID/profile为0101/00040101。历史构建记录保留；本次范围及验证见[同步记录](../MERGE_MANIFEST_20261004.md)。
 
 > 2026-09-28 硬件映射修订（VLP1 帧版本不变）：ADC1 改为 CON16 / AD4630 CH1，24位，共同1MS/s；见[修订说明](../INTEGRATION_REVISION_20260928_DUAL_AD4630.md)。

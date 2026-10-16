@@ -56,7 +56,7 @@ module cmd_decoder #(parameter integer CFG_TIMEOUT=2048, ACTION_TIMEOUT=10000000
         input [15:0] src;
         begin case(src)
             16'h1,16'h2,16'h10,16'h11,16'h20,16'h21,16'h30,16'h31,
-            16'h40,16'h41,16'h42,16'h43,16'h44,16'h45,16'h46,16'h47,16'h50,16'hffff:source_known=1;
+            16'h40,16'h41,16'h42,16'h43,16'h44,16'h45,16'h46,16'h47,16'h48,16'h50,16'hffff:source_known=1;
             default:source_known=0;
         endcase end
     endfunction
@@ -71,7 +71,7 @@ module cmd_decoder #(parameter integer CFG_TIMEOUT=2048, ACTION_TIMEOUT=10000000
             16'h21:source_owns=page==8'h41;
             16'h30:source_owns=page==8'h50;
             16'h31:source_owns=page==8'h51;
-            16'h40,16'h41,16'h42,16'h43,16'h44,16'h45,16'h46,16'h47:source_owns=page==src[7:0]+8'h20;
+            16'h40,16'h41,16'h42,16'h43,16'h44,16'h45,16'h46,16'h47,16'h48:source_owns=page==src[7:0]+8'h20;
             16'h50:source_owns=page==8'h70 || page==8'h80;
             default:source_owns=0;
         endcase end
@@ -85,7 +85,7 @@ module cmd_decoder #(parameter integer CFG_TIMEOUT=2048, ACTION_TIMEOUT=10000000
             8'h21,8'h31:commit_source=16'h11;
             8'h40:commit_source=16'h20;8'h41:commit_source=16'h21;
             8'h50:commit_source=16'h30;8'h51:commit_source=16'h31;
-            8'h60,8'h61,8'h62,8'h63,8'h64,8'h65,8'h66:commit_source={8'd0,page}-16'h20;
+            8'h60,8'h61,8'h62,8'h63,8'h64,8'h65,8'h66,8'h68:commit_source={8'd0,page}-16'h20;
             default:commit_source=16'hffff;
         endcase end
     endfunction
@@ -127,7 +127,7 @@ module cmd_decoder #(parameter integer CFG_TIMEOUT=2048, ACTION_TIMEOUT=10000000
                     3:response_write_data=100000000;
                     4:response_write_data=8192;
                     5:response_write_data=4096;
-                    6:response_write_data=32'h00000001;
+                    6:response_write_data=32'h0000003f;
                     default:response_write=0;
                 endcase
             end

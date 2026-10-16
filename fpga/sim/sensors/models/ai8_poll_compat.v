@@ -31,6 +31,8 @@ module ai8_poll_compat #(
 );
  ai8_poll_core #(.SYS_CLK_HZ(SYS_CLK_HZ)) dut(
  .enable(1'b1),.baud_hz(BAUD_HZ),.slave_addr(SLAVE_ADDR[7:0]),.channel(CHANNEL[7:0]),
+ .scan_enable(1'b0),.set_channel(CHANNEL[7:0]),.sample_channel(),
+ .param_valid(1'b0),.param_write(1'b0),.param_address(16'd0),.param_value(16'd0),
  .parity_mode(PARITY_MODE[1:0]),.stop_bits(STOP_BITS[1:0]),.retry_limit(RETRY_LIMIT[1:0]),
  .timeout_ms(TIMEOUT_MS[15:0]),.poll_interval_ms(POLL_MS),.bus_request(),.bus_busy(),.bus_grant(1'b1),
  .clk(clk),

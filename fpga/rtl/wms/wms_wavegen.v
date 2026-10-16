@@ -54,11 +54,12 @@ module wms_wavegen #(
     reg [63:0] freq_period;
     // An unacknowledged snapshot must not survive request withdrawal.
     wire cancel_calc=calc!=0 && (!cfg_valid || !commit_req);
+    wire soft_reset;
     wms_unsigned_divider divider(.clk(sys_clk),.rst_n(rst_sys_n && !soft_reset && !cancel_calc),.start(div_start),
         .numerator(div_num),.denominator(div_den),.busy(div_busy),.done(div_done),.quotient(div_q),.remainder(div_rem));
     assign cfg_ready=cfg_valid && hit && (!commit_req || pending || calc==9);
     wire access=cfg_valid && cfg_ready;
-    wire soft_reset=access && !cfg_error && control && cfg_wstrb[0] && cfg_wdata[`CTRL_BIT_SOFT_RESET];
+    assign soft_reset=access && !cfg_error && control && cfg_wstrb[0] && cfg_wdata[`CTRL_BIT_SOFT_RESET];
     always @* begin
         cfg_rdata=0; known=1; writable=0;
         case(ofs)

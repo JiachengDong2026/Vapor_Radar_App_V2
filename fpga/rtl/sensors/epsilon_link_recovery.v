@@ -8,7 +8,7 @@ module epsilon_link_recovery #(
     parameter integer RESPONSE_MS = 500,
     parameter integer QUIET_MS = 50
 )(
-    input wire sys_clk, rst_sys_n, enable,
+    input wire sys_clk, rst_sys_n, enable, tx_inhibit,
     input wire [31:0] baud_hz,
     input wire rx_valid,
     input wire [7:0] rx_data,
@@ -115,6 +115,7 @@ module epsilon_link_recovery #(
                 end
                 PASSIVE:begin
                     if(!enable) state<=IDLE;
+                    else if(tx_inhibit)timer<=0;
                     else if(good_frame || stream_seen) state<=RUN;
                     else if(timer>=PASSIVE_TICKS-1) begin
                         state<=CONFIG_TX; config_open<=1; tx_baud<=baud_hz;

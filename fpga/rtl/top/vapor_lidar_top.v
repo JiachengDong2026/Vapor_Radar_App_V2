@@ -58,32 +58,31 @@ module vapor_lidar_top #(parameter integer SIMULATION=0,GPIF_CLK_HZ=50000000,
     wire [1:0] channel_idle;
     wire motor_busy,motor_done;
     wire [31:0] motion_id,motor_position,motor_remaining,motor_errors;
-    wire [6:0] device_online;
-    wire [223:0] device_error,device_drop,device_level;
+    wire [7:0] device_online;
+    wire [255:0] device_error,device_drop,device_level;
     wire scl_low,sda_low;
     assign I2C_SCL=scl_low ? 1'b0 : 1'bz;
     assign I2C_SDA=sda_low ? 1'b0 : 1'bz;
     assign FPGA_UART_EN_L=1'b1;
     assign RS232_PHY_FORCEON=1'b1;
-    assign FPGA_RS422_TXD_L=1'b1;
     wire [2:0] master_valid,master_write,master_ready,master_error;
     wire [95:0] master_addr,master_wdata,master_rdata;
     wire [11:0] master_wstrb;
     wire [11:0] master_error_code;
     wire [3:0] cfg_error_code;
-    wire [83:0] slave_error_code;
+    wire [87:0] slave_error_code;
     wire cfg_valid,cfg_write,cfg_ready,cfg_error;
     wire [31:0] cfg_addr,cfg_wdata,cfg_rdata;
     wire [3:0] cfg_wstrb;
-    wire [20:0] slave_valid,slave_ready,slave_error,module_present;
-    wire [671:0] slave_rdata,module_status,module_errors;
+    wire [21:0] slave_valid,slave_ready,slave_error,module_present;
+    wire [703:0] slave_rdata,module_status,module_errors;
     wire slave_write;wire [31:0] slave_addr,slave_wdata;wire [3:0] slave_wstrb;
     wire [31:0] crossbar_timeouts,poll_timeouts;
     wire [31:0] module_error_summary,module_irq,event_drops,total_drops,sensor_level;
     wire [95:0] event_queue_level;
     wire [63:0] arb_grants,hub_grants;
     wire [9:0] arb_pending;
-    wire [5:0] hub_pending;
+    wire [6:0] hub_pending;
     wire [31:0] packet_errors,packet_frames,sequence_tx,sequence_rx,protocol_errors,crc_errors,parser_level;
     wire packet_busy,packet_valid,packet_ready,packet_last;
     wire [31:0] packet_data,tx_level,rx_level,gpif_tx_level,gpif_rx_free;
@@ -123,42 +122,42 @@ module vapor_lidar_top #(parameter integer SIMULATION=0,GPIF_CLK_HZ=50000000,
     wire member2_ready,member2_error;wire [31:0] member2_rdata;
     wire [3:0] member2_error_code;
     wire member3_ready,member3_error;wire [31:0] member3_rdata;
-    wire [27:0] member3_error_code;
+    wire [31:0] member3_error_code;
     wire motor_ready,motor_error;wire [31:0] motor_rdata;
     wire [3:0] motor_error_code;
-    wire [6:0] sensor_valid;
-    wire [6:0] sensor_ready;
-    wire [223:0] sensor_data;
-    wire [27:0] sensor_keep;
-    wire [6:0] sensor_sof;
-    wire [6:0] sensor_last;
-    wire [111:0] sensor_source_id;
-    wire [111:0] sensor_msg_id;
-    wire [447:0] sensor_timestamp;
-    wire [223:0] sensor_cycle_id;
-    wire [223:0] sensor_flags;
-    wire [6:0] sensor_gated_valid;
-    wire [6:0] sensor_gated_ready;
-    wire [223:0] sensor_gated_data;
-    wire [27:0] sensor_gated_keep;
-    wire [6:0] sensor_gated_sof;
-    wire [6:0] sensor_gated_last;
-    wire [111:0] sensor_gated_source_id;
-    wire [111:0] sensor_gated_msg_id;
-    wire [447:0] sensor_gated_timestamp;
-    wire [223:0] sensor_gated_cycle_id;
-    wire [223:0] sensor_gated_flags;
-    wire [5:0] hub_in_valid;
-    wire [5:0] hub_in_ready;
-    wire [191:0] hub_in_data;
-    wire [23:0] hub_in_keep;
-    wire [5:0] hub_in_sof;
-    wire [5:0] hub_in_last;
-    wire [95:0] hub_in_source_id;
-    wire [95:0] hub_in_msg_id;
-    wire [383:0] hub_in_timestamp;
-    wire [191:0] hub_in_cycle_id;
-    wire [191:0] hub_in_flags;
+    wire [7:0] sensor_valid;
+    wire [7:0] sensor_ready;
+    wire [255:0] sensor_data;
+    wire [31:0] sensor_keep;
+    wire [7:0] sensor_sof;
+    wire [7:0] sensor_last;
+    wire [127:0] sensor_source_id;
+    wire [127:0] sensor_msg_id;
+    wire [511:0] sensor_timestamp;
+    wire [255:0] sensor_cycle_id;
+    wire [255:0] sensor_flags;
+    wire [7:0] sensor_gated_valid;
+    wire [7:0] sensor_gated_ready;
+    wire [255:0] sensor_gated_data;
+    wire [31:0] sensor_gated_keep;
+    wire [7:0] sensor_gated_sof;
+    wire [7:0] sensor_gated_last;
+    wire [127:0] sensor_gated_source_id;
+    wire [127:0] sensor_gated_msg_id;
+    wire [511:0] sensor_gated_timestamp;
+    wire [255:0] sensor_gated_cycle_id;
+    wire [255:0] sensor_gated_flags;
+    wire [6:0] hub_in_valid;
+    wire [6:0] hub_in_ready;
+    wire [223:0] hub_in_data;
+    wire [27:0] hub_in_keep;
+    wire [6:0] hub_in_sof;
+    wire [6:0] hub_in_last;
+    wire [111:0] hub_in_source_id;
+    wire [111:0] hub_in_msg_id;
+    wire [447:0] hub_in_timestamp;
+    wire [223:0] hub_in_cycle_id;
+    wire [223:0] hub_in_flags;
     wire hub_valid;
     wire hub_ready;
     wire [31:0] hub_data;
@@ -258,7 +257,7 @@ module vapor_lidar_top #(parameter integer SIMULATION=0,GPIF_CLK_HZ=50000000,
     wire [63:0] arb_timestamp;
     wire [31:0] arb_cycle_id;
     wire [31:0] arb_flags;
-    wire [383:0] gate_drops;
+    wire [415:0] gate_drops;
     assign path_quiet=!command_valid && !packet_busy && !packet_valid && !arb_valid && tx_level==0;
     wire raw0_valid,raw0_ready,raw0_idle,raw0_capture_phase_valid,raw0_capture_time_sync_valid;
     wire [31:0] raw0_data,raw0_capture_cycle_id,raw0_capture_phase,raw0_sample_rate_hz;
@@ -491,7 +490,7 @@ module vapor_lidar_top #(parameter integer SIMULATION=0,GPIF_CLK_HZ=50000000,
     member3_sensor_bank #(.PTB_BOOT_MS(SIMULATION ? 1 : 2000)) u_member3(
         .sys_clk(sys_clk),
         .rst_sys_n(rst_sensors_n),
-        .cfg_valid(|slave_valid[17:11]),
+        .cfg_valid((|slave_valid[17:11]) || slave_valid[21]),
         .cfg_write(slave_write),
         .cfg_addr(slave_addr),
         .cfg_wdata(slave_wdata),
@@ -522,6 +521,7 @@ module vapor_lidar_top #(parameter integer SIMULATION=0,GPIF_CLK_HZ=50000000,
         .rs485_de(FPGA_RS485_DERE_L),
         .epsilon_rxd(FPGA_RS232B_RXD),
         .epsilon_txd(FPGA_RS232B_TXD),
+        .epsilon_correction_txd(FPGA_RS422_TXD_L),
         .tfa_hf_rxd(FPGA_UART_RXD_L),
         .tfa_lf_rxd(TFA_LF_RXD),
         .tfa_txd(FPGA_UART_TXD_L),
@@ -825,6 +825,35 @@ module vapor_lidar_top #(parameter integer SIMULATION=0,GPIF_CLK_HZ=50000000,
         .drop_pulse(),
         .drop_count(gate_drops[192 +: 32])
     );
+    stream_gate u_gate_sensor7(
+        .sys_clk(sys_clk),
+        .rst_sys_n(rst_stream_n),
+        .enable((stream_mask[8]) && stream_enable && usb_enable && !reset_pending),
+        .s_valid(sensor_valid[7]),
+        .s_ready(sensor_ready[7]),
+        .s_data(sensor_data[224 +: 32]),
+        .s_keep(sensor_keep[28 +: 4]),
+        .s_sof(sensor_sof[7]),
+        .s_last(sensor_last[7]),
+        .s_source_id(sensor_source_id[112 +: 16]),
+        .s_msg_id(sensor_msg_id[112 +: 16]),
+        .s_timestamp(sensor_timestamp[448 +: 64]),
+        .s_cycle_id(sensor_cycle_id[224 +: 32]),
+        .s_flags(sensor_flags[224 +: 32]),
+        .m_valid(sensor_gated_valid[7]),
+        .m_ready(sensor_gated_ready[7]),
+        .m_data(sensor_gated_data[224 +: 32]),
+        .m_keep(sensor_gated_keep[28 +: 4]),
+        .m_sof(sensor_gated_sof[7]),
+        .m_last(sensor_gated_last[7]),
+        .m_source_id(sensor_gated_source_id[112 +: 16]),
+        .m_msg_id(sensor_gated_msg_id[112 +: 16]),
+        .m_timestamp(sensor_gated_timestamp[448 +: 64]),
+        .m_cycle_id(sensor_gated_cycle_id[224 +: 32]),
+        .m_flags(sensor_gated_flags[224 +: 32]),
+        .drop_pulse(),
+        .drop_count(gate_drops[384 +: 32])
+    );
     stream_gate u_gate_dila0(
         .sys_clk(sys_clk),
         .rst_sys_n(rst_stream_n),
@@ -1036,7 +1065,18 @@ module vapor_lidar_top #(parameter integer SIMULATION=0,GPIF_CLK_HZ=50000000,
     assign hub_in_timestamp[320 +: 64]=sensor_gated_timestamp[384 +: 64];
     assign hub_in_cycle_id[160 +: 32]=sensor_gated_cycle_id[192 +: 32];
     assign hub_in_flags[160 +: 32]=sensor_gated_flags[192 +: 32];
-    sensor_hub #(.N(6)) u_sensor_hub(
+    assign hub_in_valid[6]=sensor_gated_valid[7];
+    assign sensor_gated_ready[7]=hub_in_ready[6];
+    assign hub_in_data[192 +: 32]=sensor_gated_data[224 +: 32];
+    assign hub_in_keep[24 +: 4]=sensor_gated_keep[28 +: 4];
+    assign hub_in_sof[6]=sensor_gated_sof[7];
+    assign hub_in_last[6]=sensor_gated_last[7];
+    assign hub_in_source_id[96 +: 16]=sensor_gated_source_id[112 +: 16];
+    assign hub_in_msg_id[96 +: 16]=sensor_gated_msg_id[112 +: 16];
+    assign hub_in_timestamp[384 +: 64]=sensor_gated_timestamp[448 +: 64];
+    assign hub_in_cycle_id[192 +: 32]=sensor_gated_cycle_id[224 +: 32];
+    assign hub_in_flags[192 +: 32]=sensor_gated_flags[224 +: 32];
+    sensor_hub #(.N(7)) u_sensor_hub(
         .sys_clk(sys_clk),
         .rst_sys_n(rst_stream_n),
         .s_valid(hub_in_valid),
@@ -1086,7 +1126,7 @@ module vapor_lidar_top #(parameter integer SIMULATION=0,GPIF_CLK_HZ=50000000,
         .m_rdata(cfg_rdata),
         .m_error_code(cfg_error_code)
     );
-    reg_ctrl_crossbar u_crossbar(
+    reg_ctrl_crossbar #(.N(22),.PAGE_MAP(176'h68807067666564636261605150414031302120100100)) u_crossbar(
         .sys_clk(sys_clk),
         .rst_sys_n(rst_control_n),
         .cfg_valid(cfg_valid),
@@ -1151,7 +1191,9 @@ module vapor_lidar_top #(parameter integer SIMULATION=0,GPIF_CLK_HZ=50000000,
     assign slave_error_code[68 +: 4]=member3_error_code[24 +: 4];
     assign slave_ready[18]=motor_ready;assign slave_error[18]=motor_error;assign slave_rdata[576 +: 32]=motor_rdata;
     assign slave_error_code[72 +: 4]=motor_error_code;
-    cfg_status_poller u_poller(
+    assign slave_ready[21]=member3_ready;assign slave_error[21]=member3_error;assign slave_rdata[672+:32]=member3_rdata;
+    assign slave_error_code[84+:4]=member3_error_code[28+:4];
+    cfg_status_poller #(.N(22),.PAGE_MAP(176'h68807067666564636261605150414031302120100100)) u_poller(
         .sys_clk(sys_clk),
         .rst_sys_n(rst_control_n),
         .cfg_valid(master_valid[2]),
@@ -1234,8 +1276,8 @@ module vapor_lidar_top #(parameter integer SIMULATION=0,GPIF_CLK_HZ=50000000,
         .sensor_datapath_idle(sensor_level==0 && !(|sensor_valid)),
         .busy(action_busy)
     );
-    assign acquisition_running=global_enable && ((|wms_running) || module_status[224] || module_status[256] || module_status[352] || module_status[384] || module_status[416] || module_status[448] || module_status[480] || module_status[512] || module_status[544]);
-    status_manager u_status(
+    assign acquisition_running=global_enable && ((|wms_running) || module_status[224] || module_status[256] || module_status[352] || module_status[384] || module_status[416] || module_status[448] || module_status[480] || module_status[512] || module_status[544] || module_status[672]);
+    status_manager #(.N(22),.PAGE_MAP(176'h68807067666564636261605150414031302120100100)) u_status(
         .sys_clk(sys_clk),
         .rst_sys_n(rst_stream_n),
         .timestamp_now(timestamp_now),
@@ -1273,8 +1315,8 @@ module vapor_lidar_top #(parameter integer SIMULATION=0,GPIF_CLK_HZ=50000000,
         .m_frame_type(event_frame_type),
         .queue_level(event_queue_level)
     );
-    assign sensor_level=device_level[0 +: 32]+device_level[32 +: 32]+device_level[64 +: 32]+device_level[96 +: 32]+device_level[128 +: 32]+device_level[160 +: 32]+device_level[192 +: 32];
-    assign total_drops=raw0_drop_count+raw1_drop_count+event_drops+forced_clear_count+packet_errors+device_drop[0 +: 32]+device_drop[32 +: 32]+device_drop[64 +: 32]+device_drop[96 +: 32]+device_drop[128 +: 32]+device_drop[160 +: 32]+device_drop[192 +: 32]+gate_drops[0 +: 32]+gate_drops[32 +: 32]+gate_drops[64 +: 32]+gate_drops[96 +: 32]+gate_drops[128 +: 32]+gate_drops[160 +: 32]+gate_drops[192 +: 32]+gate_drops[224 +: 32]+gate_drops[256 +: 32]+gate_drops[288 +: 32]+gate_drops[320 +: 32]+gate_drops[352 +: 32];
+    assign sensor_level=device_level[0 +: 32]+device_level[32 +: 32]+device_level[64 +: 32]+device_level[96 +: 32]+device_level[128 +: 32]+device_level[160 +: 32]+device_level[192 +: 32]+device_level[224 +: 32];
+    assign total_drops=raw0_drop_count+raw1_drop_count+event_drops+forced_clear_count+packet_errors+device_drop[0 +: 32]+device_drop[32 +: 32]+device_drop[64 +: 32]+device_drop[96 +: 32]+device_drop[128 +: 32]+device_drop[160 +: 32]+device_drop[192 +: 32]+gate_drops[0 +: 32]+gate_drops[32 +: 32]+gate_drops[64 +: 32]+gate_drops[96 +: 32]+gate_drops[128 +: 32]+gate_drops[160 +: 32]+gate_drops[192 +: 32]+gate_drops[224 +: 32]+gate_drops[256 +: 32]+gate_drops[288 +: 32]+gate_drops[320 +: 32]+gate_drops[352 +: 32]+gate_drops[384 +: 32]+device_drop[224 +: 32];
     system_registers #(.GPIF_CLK_HZ(GPIF_CLK_HZ),.USE_EXTERNAL_CLOCK_FAULTS(1)) u_system(
         .sys_clk(sys_clk),
         .rst_sys_n(rst_power_n),

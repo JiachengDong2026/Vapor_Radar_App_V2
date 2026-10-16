@@ -1,5 +1,5 @@
 `include "project_defs.vh"
-// Lane order: PTB210,HMP,EPSILON,BMP390,SHT45,TFA1500,AI8.
+// Lane order: PTB210,HMP,EPSILON,BMP390,SHT45,TFA1500,AI8,RD105.
 // SDA/SCL drive_low outputs feed top-level open-drain IOBUF controls.
 module member3_sensor_bank #(
     parameter integer SYS_CLK_HZ=100000000,FIFO_DEPTH=256,PTB_BOOT_MS=2000,EPSILON_PASSIVE_MS=2500
@@ -11,27 +11,27 @@ module member3_sensor_bank #(
     output wire cfg_ready,output reg [31:0] cfg_rdata,output wire cfg_error,
     input wire ptb_rxd,output wire ptb_txd,
     input wire rs485_rxd,output wire rs485_txd,rs485_de,
-    input wire epsilon_rxd,output wire epsilon_txd,
+    input wire epsilon_rxd,output wire epsilon_txd,epsilon_correction_txd,
     input wire tfa_hf_rxd,tfa_lf_rxd,output wire tfa_txd,
     input wire scl_i,sda_i,bmp_int,output wire scl_drive_low,sda_drive_low,
     output wire [63:0] gnss_time_tag,output wire gnss_time_tag_valid,
-    output wire [6:0] m_valid,input wire [6:0] m_ready,
-    output wire [223:0] m_data,output wire [27:0] m_keep,
-    output wire [6:0] m_sof,m_last,
-    output wire [111:0] m_source_id,m_msg_id,
-    output wire [447:0] m_timestamp,output wire [223:0] m_cycle_id,m_flags,
-    output wire [6:0] device_online,
-    output wire [223:0] device_error,device_drop_count,device_fifo_level,
-    output wire [27:0] cfg_error_code
+    output wire [7:0] m_valid,input wire [7:0] m_ready,
+    output wire [255:0] m_data,output wire [31:0] m_keep,
+    output wire [7:0] m_sof,m_last,
+    output wire [127:0] m_source_id,m_msg_id,
+    output wire [511:0] m_timestamp,output wire [255:0] m_cycle_id,m_flags,
+    output wire [7:0] device_online,
+    output wire [255:0] device_error,device_drop_count,device_fifo_level,
+    output wire [31:0] cfg_error_code
 );
-    wire [6:0] ready,error;
-    wire [223:0] rdata;
+    wire [7:0] ready,error;
+    wire [255:0] rdata;
     integer c;
     assign cfg_ready=|ready;
     assign cfg_error=|(error&ready);
     always @*begin
         cfg_rdata=0;
-        for(c=0;c<7;c=c+1)if(ready[c])cfg_rdata=cfg_rdata|rdata[c*32+:32];
+        for(c=0;c<8;c=c+1)if(ready[c])cfg_rdata=cfg_rdata|rdata[c*32+:32];
     end
     wire [1:0] i_valid,i_ready,i_done;
     wire [13:0] i_addr;
@@ -43,8 +43,8 @@ module member3_sensor_bank #(
     wire [5:0] req_write_len,req_read_len;
     wire [255:0] req_write_data,read_data;
     wire [2:0] bus_error;
-    wire [1:0] bus_request,bus_busy,bus_grant,bus_rxd,bus_txd,bus_de;
-    rs485_transaction_arbiter u_rs485_arbiter(
+    wire [2:0] bus_request,bus_busy,bus_grant,bus_rxd,bus_txd,bus_de;
+    rs485_transaction_arbiter #(.N(3)) u_rs485_arbiter(
         .clk(sys_clk),.rst_n(rst_sys_n),.request(bus_request),.busy(bus_busy),
         .txd(bus_txd),.de(bus_de),.uart_rxd(rs485_rxd),.grant(bus_grant),
         .rxd(bus_rxd),.uart_txd(rs485_txd),.rs485_de(rs485_de));
@@ -129,6 +129,7 @@ module member3_sensor_bank #(
         .cfg_wstrb(cfg_wstrb),
         .uart_rxd(epsilon_rxd),
         .uart_txd(epsilon_txd),
+        .correction_txd(epsilon_correction_txd),
         .sync_event_pulse(sync_event_pulse),
         .gnss_time_tag(gnss_time_tag),
         .gnss_time_tag_valid(gnss_time_tag_valid),
@@ -311,4 +312,15 @@ module member3_sensor_bank #(
         .req_addr(req_addr),.req_write_len(req_write_len),.req_read_len(req_read_len),.req_write_data(req_write_data),
         .done(done),.error(bus_error),.read_data(read_data),
         .scl_i(scl_i),.sda_i(sda_i),.scl_drive_low(scl_drive_low),.sda_drive_low(sda_drive_low),.busy(busy));
+    rd105_uart #(.SYS_CLK_HZ(SYS_CLK_HZ),.FIFO_DEPTH(FIFO_DEPTH),.SHARED_BUS(1)) u_7(
+        .sys_clk(sys_clk),.rst_sys_n(rst_sys_n),.uart_rxd(bus_rxd[2]),.uart_txd(bus_txd[2]),
+        .rs485_de(bus_de[2]),
+        .timestamp_now(timestamp_now),.time_sync_valid(time_sync_valid),.time_sync_seq(time_sync_seq),
+        .bus_request(bus_request[2]),.bus_busy(bus_busy[2]),.bus_grant(bus_grant[2]),
+        .cfg_valid(cfg_valid),.cfg_write(cfg_write),.cfg_addr(cfg_addr),.cfg_wdata(cfg_wdata),.cfg_wstrb(cfg_wstrb),
+        .cfg_ready(ready[7]),.cfg_rdata(rdata[224+:32]),.cfg_error(error[7]),.cfg_error_code(cfg_error_code[28+:4]),
+        .m_valid(m_valid[7]),.m_ready(m_ready[7]),.m_data(m_data[224+:32]),.m_keep(m_keep[28+:4]),
+        .m_sof(m_sof[7]),.m_last(m_last[7]),.m_source_id(m_source_id[112+:16]),.m_msg_id(m_msg_id[112+:16]),
+        .m_timestamp(m_timestamp[448+:64]),.m_cycle_id(m_cycle_id[224+:32]),.m_flags(m_flags[224+:32]),
+        .online(device_online[7]),.errors(device_error[224+:32]),.drop_count(device_drop_count[224+:32]),.fifo_level(device_fifo_level[224+:32]));
 endmodule

@@ -87,6 +87,8 @@
     "rtl/sensors/tfa1500_parser.v",
     "rtl/sensors/tfa1500_uart.v",
     "rtl/sensors/uart_rx.v",
-    "rtl/sensors/uart_tx.v"
+    "rtl/sensors/uart_tx.v",
+    "rtl/sensors/epsilon_command_mailbox.v",
+    "rtl/dila/dila_lpf_coefficients.v"
   ]
 }
