@@ -16,6 +16,7 @@
     "rtl/control/reg_ctrl_crossbar.v",
     "rtl/sensors/sensor_hub.v",
     "rtl/control/status_manager.v",
+    "rtl/motor/dm422_pc_ctrl.v",
     "rtl/motor/stepper_ctrl.v",
     "rtl/stream/stream_arbiter.v",
     "rtl/stream/stream_gate.v",
@@ -72,6 +73,7 @@
     "rtl/sensors/epsilon_link_recovery.v",
     "rtl/sensors/epsilon_rs232.v",
     "rtl/sensors/epsilon_rs422.v",
+    "rtl/sensors/hc2a_roascii_uart.v",
     "rtl/sensors/hmp_modbus_rs485.v",
     "rtl/sensors/i2c_arbiter_2.v",
     "rtl/sensors/i2c_master.v",
@@ -89,6 +91,7 @@
     "rtl/sensors/uart_rx.v",
     "rtl/sensors/uart_tx.v",
     "rtl/sensors/epsilon_command_mailbox.v",
-    "rtl/dila/dila_lpf_coefficients.v"
+    "rtl/dila/dila_lpf_coefficients.v",
+    "rtl/sensors/lc_uart_bridge.v"
   ]
 }

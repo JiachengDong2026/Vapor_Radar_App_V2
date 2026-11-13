@@ -1,3 +1,11 @@
+# HC2A: CON11 pin13 TX -> probe RXD; pin15 RX <- probe TXD. Bank88 3.3V.
+set_property -dict {PACKAGE_PIN AK13 IOSTANDARD LVCMOS33} [get_ports HC2A_UART_TXD]
+set_property -dict {PACKAGE_PIN AL13 IOSTANDARD LVCMOS33} [get_ports HC2A_UART_RXD]
+# LC0: CON11 pin5 TX / pin7 RX; LC1: pin6 TX / pin8 RX. 3.3V TTL only.
+set_property -dict {PACKAGE_PIN AM12 IOSTANDARD LVCMOS33} [get_ports {LC_UART_TXD[0]}]
+set_property -dict {PACKAGE_PIN AN12 IOSTANDARD LVCMOS33} [get_ports {LC_UART_RXD[0]}]
+set_property -dict {PACKAGE_PIN AP11 IOSTANDARD LVCMOS33} [get_ports {LC_UART_TXD[1]}]
+set_property -dict {PACKAGE_PIN AP10 IOSTANDARD LVCMOS33} [get_ports {LC_UART_RXD[1]}]
 # Generated from the complete original UCF, including both DAC channels.
 # Schematic: Bank88 GPIO is 3.3 V; remaining used CMOS banks are 1.8 V. ADC clock output uses LVDS.
 set_property -dict {PACKAGE_PIN AK17 IOSTANDARD LVCMOS18} [get_ports {CLK_FPGA_25MHZ}]

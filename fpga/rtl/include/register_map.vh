@@ -18,12 +18,29 @@
 `define REG_BASE_DILA1           32'h0000_5100
 `define REG_BASE_PTB210          32'h0000_6000
 `define REG_BASE_HMP             32'h0000_6100
+`define REG_BASE_HC2A            `REG_BASE_HMP
 `define REG_BASE_EPSILON2        32'h0000_6200
 `define REG_BASE_BMP390          32'h0000_6300
 `define REG_BASE_SHT45           32'h0000_6400
 `define REG_BASE_TFA1500         32'h0000_6500
 `define REG_BASE_AI8             32'h0000_6600
-`define REG_BASE_RD105           32'h0000_6800
+`define REG_BASE_RD105           32'h0000_6600 // Legacy alias; ID/version identifies AI8.
+// Independent raw TTL UART pages for the two LC laser controllers.
+`define REG_BASE_LC0             32'h0000_6800
+`define REG_BASE_LC1             32'h0000_6900
+`define REG_LC_BAUD              8'h10
+`define REG_LC_FORMAT            8'h14
+`define REG_LC_TX_DATA           8'h18
+`define REG_LC_RX_DATA           8'h1C
+`define REG_LC_TX_LEVEL          8'h20
+`define REG_LC_RX_LEVEL          8'h24
+`define REG_LC_TX_COUNT          8'h28
+`define REG_LC_RX_COUNT          8'h2C
+`define REG_LC_DROP_COUNT        8'h30
+`define REG_LC_PARITY_COUNT      8'h34
+`define REG_LC_FRAMING_COUNT     8'h38
+`define REG_LC_FIFO_DEPTH        8'h3C
+
 `define REG_BASE_STEPPER         32'h0000_6700
 `define REG_BASE_STREAM          32'h0000_7000
 `define REG_BASE_USB_GPIF        32'h0000_8000
@@ -157,6 +174,32 @@
 `define REG_HMP_FIFO_LEVEL          8'h38
 `define REG_HMP_DROP_COUNT          8'h3C
 
+`define HC2A_ID_VERSION             32'h00410106
+// CON11 GPIO TTL HC2A RO-ASCII candidate (TFA1500 retained); HMP pressure commit is unsupported.
+`define REG_HC2A_BAUD               8'h10
+`define REG_HC2A_ADDRESS            8'h14
+`define REG_HC2A_SERIAL_FORMAT      8'h18
+`define REG_HC2A_POLL_INTERVAL_MS   8'h1C
+`define REG_HC2A_MEAS_MASK          8'h20
+`define REG_HC2A_LAST_RH_F32_BITS   8'h24
+`define REG_HC2A_LAST_TEMP_F32_BITS 8'h28
+`define REG_HC2A_CHECKSUM_ERR_COUNT 8'h2C
+`define REG_HC2A_TIMEOUT_COUNT      8'h30
+`define REG_HC2A_DEVICE_ALARM       8'h34
+`define REG_HC2A_FIFO_LEVEL         8'h38
+`define REG_HC2A_DROP_COUNT         8'h3C
+`define REG_HC2A_LAST_ALARM         8'h40
+`define REG_HC2A_FRAME_COUNT        8'h44
+`define REG_HC2A_FORMAT_ERR_COUNT   8'h48
+// Isolated HC2A diagnostic extension; stable acquisition ID/data schema retained.
+`define REG_HC2A_DEBUG_SIGNATURE    8'h4C
+`define REG_HC2A_DEBUG_RX_TOTAL     8'h50
+`define REG_HC2A_DEBUG_UART_ERRORS  8'h54
+`define REG_HC2A_DEBUG_SNAPSHOT     8'h58
+`define REG_HC2A_DEBUG_FAILURE      8'h5C
+`define REG_HC2A_DEBUG_RAW_BASE     8'h60
+`define HC2A_DEBUG_SIGNATURE        32'h48434432
+
 // EPSILON2 offsets.
 `define REG_EPS_BAUD                8'h10
 `define REG_EPS_FDI_MSG_MASK_LO     8'h14
@@ -262,23 +305,7 @@
 `define REG_AI8_TIMEOUT_MS       8'h60
 `define REG_AI8_RETRY_LIMIT      8'h64
 
-// VLP1 host extensions, 2026-10-17. The legacy defaults remain unchanged.
-`define REG_AI8_SCAN_ENABLE       8'h68
-`define REG_AI8_SET_CHANNEL       8'h6C
-`define REG_AI8_PARAM_CONTROL     8'h80
-`define REG_AI8_PARAM_ADDRESS     8'h84
-`define REG_AI8_PARAM_VALUE       8'h88
-`define REG_AI8_PARAM_STATUS      8'h8C
-`define REG_AI8_PARAM_READBACK    8'h90
-`define REG_AI8_PARAM_COUNT       8'h94
-`define REG_AI8_CACHE_CHANNEL     8'h98
-`define REG_AI8_CACHE_QUALITY     8'hA0
-`define REG_AI8_CACHE_SP_PV       8'hA4
-`define REG_AI8_CACHE_SV_OP       8'hA8
-`define REG_AI8_CACHE_STATUS      8'hAC
-`define REG_AI8_CACHE_TICKS_LO    8'hB0
-`define REG_AI8_CACHE_TICKS_HI    8'hB4
-`define REG_AI8_FEATURES          8'hFC
+// Retained EPSILON and DLIA host extensions, 2026-10-17.
 `define REG_DILA_CUTOFF_SHADOW    8'h58
 `define REG_DILA_CUTOFF_ACTIVE    8'h5C
 `define REG_EPSILON_TX_CONTROL   8'h40
@@ -297,12 +324,28 @@
 `define REG_EPSILON_TX_TARGET    8'h74
 `define REG_EPSILON_RTCM_BAUD    8'h78
 `define REG_EPSILON_RTCM_BYTES   8'h7C
-`define REG_RD105_PARAM_CONTROL  8'h80
-`define REG_RD105_PARAM_ADDRESS  8'h84
-`define REG_RD105_PARAM_QUANTITY 8'h88
-`define REG_RD105_PARAM_STATUS   8'h8C
-`define REG_RD105_PARAM_COUNT    8'h90
-`define REG_RD105_PARAM_TX_BASE  8'hC0
-`define REG_RD105_PARAM_RX_BASE  8'hE0
+
+// PPS calibration revision 0x0200, source 0002 / page 1000.
+`define TIME_SYNC_ID_VERSION        32'h00020200
+`define REG_TIME_CAL_SNAPSHOT       8'h44
+`define REG_TIME_TICKS_PER_SECOND   8'h48
+`define REG_TIME_SNAPSHOT_SEQ       8'h4C
+`define REG_TIME_SNAPSHOT_TICK_LO   8'h50
+`define REG_TIME_SNAPSHOT_TICK_HI   8'h54
+`define REG_TIME_SNAPSHOT_UTC_LO    8'h58
+`define REG_TIME_SNAPSHOT_UTC_HI    8'h5C
+`define REG_TIME_SNAPSHOT_STATUS   8'h60
+`define REG_TIME_REJECTED_PERIODS  8'h64
+`define REG_TIME_NOMINAL_HZ        8'h68
+`define REG_TIME_ANCHOR_SECONDS    8'h70
+`define REG_TIME_ANCHOR_SEQ        8'h74
+`define REG_TIME_ANCHOR_COMMAND    8'h78
+// DM422 adapter revision 0x0200, source 0047 / page 6700.
+`define MOTOR_ID_VERSION            32'h00470200
+`define REG_MOTOR_HEARTBEAT         8'h38
+`define REG_MOTOR_CORE_STATUS       8'h3C
+`define REG_MOTOR_CLOCK_HZ          8'h40
+`define REG_MOTOR_WATCHDOG_MS       8'h44
+`define REG_MOTOR_PULSES_PER_MM     8'h48
 
 `endif

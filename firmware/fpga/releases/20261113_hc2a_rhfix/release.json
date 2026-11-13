@@ -1,0 +1,42 @@
+{
+  "release_date": "2026-11-13",
+  "original_build_date": "2026-10-28",
+  "latest_device_validation_date": "2026-11-12",
+  "target": "XCKU11P-2FFVA1156I",
+  "tool": "Vivado 2020.2",
+  "bit_file": "vapor_lidar_hc2a_gpio_rhfix_20261028.bit",
+  "bit_bytes": 23581028,
+  "bit_sha256": "e5d0c1f691fd7a47cf83c108612f51d518f886ca57e7ca9a363f69c619c2f8a6",
+  "source_test_directory": "hc2a_gpio_20261028_01/rh_case_fix_01",
+  "source_inputs_count": 128,
+  "source_inputs_match_at_sync": "byte_identical",
+  "checkout_verification": "source_inputs_lf.json permits only CRLF/LF normalization",
+  "hc2a_id": "0x00410106",
+  "hc2a_diagnostic_signature": "0x48434432",
+  "build": {
+    "build_validation_pass": true,
+    "fresh_rtl_synthesis": true,
+    "wns_ns": 0.079,
+    "whs_ns": 0.003,
+    "drc_error_or_critical_warning": 0,
+    "cdc_inventory": "exact_inventory_match",
+    "cdc_severities": {
+      "Critical": 1,
+      "Info": 1
+    },
+    "flow_critical_warnings": {
+      "Project 1-1108": 1,
+      "Vivado_Tcl 4-425": 75
+    }
+  },
+  "incremental_reference_sha256": "e911bef04f5dfede3945a80d26f2e7994ff3ae6ba390d4745636ff37a7b3f6ec",
+  "incremental_flow_sha256": "904017a8ef339769460146103f36c0ee47ee24425983f09197e793d8a245f63b",
+  "deployment": {
+    "volatile_sram_tested": true,
+    "this_bit_programmed_to_flash": false,
+    "hardware_changed_during_sync": false
+  },
+  "documentation": "Docs/LOWER_COMPUTER_RELEASE_20261113.md",
+  "sync_validation_file": "validation.json",
+  "sync_testbench_fix": "fpga/tests/system/tb_vapor_sensor_integration.v: explicitly select legacy HMP mode"
+}

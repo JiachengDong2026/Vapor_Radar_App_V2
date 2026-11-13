@@ -57,13 +57,13 @@ module tb_cfg_error_paths;
         payload[0]=0;payload[1]=0;payload[2]=0;payload[3]=0;
         repeat(4)@(negedge clk);rst=1;
         command(3,32'h6700,0,6);command(3,32'h6734,0,6);
-        command(3,32'h6718,0,7);command(3,32'h671c,0,7);command(3,32'h6714,0,7);
+        command(3,32'h6718,0,6);command(3,32'h671c,0,6);command(3,32'h6714,0,7);
         command(3,32'h677c,0,5);command(2,32'h677c,0,5);command(3,32'h5600,0,5);
         command(3,32'h1000,0,6);command(3,32'h1028,0,7);
-        command(4,32'h6708,0,6);command(4,32'h6718,0,7);
+        command(4,32'h6708,0,6);command(4,32'h6718,0,6);
         command(2,32'h5500,0,9);
         command(3,32'h672c,1,11);
-        command(3,32'h6704,1,0);command(3,32'h6710,100,0);command(3,32'h672c,1,0);
+        command(3,32'h6738,1,0);command(3,32'h6704,1,0);command(3,32'h6710,100,0);command(3,32'h672c,1,0);
         if(!mbusy)$fatal(1,"motor should be busy");command(3,32'h6710,200,8);
         $display("tb_cfg_error_paths_PASS responses=%0d real_stepper_time decoder_arbiter_crossbar RO_range_address_busy_timeout_mask",responses);$finish;
     end

@@ -1,6 +1,10 @@
+> 2026-11-13：本文仅适用于 `HC2A_ENABLE=0` 的兼容构建。正式 BIT 默认使用[HC2A独立GPIO接口](HC2A_ROASCII.md)，不能向其应用HMP压力补偿流程。
+
 > 正式归档：2026-09-23。本文源于2026-09-16集成版本；旧文中的Test专用、V2只读和当轮未上板描述属于当时记录。当前目录、六路既有实测及本轮离线边界以[正式集成修订](../../INTEGRATION_REVISION_20260923.md)为准。
 
 # HMP protocol evidence and register implementation
+
+2026-10-27: the production shared bank uses `SHARED_BUS=1`, fixed 19200/8N1/address 240, with AI8 at address 1. The format default 8N2 described below applies to standalone `SHARED_BUS=0`. HMP3 was externally configured to 8N1 and subsequently power-cycled before the shared hardware test; the driver does not change the sensor's serial configuration on enable. Current restoration details are in [the revision record](../../INTEGRATION_REVISION_20261027_HMP_AI8.md).
 
 Official Vaisala **HMP Series with MMP8 and TMP1 User Guide M212022EN-M**, publication2025-08-19, provides the missing word-order specification. Authoritative reader: https://docs.vaisala.com/r/M212022EN-M/en-US . Retained official HTML evidence is `docs/modbus_sources/hmp_float.html`, `hmp_configuration.html`, `hmp_measurement.html`, plus document metadata/TOC.
 

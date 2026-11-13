@@ -25,6 +25,7 @@ set sources [list \
     "$root/rtl/control/reg_ctrl_crossbar.v" \
     "$root/rtl/sensors/sensor_hub.v" \
     "$root/rtl/control/status_manager.v" \
+    "$root/rtl/motor/dm422_pc_ctrl.v" \
     "$root/rtl/motor/stepper_ctrl.v" \
     "$root/rtl/stream/stream_arbiter.v" \
     "$root/rtl/stream/stream_gate.v" \
@@ -83,6 +84,7 @@ set sources [list \
     "$root/rtl/sensors/epsilon_rs232.v" \
     "$root/rtl/sensors/epsilon_command_mailbox.v" \
     "$root/rtl/sensors/epsilon_rs422.v" \
+    "$root/rtl/sensors/hc2a_roascii_uart.v" \
     "$root/rtl/sensors/hmp_modbus_rs485.v" \
     "$root/rtl/sensors/i2c_arbiter_2.v" \
     "$root/rtl/sensors/i2c_master.v" \
@@ -97,6 +99,7 @@ set sources [list \
     "$root/rtl/sensors/sht45_driver.v" \
     "$root/rtl/sensors/tfa1500_parser.v" \
     "$root/rtl/sensors/tfa1500_uart.v" \
+    "$root/rtl/sensors/lc_uart_bridge.v" \
     "$root/rtl/sensors/uart_rx.v" \
     "$root/rtl/sensors/uart_tx.v"]
 proc prepare_memories {work} {

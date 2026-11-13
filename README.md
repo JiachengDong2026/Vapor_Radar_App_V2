@@ -1,8 +1,31 @@
 # Vapor_Radar_App_V2
 
+## 当前正式版本：2026-11-13
+
+已同步最近实板使用的 **HC2A GPIO RH 修正版（HCD2）**：HC2A独立CON11 UART，保留AI8、TFA、EPSILON、双LC UART、GNSS PPS/UTC、DM422、双AD4630/DLIA和WMS/DAC。原2026-10-28构建BIT与配套128项源码输入已核对，归档日期不代表重新综合或重新上板。
+
+- [最新下位机说明、接线、能力和验证边界](Docs/LOWER_COMPUTER_RELEASE_20261113.md)
+- [正式BIT、SHA256与来源清单](firmware/fpga/releases/20261113_hc2a_rhfix/README.md)
+- [HC2A正式寄存器与接线规范](Docs/integration/sensors/HC2A_ROASCII.md)
+- [VLP1协议](Docs/protocol/FPGA_HOST_PROTOCOL_V1.0.md)、[PPS与电机接口](Docs/integration/GNSS_PPS_DM422_20261027.md)、[双LC UART](Docs/integration/LC_DUAL_UART_20261027.md)
+- [电机窗口](Docs/integration/MOTOR_PANEL_20261110.md)、[Qt上位机参考源码](host/qt_monitor/README.md)
+
+BIT：`firmware/fpga/releases/20261113_hc2a_rhfix/vapor_lidar_hc2a_gpio_rhfix_20261028.bit`。SHA256：`e5d0c1f691fd7a47cf83c108612f51d518f886ca57e7ca9a363f69c619c2f8a6`。核验命令：`python -B firmware/fpga/verify_release.py`。
+
+正式目录保存源码、规范、测试源以及本次明确归档的BIT；生成工程、DCP、日志、波形及临时数据留在外部 `Vapor_Lc_App_Test`。本版近期通过SRAM加载使用，未固化此BIT至Flash。AI8是可选择单通道轮询；HC2A占旧HMP逻辑页，但不支持HMP压力补偿。最近实测限制见最新说明。
+
+## 历史同步与构建说明
+
+以下保留历次说明，含当时的“当前”及验收状态；设备选择、BIT路径、归档规则和最新验证结论以上方2026-11-13说明为准。通用构建/CDC复核命令仍可参考，输出须放外部Test目录。
+
+
+## 2026-10-27 HMP / AI8 实测通信基线恢复
+
+HMP、AI8 与 CON19 双设备仲裁恢复至同步前 `d2e2f8f` 的实现，保留 EPSILON 下行/RTCM 和 DLIA 截止频率扩展。AI8 为配置单通道的 schema 2，撤回自动扫描、通用参数事务及 RD105 第三路接入；扩展能力 word 为 `0x29`。恢复范围、已完成实测及当前源码验证边界见 [恢复记录](Docs/INTEGRATION_REVISION_20261027_HMP_AI8.md)。
+
 ## 2026-10-17 下位机能力扩展
 
-按 VaporView 缺失清单增加 AI8 八通道扫描与参数读写核验、EPSILON MAIN 参数/RTCM 下行邮箱、独立 RD105 共享总线接入及 DLIA 截止频率档位。默认 VLP1 行为保持兼容；新能力需上位机按 capability 适配。契约、AI8 恢复出厂的资料限制和实板检查见 [扩展交接](Docs/protocol/HOST_EXTENSIONS_20261017.md)，本轮软件验证见 [验证记录](Docs/HOST_EXTENSIONS_VALIDATION_20261017.md)。本轮未生成经 Vivado 实现验证的新 BIT。
+历史版本曾按 VaporView 缺失清单增加 AI8 八通道扫描与参数读写核验、EPSILON MAIN 参数/RTCM 下行邮箱、独立 RD105 共享总线接入及 DLIA 截止频率档位。AI8/RD105 部分已按上方 2026-10-27 修订撤回，其余新能力仍需上位机按 capability 适配。历史契约、AI8 恢复出厂的资料限制和实板检查见 [扩展交接](Docs/protocol/HOST_EXTENSIONS_20261017.md)，当时的软件验证见 [验证记录](Docs/HOST_EXTENSIONS_VALIDATION_20261017.md)。未生成经 Vivado 实现验证的新 BIT。
 
 ## 2026-10-11 上位机参考源码
 
@@ -107,3 +130,9 @@ try {
 ## 提交规则
 
 源代码、ROM/仿真向量、构建入口、简明验证报告及规范同步提交。FX3官方SDK/示例主体由使用者从本地合法安装的依赖重建，仓库仅保存项目自有增量和哈希，不盲目上传SDK或库。修改公共接口、管脚、消息格式或寄存器时，同步更新Docs、头文件与验证；遵循根AGENTS.md。
+
+
+2026-10-27 新增CON11双路LC TTL UART，接口与验证方法见 [LC双路UART](Docs/integration/LC_DUAL_UART_20261027.md)。两路默认禁用；当前提供可配置原始字节收发，厂家命令由上位机提供。
+
+
+2026-10-27：组合导航CON22 PPS频率校准/显式UTC锚点与DM422整机控制集成，详见 [接线、寄存器与验证说明](Docs/integration/GNSS_PPS_DM422_20261027.md)。USB控制脚本：`host/gnss_motor_control.py`（默认status只读；不加载独立电机镜像）。

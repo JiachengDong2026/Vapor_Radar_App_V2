@@ -28,7 +28,7 @@ module tb_time_sync_core;
         write_reg('h1000,0,15,1);write_reg('h1024,2,15,1);
         @(negedge clk);cv=1;ca='h9999;#1;if(cr||ce)$fatal(1,"wrong page");cv=0;
         tag_valid=1;@(negedge clk);tag_valid=0;pulse;
-        if(!valid || seq!=1 || event_tag!=tag || !event_tag_valid)$fatal(1,"first edge");
+        if(!valid || seq!=1 || event_tag!=0 || event_tag_valid)$fatal(1,"first edge");
         t0=event_tick;repeat(5)@(negedge clk);pulse;
         read_reg('h102c);if(got!=event_tick-t0)$fatal(1,"interval");
         repeat(60)@(negedge clk);if(valid||!(errors&1))$fatal(1,"sync timeout");

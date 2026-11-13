@@ -1,4 +1,8 @@
-> 2026-10-17：新增能力位、AI8 扫描/参数事务、EPSILON MAIN 下行/RTCM、独立 RD105 source 0048/page 6800 和 DLIA 截止频率档位。VLP1 外层和旧默认行为不变；新增字段以[扩展交接](HOST_EXTENSIONS_20261017.md)为准，未上板验证。
+> **2026-11-13 正式版本**：默认 lane/source `0x0041` 为 HC2A，ID `0x00410106`、page `0x6100`、诊断 HCD2。VLP1 帧及 RH/T schema 1 保持兼容；旧 HMP 压力补偿/COMMIT 不适用。接口以[HC2A正式规范](../integration/sensors/HC2A_ROASCII.md)为准，整机身份与BIT见[最新说明](../LOWER_COMPUTER_RELEASE_20261113.md)。AI8 为配置单通道，八路需主机依次切换，非自动扫描。
+
+> 2026-10-27：HMP/AI8 与 CON19 恢复实测双设备实现，AI8 保留单通道 schema 2 和设温核验；撤回扫描、通用参数事务及独立 RD105，扩展能力 word 为 `0x29`。EPSILON MAIN 下行/RTCM 和 DLIA 截止频率扩展保留。当前接口及验证边界见[恢复记录](../INTEGRATION_REVISION_20261027_HMP_AI8.md)。
+
+> 2026-10-17 历史版本：新增 AI8 扫描/参数事务、EPSILON MAIN 下行/RTCM、独立 RD105 source 0048/page 6800 和 DLIA 截止频率档位。AI8/RD105 部分已由上方修订撤回；仍保留的新增字段以[扩展交接](HOST_EXTENSIONS_20261017.md)为准，未上板验证。
 
 > 2026-10-04：已将2026-10-02上板验证的DLIA精度版本同步至正式V2，当前ID/profile为0101/00040101。历史构建记录保留；本次范围及验证见[同步记录](../MERGE_MANIFEST_20261004.md)。
 
@@ -85,6 +89,8 @@
 | TFA1500-L | 0x0045 | 0x6500 | 5 | 0x1100 |
 | AI8 温控 | 0x0046 | 0x6600 | 6 | 0x1100 schema 2 |
 | 电机 | 0x0047 | 0x6700 | 7，仅相关动作 | 0x1300 |
+| LC0原始UART | 0x0048 | 0x6800 | 通过本页CONTROL操作 | 寄存器读取原始字节 |
+| LC1原始UART | 0x0049 | 0x6900 | 通过本页CONTROL操作 | 寄存器读取原始字节 |
 | STREAM / USB | 0x0050 | 0x7000 / 0x8000 | 不用于普通采集启动 | 状态/事件 |
 
 mask 的冻结映射是 `source_id & 0x3F`，存在别名，不能把所有 source 通用地 OR 成无歧义列表。SYSTEM/0xFFFF 广播的 bit2 表示 EPSILON，不是 TIME；TIME reset/clear 必须显式 source=0x0002。六个已接传感器 mask=0x000000000000007D（不含 HMP bit1）；禁止将此掩码解释成寄存器页编号。
@@ -213,7 +219,7 @@ FPGA OUT 接收同样保留坏候选内容并在长度/版本/CRC 失败后只�
 | 000D TIME_ACTION | +0 u32 action；+4 u32 value（8 B） | status |
 | 00FE PING | 任意 0..4052 B | +0 status；+4 原请求 payload，逐字节回显 |
 
-GET 当前常量依次为 `0, 0x0000FFFF, 0x00000100, 100000000, 8192, 4096, 1`。capabilities=FFFF 是已实现能力常量，不能作为设备实物在线或已完成实测的证据；extensions.bit0 表示 RAW schema 2。依据 `rtl/cmd_decoder.v:122`、FPGA `docs/PROTOCOL_EXTENSIONS.md:48`。READ 成功固定前导确为 **12 B**，完整应答帧长 `56+4×count`。
+GET 当前常量依次为 `0, 0x0000FFFF, 0x00000100, 100000000, 8192, 4096, 0x29`。capabilities=FFFF 是已实现能力常量，不能作为设备实物在线或已完成实测的证据；extensions.bit0/3/5 分别表示 RAW schema 2、EPSILON 下行/RTCM、DLIA 截止频率。AI8 扫描、通用参数事务和独立 RD105 的 bit1/2/4 为 0。当前值由 `project_defs.vh` 的 `HOST_EXTENSION_FLAGS` 统一定义。READ 成功固定前导确为 **12 B**，完整应答帧长 `56+4×count`。
 
 READ/WRITE 地址按字节计，必须 4 B 对齐，addr 高 16 位为 0，count 非零，末字节不超过 FFFF。READ reserved 必须 0。WRITE 的 u16 flags 仅 bit0=AUTO_COMMIT 有效，亦即合并的第二个 u32 bit16；其他 flags 位必须 0。MASKED_WRITE 执行 `(old & ~mask) | (value & mask)`。对只读/特殊写语义寄存器不能假设通用 RMW 总是合适。
 
@@ -905,3 +911,11 @@ pressure_hpa = pressure_pa / 100.0
 
 上位机可使用CyUSB.dll/CyAPI接入当前Cypress驱动。若采用其他USB库，需确认驱动绑定与端点调用方式；协议示例不负责安装或切换Windows驱动。建议先完成离线样本比对，再接入真实USB，最后接界面刷新与文件存储。
 
+
+
+## 2026-10-27 LC双路UART扩展
+
+新增0x6800/0x6900两页，原有源ID、21页索引、HOST_EXTENSION_FLAGS和七路传感器采样流语义保持不变。LC ID_VERSION分别为0x00480100/0x00490100，两页附加状态索引21/22。LC支持READ_REG/WRITE_REG，原始RX读取具有出队副作用；完整寄存器、错误码、接线、复位和主机流程见 [LC双路UART接口](../integration/LC_DUAL_UART_20261027.md)。LC source仅访问各自页，不加入通用采样动作集合。
+
+
+2026-10-27：TIME页新增PPS频率资格与原子快照、显式UTC锚点；1201事件帧格式保持32字节，但GNSS有效位改为“确认的PPS UTC”。MOTOR页修订到00470200、增加真实heartbeat及命令12子操作5。详细寄存器和兼容性见 [PPS/DM422修订](../integration/GNSS_PPS_DM422_20261027.md)。

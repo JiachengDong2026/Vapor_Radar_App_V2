@@ -5,7 +5,8 @@ module tb_vapor_clock_integration;
     tri1 scl,sda;wire ptb_rx,ptb_tx,hmp_rx,hmp_tx,hmp_de,eps_tx,tfa_hf,tfa_lf,tfa_tx,rd_rx,rd_tx;
     reg eps_rx=1,sync_pulse=0;
     vapor_lidar_top #(.SIMULATION(1),.GPIF_CLK_HZ(50000000),.RAW0_MAX_SAMPLES(32),.RAW1_MAX_SAMPLES(32)) dut(
-        .CLK_FPGA_25MHZ(clk),.FPGA_GPIF_DQ(gpif_dq),.FPGA_GPIF_CTL(ctl),.FPGA_GPIF_INTN(1'b1),
+        .LC_UART_RXD(2'b11),.LC_UART_TXD(),
+        .HC2A_UART_RXD(1'b1),.CLK_FPGA_25MHZ(clk),.FPGA_GPIF_DQ(gpif_dq),.FPGA_GPIF_CTL(ctl),.FPGA_GPIF_INTN(1'b1),
         .FPGA_GPIF_PCLK(pclk),.CYUSB_RSTN(fx3_rst),
         .FPGA_RS232A_RXD(ptb_rx),.FPGA_RS232A_TXD(ptb_tx),
         .FPGA_RS485_RXD_L(hmp_rx),.FPGA_RS485_TXD_L(hmp_tx),.FPGA_RS485_DERE_L(hmp_de),

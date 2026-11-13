@@ -23,3 +23,11 @@ xsim.dir/
 *.o
 *.elf
 *.map
+
+# Local analysis, previews and caches are archived outside the formal tree.
+/.pytest_cache/
+/output/
+/tmp/
+
+# Explicitly requested, versioned FPGA release; all other BIT files stay ignored.
+!/firmware/fpga/releases/20261113_hc2a_rhfix/vapor_lidar_hc2a_gpio_rhfix_20261028.bit

@@ -1,0 +1,662 @@
+{
+  "date": "2026-11-13",
+  "static_check": "BASELINE_STATIC_CHECK_PASS",
+  "host_unit_tests": {
+    "passed": 20
+  },
+  "release_verification": {
+    "bit_sha256_verified": true,
+    "source_inputs_verified": 128
+  },
+  "common_vivado": {
+    "behavioral_pass": true,
+    "synthesis_completed": true,
+    "reports_generated": true,
+    "unplaced_wns_ns": 8.439,
+    "unplaced_whs_ns": -0.087,
+    "routed_timing_signoff": false
+  },
+  "rtl_test_count": 103,
+  "rtl_all_pass": true,
+  "rtl_tests": [
+    {
+      "test": "tb_action_ai8",
+      "pass": true,
+      "seconds": 27.67,
+      "evidence_directory": "regression"
+    },
+    {
+      "test": "tb_action_controller",
+      "pass": true,
+      "seconds": 17.35,
+      "evidence_directory": "regression"
+    },
+    {
+      "test": "tb_ad4630",
+      "pass": true,
+      "seconds": 18.85,
+      "evidence_directory": "regression"
+    },
+    {
+      "test": "tb_ad4630_boundaries",
+      "pass": true,
+      "seconds": 18.02,
+      "evidence_directory": "regression"
+    },
+    {
+      "test": "tb_ad4630_dual",
+      "pass": true,
+      "seconds": 19.9,
+      "evidence_directory": "regression"
+    },
+    {
+      "test": "tb_ad4630_dual_min",
+      "pass": true,
+      "seconds": 19.78,
+      "evidence_directory": "regression"
+    },
+    {
+      "test": "tb_ad4630_min",
+      "pass": true,
+      "seconds": 17.99,
+      "evidence_directory": "regression"
+    },
+    {
+      "test": "tb_adc3660",
+      "pass": true,
+      "seconds": 18.96,
+      "evidence_directory": "regression"
+    },
+    {
+      "test": "tb_adc3660_lock_release",
+      "pass": true,
+      "seconds": 15.48,
+      "evidence_directory": "regression"
+    },
+    {
+      "test": "tb_adc_channel_regs",
+      "pass": true,
+      "seconds": 16.51,
+      "evidence_directory": "regression"
+    },
+    {
+      "test": "tb_adc_cycle_framer",
+      "pass": true,
+      "seconds": 16.36,
+      "evidence_directory": "regression"
+    },
+    {
+      "test": "tb_adc_cycle_framer_capacity",
+      "pass": true,
+      "seconds": 17.78,
+      "evidence_directory": "regression"
+    },
+    {
+      "test": "tb_adc_cycle_framer_flush",
+      "pass": true,
+      "seconds": 18.18,
+      "evidence_directory": "regression_part_1"
+    },
+    {
+      "test": "tb_adc_debug_uart",
+      "pass": true,
+      "seconds": 18.61,
+      "evidence_directory": "regression_part_2"
+    },
+    {
+      "test": "tb_adc_spi_master",
+      "pass": true,
+      "seconds": 18.2,
+      "evidence_directory": "regression_part_3"
+    },
+    {
+      "test": "tb_ai8_cfg_cache",
+      "pass": true,
+      "seconds": 21.68,
+      "evidence_directory": "regression_part_4"
+    },
+    {
+      "test": "tb_ai8_poll",
+      "pass": true,
+      "seconds": 45.0,
+      "evidence_directory": "regression_part_1"
+    },
+    {
+      "test": "tb_ai8_sample_epoch",
+      "pass": true,
+      "seconds": 20.29,
+      "evidence_directory": "regression_part_2"
+    },
+    {
+      "test": "tb_ai8_setpoint",
+      "pass": true,
+      "seconds": 33.45,
+      "evidence_directory": "regression_part_3"
+    },
+    {
+      "test": "tb_ai8_shared_bus",
+      "pass": true,
+      "seconds": 77.64,
+      "evidence_directory": "regression_part_4"
+    },
+    {
+      "test": "tb_cfg_bus_arbiter",
+      "pass": true,
+      "seconds": 16.82,
+      "evidence_directory": "regression_part_1"
+    },
+    {
+      "test": "tb_cfg_commit_cancel",
+      "pass": true,
+      "seconds": 20.17,
+      "evidence_directory": "regression_part_2"
+    },
+    {
+      "test": "tb_cfg_crossbar_pipeline",
+      "pass": true,
+      "seconds": 17.2,
+      "evidence_directory": "regression_part_3"
+    },
+    {
+      "test": "tb_cfg_error_codes",
+      "pass": true,
+      "seconds": 21.48,
+      "evidence_directory": "regression_part_4"
+    },
+    {
+      "test": "tb_cfg_error_paths",
+      "pass": true,
+      "seconds": 21.85,
+      "evidence_directory": "regression_part_1"
+    },
+    {
+      "test": "tb_cfg_status_poller",
+      "pass": true,
+      "seconds": 16.5,
+      "evidence_directory": "regression_part_2"
+    },
+    {
+      "test": "tb_clk_rst_mgr",
+      "pass": true,
+      "seconds": 16.34,
+      "evidence_directory": "regression_part_3"
+    },
+    {
+      "test": "tb_clock_persistence",
+      "pass": true,
+      "seconds": 19.48,
+      "evidence_directory": "regression_part_4"
+    },
+    {
+      "test": "tb_cmd_decoder",
+      "pass": true,
+      "seconds": 19.83,
+      "evidence_directory": "regression_part_1"
+    },
+    {
+      "test": "tb_crc16_modbus",
+      "pass": true,
+      "seconds": 16.32,
+      "evidence_directory": "regression_part_2"
+    },
+    {
+      "test": "tb_dac_ad5791_if",
+      "pass": true,
+      "seconds": 19.04,
+      "evidence_directory": "regression_part_3"
+    },
+    {
+      "test": "tb_data_packetizer",
+      "pass": true,
+      "seconds": 17.55,
+      "evidence_directory": "regression_part_4"
+    },
+    {
+      "test": "tb_decoder_action",
+      "pass": true,
+      "seconds": 17.9,
+      "evidence_directory": "regression_part_1"
+    },
+    {
+      "test": "tb_dila_core",
+      "pass": true,
+      "seconds": 22.9,
+      "evidence_directory": "regression_part_2"
+    },
+    {
+      "test": "tb_dila_cutoff",
+      "pass": true,
+      "seconds": 19.18,
+      "evidence_directory": "regression_part_3"
+    },
+    {
+      "test": "tb_dila_filter_precision",
+      "pass": true,
+      "seconds": 51.76,
+      "evidence_directory": "regression_part_4"
+    },
+    {
+      "test": "tb_dila_framer",
+      "pass": true,
+      "seconds": 20.12,
+      "evidence_directory": "regression_part_1"
+    },
+    {
+      "test": "tb_dila_numeric",
+      "pass": true,
+      "seconds": 18.82,
+      "evidence_directory": "regression_part_2"
+    },
+    {
+      "test": "tb_dila_ref_precision",
+      "pass": true,
+      "seconds": 30.04,
+      "evidence_directory": "regression_part_3"
+    },
+    {
+      "test": "tb_dm422_pc_ctrl",
+      "pass": true,
+      "seconds": 16.89,
+      "evidence_directory": "regression_part_4"
+    },
+    {
+      "test": "tb_dm422_real_sys100",
+      "pass": true,
+      "seconds": 18.33,
+      "evidence_directory": "regression_part_1"
+    },
+    {
+      "test": "tb_epsilon_downlink",
+      "pass": true,
+      "seconds": 26.29,
+      "evidence_directory": "regression_part_2"
+    },
+    {
+      "test": "tb_epsilon_recovery",
+      "pass": true,
+      "seconds": 29.94,
+      "evidence_directory": "regression_part_3"
+    },
+    {
+      "test": "tb_epsilon_rs232",
+      "pass": true,
+      "seconds": 25.99,
+      "evidence_directory": "regression_part_4"
+    },
+    {
+      "test": "tb_epsilon_rs422",
+      "pass": true,
+      "seconds": 25.61,
+      "evidence_directory": "regression_part_1"
+    },
+    {
+      "test": "tb_gnss_motor_top",
+      "pass": true,
+      "seconds": 60.93,
+      "evidence_directory": "regression_part_2"
+    },
+    {
+      "test": "tb_gpif_slave_fifo_limits",
+      "pass": true,
+      "seconds": 17.1,
+      "evidence_directory": "regression_part_3"
+    },
+    {
+      "test": "tb_gpif_slave_fifo_master",
+      "pass": true,
+      "seconds": 17.83,
+      "evidence_directory": "regression_part_4"
+    },
+    {
+      "test": "tb_gpif_transport_buffers",
+      "pass": true,
+      "seconds": 17.3,
+      "evidence_directory": "regression_part_1"
+    },
+    {
+      "test": "tb_hc2a_ai8_independent",
+      "pass": true,
+      "seconds": 171.59,
+      "evidence_directory": "regression_wrappers"
+    },
+    {
+      "test": "tb_hc2a_ai8_tfa",
+      "pass": true,
+      "seconds": 89.87,
+      "evidence_directory": "regression_wrappers"
+    },
+    {
+      "test": "tb_hc2a_invalid_rh",
+      "pass": true,
+      "seconds": 18.05,
+      "evidence_directory": "regression_part_4"
+    },
+    {
+      "test": "tb_hc2a_real_reply",
+      "pass": true,
+      "seconds": 18.99,
+      "evidence_directory": "regression_part_1"
+    },
+    {
+      "test": "tb_hc2a_roascii_uart",
+      "pass": true,
+      "seconds": 18.84,
+      "evidence_directory": "regression_part_2"
+    },
+    {
+      "test": "tb_hc2a_sensor_bank_select",
+      "pass": true,
+      "seconds": 23.71,
+      "evidence_directory": "regression_part_3"
+    },
+    {
+      "test": "tb_hc2a_uart_diagnostic",
+      "pass": true,
+      "seconds": 18.74,
+      "evidence_directory": "regression_part_4"
+    },
+    {
+      "test": "tb_hc2a_vapor_lidar_top",
+      "pass": true,
+      "seconds": 35.81,
+      "evidence_directory": "regression_wrappers"
+    },
+    {
+      "test": "tb_hmp_modbus_rs485",
+      "pass": true,
+      "seconds": 25.27,
+      "evidence_directory": "regression_part_2"
+    },
+    {
+      "test": "tb_i2c_master",
+      "pass": true,
+      "seconds": 16.93,
+      "evidence_directory": "regression_part_3"
+    },
+    {
+      "test": "tb_i2c_shared",
+      "pass": true,
+      "seconds": 40.66,
+      "evidence_directory": "regression_part_4"
+    },
+    {
+      "test": "tb_lc_uart_bridge",
+      "pass": true,
+      "seconds": 18.38,
+      "evidence_directory": "regression_part_1"
+    },
+    {
+      "test": "tb_lc_uart_top",
+      "pass": true,
+      "seconds": 36.02,
+      "evidence_directory": "regression_part_2"
+    },
+    {
+      "test": "tb_member1_ad4630_dual",
+      "pass": true,
+      "seconds": 21.97,
+      "evidence_directory": "regression_part_3"
+    },
+    {
+      "test": "tb_member1_adc_dila",
+      "pass": true,
+      "seconds": 24.81,
+      "evidence_directory": "regression_part_4"
+    },
+    {
+      "test": "tb_modbus_rtu_master",
+      "pass": true,
+      "seconds": 20.02,
+      "evidence_directory": "regression_part_1"
+    },
+    {
+      "test": "tb_msg_stream_hex_uart",
+      "pass": true,
+      "seconds": 16.09,
+      "evidence_directory": "regression_part_2"
+    },
+    {
+      "test": "tb_pps_calibration",
+      "pass": true,
+      "seconds": 18.48,
+      "evidence_directory": "regression_part_3"
+    },
+    {
+      "test": "tb_pps_expiry_boundary",
+      "pass": true,
+      "seconds": 18.93,
+      "evidence_directory": "regression_part_4"
+    },
+    {
+      "test": "tb_predev_common",
+      "pass": true,
+      "seconds": 18.8,
+      "evidence_directory": "regression_part_1"
+    },
+    {
+      "test": "tb_ptb210_overflow",
+      "pass": true,
+      "seconds": 19.18,
+      "evidence_directory": "regression_part_2"
+    },
+    {
+      "test": "tb_ptb210_rs232",
+      "pass": true,
+      "seconds": 27.19,
+      "evidence_directory": "regression_part_3"
+    },
+    {
+      "test": "tb_rd105_uart",
+      "pass": true,
+      "seconds": 27.53,
+      "evidence_directory": "regression_part_4"
+    },
+    {
+      "test": "tb_reg_ctrl_crossbar",
+      "pass": true,
+      "seconds": 17.1,
+      "evidence_directory": "regression_part_1"
+    },
+    {
+      "test": "tb_rs485_halfduplex_ctrl",
+      "pass": true,
+      "seconds": 15.75,
+      "evidence_directory": "regression_part_2"
+    },
+    {
+      "test": "tb_sensor_bank_merge",
+      "pass": true,
+      "seconds": 232.53,
+      "evidence_directory": "regression_part_3"
+    },
+    {
+      "test": "tb_sensor_cfg_error_codes",
+      "pass": true,
+      "seconds": 31.07,
+      "evidence_directory": "regression_part_4"
+    },
+    {
+      "test": "tb_sensor_hub",
+      "pass": true,
+      "seconds": 16.76,
+      "evidence_directory": "regression_part_1"
+    },
+    {
+      "test": "tb_seven_devices",
+      "pass": true,
+      "seconds": 193.09,
+      "evidence_directory": "regression_part_2"
+    },
+    {
+      "test": "tb_sine_lut",
+      "pass": true,
+      "seconds": 15.58,
+      "evidence_directory": "regression_part_3"
+    },
+    {
+      "test": "tb_status_manager",
+      "pass": true,
+      "seconds": 17.26,
+      "evidence_directory": "regression_part_4"
+    },
+    {
+      "test": "tb_stepper_ctrl",
+      "pass": true,
+      "seconds": 17.43,
+      "evidence_directory": "regression_part_1"
+    },
+    {
+      "test": "tb_stream_arbiter",
+      "pass": true,
+      "seconds": 15.35,
+      "evidence_directory": "regression_part_2"
+    },
+    {
+      "test": "tb_stream_gate",
+      "pass": true,
+      "seconds": 16.14,
+      "evidence_directory": "regression_part_3"
+    },
+    {
+      "test": "tb_system_registers",
+      "pass": true,
+      "seconds": 16.33,
+      "evidence_directory": "regression_part_4"
+    },
+    {
+      "test": "tb_system_registers_semantics",
+      "pass": true,
+      "seconds": 18.24,
+      "evidence_directory": "regression_part_1"
+    },
+    {
+      "test": "tb_system_reset_controller",
+      "pass": true,
+      "seconds": 16.0,
+      "evidence_directory": "regression_part_2"
+    },
+    {
+      "test": "tb_tfa1500_parser",
+      "pass": true,
+      "seconds": 16.49,
+      "evidence_directory": "regression_part_3"
+    },
+    {
+      "test": "tb_tfa1500_uart",
+      "pass": true,
+      "seconds": 19.72,
+      "evidence_directory": "regression_part_4"
+    },
+    {
+      "test": "tb_time_sync_core",
+      "pass": true,
+      "seconds": 18.11,
+      "evidence_directory": "regression_part_1"
+    },
+    {
+      "test": "tb_timestamp_capture",
+      "pass": true,
+      "seconds": 15.39,
+      "evidence_directory": "regression_part_2"
+    },
+    {
+      "test": "tb_uart",
+      "pass": true,
+      "seconds": 17.42,
+      "evidence_directory": "regression_part_3"
+    },
+    {
+      "test": "tb_vapor_ad4630_dual_integration",
+      "pass": true,
+      "seconds": 85.29,
+      "evidence_directory": "regression_part_4"
+    },
+    {
+      "test": "tb_vapor_adc_integration",
+      "pass": true,
+      "seconds": 82.58,
+      "evidence_directory": "regression_part_1"
+    },
+    {
+      "test": "tb_vapor_clock_integration",
+      "pass": true,
+      "seconds": 32.36,
+      "evidence_directory": "regression_part_2"
+    },
+    {
+      "test": "tb_vapor_lidar_top",
+      "pass": true,
+      "seconds": 35.38,
+      "evidence_directory": "regression_wrappers"
+    },
+    {
+      "test": "tb_vapor_sensor_integration",
+      "pass": true,
+      "seconds": 1386.12,
+      "evidence_directory": "regression_hmp_compat"
+    },
+    {
+      "test": "tb_vlp_cmd_rx",
+      "pass": true,
+      "seconds": 16.24,
+      "evidence_directory": "regression_part_1"
+    },
+    {
+      "test": "tb_watchdog",
+      "pass": true,
+      "seconds": 15.18,
+      "evidence_directory": "regression_part_2"
+    },
+    {
+      "test": "tb_wms_dac_channel",
+      "pass": true,
+      "seconds": 19.28,
+      "evidence_directory": "regression_part_3"
+    },
+    {
+      "test": "tb_wms_dac_dual",
+      "pass": true,
+      "seconds": 22.61,
+      "evidence_directory": "regression_part_4"
+    },
+    {
+      "test": "tb_wms_fractional",
+      "pass": true,
+      "seconds": 15.63,
+      "evidence_directory": "regression_part_1"
+    },
+    {
+      "test": "tb_wms_unsigned_divider",
+      "pass": true,
+      "seconds": 15.42,
+      "evidence_directory": "regression_part_2"
+    },
+    {
+      "test": "tb_wms_wavegen",
+      "pass": true,
+      "seconds": 17.75,
+      "evidence_directory": "regression_part_3"
+    }
+  ],
+  "resolved_initial_failures": [
+    {
+      "test": "tb_hc2a_vapor_lidar_top",
+      "evidence_directory": "regression_part_1"
+    },
+    {
+      "test": "tb_hc2a_ai8_tfa",
+      "evidence_directory": "regression_part_3"
+    },
+    {
+      "test": "tb_vapor_sensor_integration",
+      "evidence_directory": "regression_part_4"
+    }
+  ],
+  "resolution_notes": [
+    "Compile wrapper testbenches with their referenced testbenches in the same selected group.",
+    "Set HC2A_ENABLE=0 in the legacy HMP/AI8 integration testbench; production RTL and BIT unchanged."
+  ],
+  "evidence_root": "Vapor_Lc_App_Test/formal_sync_20261113",
+  "fresh_implementation_during_sync": false,
+  "hardware_operations_during_sync": false
+}

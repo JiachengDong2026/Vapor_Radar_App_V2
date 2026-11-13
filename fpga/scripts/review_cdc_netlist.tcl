@@ -78,14 +78,19 @@ foreach entry $cdc_entries {
 }
 close $task_fh
 set task_fh [open "$task_review_dir/synchronizer_evidence.txt" w]
-foreach {label port base} {
- PTB210 FPGA_RS232A_RXD u_member3/u_0/u_uart_rx
- HMP FPGA_RS485_RXD_L u_member3/u_1/core/transport/rx
- AI8 FPGA_RS485_RXD_L u_member3/u_6/core/master/rx
- EPSILON FPGA_RS232B_RXD u_member3/u_2/u_rx
- TFA_HF FPGA_UART_RXD_L u_member3/u_5/u_hf_rx
- TFA_LF TFA_LF_RXD u_member3/u_5/u_lf_rx
-} {
+set uart_specs [list \
+ PTB210 FPGA_RS232A_RXD u_member3/u_0/u_uart_rx \
+ AI8 FPGA_RS485_RXD_L u_member3/u_6/core/master/rx \
+ EPSILON FPGA_RS232B_RXD u_member3/u_2/u_rx \
+ TFA_HF FPGA_UART_RXD_L u_member3/u_5/u_hf_rx \
+ TFA_LF TFA_LF_RXD u_member3/u_5/u_lf_rx]
+set hc2a_rx_base u_member3/gen_hc2a.u_1/rx
+if {[llength [get_cells -quiet ${hc2a_rx_base}/rxd_meta_reg]]} {
+    lappend uart_specs HC2A HC2A_UART_RXD $hc2a_rx_base
+} else {
+    lappend uart_specs HMP FPGA_RS485_RXD_L u_member3/gen_hmp.u_1/core/transport/rx
+}
+foreach {label port base} $uart_specs {
     async_register ${base}/rxd_meta_reg
     async_register ${base}/rxd_sync_reg
     set starts [get_property NAME [all_fanin -flat -startpoints_only -to [get_pins ${base}/rxd_meta_reg/D]]]

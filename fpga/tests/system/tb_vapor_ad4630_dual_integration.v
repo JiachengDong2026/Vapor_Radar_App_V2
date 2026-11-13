@@ -57,7 +57,7 @@ module tb_vapor_ad4630_dual_integration #(parameter integer GPIF_TEST_HZ=5000000
     wire ADC_ADC3660_SYNC;
     wire ADC_ADC3660_SDIO;
     vapor_lidar_top #(.SIMULATION(1),.DUAL_AD4630(1),.GPIF_CLK_HZ(GPIF_TEST_HZ),.RAW0_MAX_SAMPLES(512),.RAW1_MAX_SAMPLES(4096)) dut(
-        .CLK_FPGA_25MHZ(CLK_FPGA_25MHZ),
+        .HC2A_UART_RXD(1'b1),.CLK_FPGA_25MHZ(CLK_FPGA_25MHZ),
         .FPGA_GPIF_DQ(FPGA_GPIF_DQ),
         .FPGA_GPIF_CTL(FPGA_GPIF_CTL),
         .FPGA_GPIF_INTN(FPGA_GPIF_INTN),
@@ -68,6 +68,7 @@ module tb_vapor_ad4630_dual_integration #(parameter integer GPIF_TEST_HZ=5000000
         .FPGA_RS422_RXD_L(FPGA_RS422_RXD_L),
         .FPGA_UART_RXD_L(FPGA_UART_RXD_L),
         .TFA_LF_RXD(TFA_LF_RXD),
+        .LC_UART_RXD(2'b11),.LC_UART_TXD(),
         .FPGA_RS232B_RXD(FPGA_RS232B_RXD),
         .FPGA_RS232A_TXD(FPGA_RS232A_TXD),
         .FPGA_RS485_TXD_L(FPGA_RS485_TXD_L),

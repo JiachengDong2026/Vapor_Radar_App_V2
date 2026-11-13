@@ -135,6 +135,7 @@ module tb_action_controller;
         expect_write(base,32'h6710,32'hffffffef);expect_write(base+3,32'h672c,1);
         if(!memory[32'h6708>>2][3])$fatal(1,"MOVE should acknowledge accepted motion");
         action(12,16'h47,128'd2,0);if(memory[32'h6708>>2][3])$fatal(1,"MOTOR STOP before idle");
+        base=writes;action(12,16'h47,128'd5,0);expect_write(base,32'h6738,1);
         memory[32'h6724>>2]=5;action(12,16'h47,128'd3,0);if(memory[32'h6724>>2]!=0)$fatal(1,"motor zero");
         action(13,2,128'd2,0);if(memory[32'h1004>>2]!=1)$fatal(1,"time rearm enable");
         action(13,2,{64'd0,32'd1,32'd3},0);if(memory[32'h1024>>2]!=1)$fatal(1,"time edge");

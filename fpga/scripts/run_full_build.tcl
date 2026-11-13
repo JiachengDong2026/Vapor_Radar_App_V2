@@ -43,8 +43,21 @@ proc full_hold_pin_repair {out exact_scope} {
         set source_clock [get_clocks -of_objects [get_pins $start]]
         set fanin [all_fanin -flat -startpoints_only -to $pin]
         if {[llength $fanin]!=1 || $fanin ne $start || [get_property REF_PIN_NAME $fanin] ne "C" || ![string match FD* [get_property REF_NAME [get_cells -of_objects $fanin]]]} {error "Unexpected hold launch for $destination"}
-        if {$source_clock ne "gpif_raw" || $dest_clock ne "sys_raw"} {error "Unexpected hold clock pair: $source_clock -> $dest_clock"}
-        if {[regexp {^u_usb_counter(0|1|3|4)/gray_meta_reg\[([0-9]+)\]/D$} $destination match instance bit] && $bit<32} {
+        if {$dest_clock ne "sys_raw" || $source_clock ni {gpif_raw board25}} {error "Unexpected hold clock pair: $source_clock -> $dest_clock"}
+        if {$source_clock eq "board25" && ![string match {u_clock_fault_cdc/gray_meta_reg*} $destination]} {error "Unreviewed board25 hold endpoint"}
+        if {[regexp {^u_clock_fault_cdc/gray_meta_reg\[([0-9]+)\]/D$} $destination match bit] && $bit<32} {
+            set expected_start [format {u_clock_fault_cdc/src_gray_reg[%d]/C} $bit]
+            set second [get_cells -quiet [format {u_clock_fault_cdc/gray_sync_reg[%d]} $bit]]
+            if {$source_clock ne "board25" || $start ne $expected_start || [llength $second]!=1 || ![get_property ASYNC_REG $second]} {error "Unexpected clock-fault Gray synchronizer"}
+            set second_d [get_pins -of_objects $second -filter {REF_PIN_NAME == D}]
+            set driver [get_pins -of_objects [get_nets -of_objects $second_d] -filter {DIRECTION == OUT}]
+            set expected_driver [format {u_clock_fault_cdc/gray_meta_reg[%d]/Q} $bit]
+            if {[llength $driver]!=1 || [get_property NAME $driver] ne $expected_driver} {error "Clock-fault second stage is not direct"}
+            if {[get_clocks -of_objects [get_pins -of_objects $second -filter {REF_PIN_NAME == C}]] ne "sys_raw"} {error "Clock-fault second stage clock changed"}
+            set timed [get_timing_paths -from [get_pins [string range $destination 0 end-1]C] -to $second_d -delay_type max -max_paths 1]
+            if {[llength $timed]!=1 || [get_property SLACK $timed]<0 || [get_property EXCEPTION $timed] ne ""} {error "Clock-fault second stage is failing or excepted"}
+            dict incr group_counts clock_fault
+        } elseif {[regexp {^u_usb_counter(0|1|3|4)/gray_meta_reg\[([0-9]+)\]/D$} $destination match instance bit] && $bit<32} {
             dict incr group_counts usb$instance
         } elseif {[regexp {^u_transport/u_(tx|rx)/(rd|wr)_gray_meta_reg\[([0-9]+)\]/D$} $destination match fifo pointer bit] && $bit<12} {
             if {!(($fifo eq "tx" && $pointer eq "rd") || ($fifo eq "rx" && $pointer eq "wr"))} {error "Unexpected USB occupancy crossing direction"}
@@ -239,6 +252,15 @@ if {[catch {
         } else {
             # Reuse the routed constraints without sourcing them a second time.
             write_xdc -force "$out/full_resolved.xdc"
+        }
+        # Close residual setup violations before the unchanged signoff gates.
+        # No clock/IO exceptions or uncertainty values are relaxed here.
+        set post_route_setup [get_property SLACK [get_timing_paths -delay_type max -max_paths 1]]
+        if {$post_route_setup<0} {
+            write_checkpoint -force "$out/pre_setup_closure.dcp"
+            puts "POST_ROUTE_SETUP_CLOSURE_START WNS=$post_route_setup"
+            phys_opt_design -directive AggressiveExplore
+            route_design -directive Explore
         }
         # Hold-only PhysOpt made no progress on the reviewed related-clock
         # synchronizers. Derive interconnect-only min/max routing targets from

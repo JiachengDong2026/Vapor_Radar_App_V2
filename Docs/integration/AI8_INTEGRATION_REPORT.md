@@ -2,6 +2,8 @@
 
 # AI8 integration and shared CON19 transactions
 
+2026-10-27 update: the current V2 HMP/AI8 drivers and two-client CON19 arbitration are restored from `d2e2f8f`. The earlier hardware run collected 58 HMP and 56 AI8 records with no timeout/CRC/drop increase; AI8 instrument alarm flags remained present. AI8 scan/schema 3, generic parameter transactions and the third RD105 client are withdrawn. The combined source tree retains other newer features and has not been reprogrammed or hardware-qualified as a whole; see [current revision](../INTEGRATION_REVISION_20261027_HMP_AI8.md). Historical statements about HMP hardware validation being outstanding below refer to the original integration date.
+
 Scope: only the `integrated_20260916` snapshot. V2, previous integration snapshots and standalone releases are not modified. AI8 integration derives from the tested `member3_ai8/versions/serial_setpoint_20260916` driver. HMP remains available but disabled by default; its physical hardware validation is still outstanding.
 
 ## Modules and wiring

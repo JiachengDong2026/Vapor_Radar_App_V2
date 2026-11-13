@@ -10,6 +10,8 @@
 `define TIMESTAMP_WIDTH              64
 `define CYCLE_ID_WIDTH               32
 `define CFG_ADDR_WIDTH               32
+// RAW schema 2, EPSILON downlink/RTCM and DLIA cutoff profiles.
+`define HOST_EXTENSION_FLAGS         32'h00000029
 `define CFG_DATA_WIDTH               32
 `define SAMPLE_DATA_WIDTH            32
 `define SAMPLE_FLAGS_WIDTH           8
@@ -38,13 +40,17 @@
 `define SRC_DILA1               16'h0031
 `define SRC_PTB210              16'h0040
 `define SRC_HMP                 16'h0041
+// HC2A candidate occupies the mutually exclusive HMP humidity/temperature slot.
+`define SRC_HC2A                `SRC_HMP
 `define SRC_EPSILON2            16'h0042
 `define SRC_BMP390              16'h0043
 `define SRC_SHT45               16'h0044
 `define SRC_TFA1500             16'h0045
-// AI8 keeps its existing source; RD105 has an independent extension source.
+// AI8 replaces RD105 in integration revision 20260916. Legacy alias is reserved.
 `define SRC_AI8                 16'h0046
-`define SRC_RD105               16'h0048
+`define SRC_RD105               16'h0046
+`define SRC_LC0                 16'h0048
+`define SRC_LC1                 16'h0049
 `define SRC_STEPPER             16'h0047
 `define SRC_DIAGNOSTICS         16'h0050
 `define SRC_BROADCAST           16'hFFFF
@@ -92,6 +98,8 @@
 // tag meanings. These avoid forcing floating-point arithmetic into FPGA RTL.
 `define TLV_TAG_HMP_RH_F32          16'h0100
 `define TLV_TAG_HMP_TEMP_F32        16'h0101
+`define TLV_TAG_HC2A_RH_F32         `TLV_TAG_HMP_RH_F32
+`define TLV_TAG_HC2A_TEMP_F32       `TLV_TAG_HMP_TEMP_F32
 
 // AI8 schema 2: signed raw values represent tenths of one degree Celsius.
 `define TLV_TAG_AI8_PV_RAW         16'h0460
@@ -102,7 +110,6 @@
 `define TLV_TAG_AI8_CONTROL        16'h0465
 `define TLV_TAG_AI8_HOST           16'h0466
 `define TLV_TAG_AI8_SET_RESULT     16'h0467
-`define TLV_TAG_AI8_CHANNEL        16'h0468
 
 // Arbitration classes.
 `define ARB_PRIO_P0             2'd0

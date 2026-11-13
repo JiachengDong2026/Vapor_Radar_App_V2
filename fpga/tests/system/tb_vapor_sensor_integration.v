@@ -4,8 +4,11 @@ module tb_vapor_sensor_integration #(parameter integer GPIF_TEST_HZ=50000000);
     wire rst;wire [31:0] gpif_dq;tri [12:0] ctl;wire pclk,fx3_rst;
     tri1 scl,sda;wire ptb_rx,ptb_tx,hmp_rx,hmp_tx,hmp_de,eps_tx,tfa_hf,tfa_lf,tfa_tx;
     reg eps_rx=1,sync_pulse=0;
-    vapor_lidar_top #(.SIMULATION(1),.GPIF_CLK_HZ(GPIF_TEST_HZ),.RAW0_MAX_SAMPLES(32),.RAW1_MAX_SAMPLES(32)) dut(
-        .CLK_FPGA_25MHZ(clk),.FPGA_GPIF_DQ(gpif_dq),.FPGA_GPIF_CTL(ctl),.FPGA_GPIF_INTN(1'b1),
+    // This legacy integration bench drives the shared HMP/AI8 RS485 model.
+    // HC2A mode is covered by tb_hc2a_vapor_lidar_top and its dedicated BFM tests.
+    vapor_lidar_top #(.SIMULATION(1),.HC2A_ENABLE(0),.GPIF_CLK_HZ(GPIF_TEST_HZ),.RAW0_MAX_SAMPLES(32),.RAW1_MAX_SAMPLES(32)) dut(
+        .LC_UART_RXD(2'b11),.LC_UART_TXD(),
+        .HC2A_UART_RXD(1'b1),.CLK_FPGA_25MHZ(clk),.FPGA_GPIF_DQ(gpif_dq),.FPGA_GPIF_CTL(ctl),.FPGA_GPIF_INTN(1'b1),
         .FPGA_GPIF_PCLK(pclk),.CYUSB_RSTN(fx3_rst),
         .FPGA_RS232A_RXD(ptb_rx),.FPGA_RS232A_TXD(ptb_tx),
         .FPGA_RS485_RXD_L(hmp_rx),.FPGA_RS485_TXD_L(hmp_tx),.FPGA_RS485_DERE_L(hmp_de),
@@ -113,7 +116,9 @@ module tb_vapor_sensor_integration #(parameter integer GPIF_TEST_HZ=50000000);
             end
             counts[lane]=counts[lane]+1;frame_read[lane]=frame_read[lane]+1;
         end else if(frame[6]==8'h11&&u32(16)==32'h12010002)begin
-            if(nbytes!=32||u32(40)!=1||u32(44)==0||u32(64)!=1||{u32(60),u32(56)}!==64'd1700000000123456)
+            // A fresh serial UTC tag alone does not establish a PPS epoch.
+            // This bench never commits an explicit sequence/UTC anchor.
+            if(nbytes!=32||u32(40)!=1||u32(44)==0||u32(64)!=0||{u32(60),u32(56)}!==64'd0)
                 $fatal(1,"PPS/GNSS VLP event payload");
             pps_output=pps_output+1;
         end else if(frame[6]!=8'h11&&frame[6]!=8'h12)$fatal(1,"unexpected VLP type %h",frame[6]);
@@ -126,8 +131,8 @@ module tb_vapor_sensor_integration #(parameter integer GPIF_TEST_HZ=50000000);
         end
         if(dut.sync_event_pulse)begin
             pps_events=pps_events+1;
-            if(dut.sync_event_gnss_valid)begin tagged_pps=tagged_pps+1;
-                if(dut.sync_event_gnss_tag!==64'd1700000000123456)$fatal(1,"PPS GNSS association");end
+            if(dut.sync_event_gnss_valid)tagged_pps=tagged_pps+1;
+            if(dut.sync_event_gnss_tag!==64'd0)$fatal(1,"unconfirmed PPS epoch must be zero");
         end
         for(k=0;k<7;k=k+1)if(dut.sensor_valid[k]&&dut.sensor_ready[k])begin
             if(beat_write[k]-beat_read[k]>=4096||frame_write[k]-frame_read[k]>=1024)$fatal(1,"scoreboard capacity");
@@ -181,7 +186,7 @@ module tb_vapor_sensor_integration #(parameter integer GPIF_TEST_HZ=50000000);
         $display("TOP_SEVEN_FIRST_FRAMES_PASS time=%t",$time);
         host_stall=1;#120000000;host_stall=0;
         #20000000;sync_pulse=1;#100;sync_pulse=0;wait(pps_output>=2);#1000;
-        if(gnss_tags==0||tagged_pps<2||dut.device_online!=7'h7f||stalled_cycles==0)$fatal(1,"missing concurrency/PPS/stall coverage");
+        if(gnss_tags==0||pps_events<2||tagged_pps!=0||dut.device_online!=7'h7f||stalled_cycles==0)$fatal(1,"missing concurrency/PPS/stall coverage");
         wait(counts[0]>=3&&counts[1]>=3&&counts[2]>=3&&counts[3]>=3&&counts[4]>=3&&counts[5]>=3&&counts[6]>=3);
         if(hmp_requests<3 || bus_requests-hmp_requests<21 || ai8_writes!=0 || hmp_writes!=0 || ai8_sp!=500)$fatal(1,"shared bus progress or unrequested write");
         $display("SHARED_RS485_PROGRESS_PASS hmp=%0d ai8=%0d writes=%0d/%0d",hmp_requests,bus_requests-hmp_requests,ai8_writes,hmp_writes);

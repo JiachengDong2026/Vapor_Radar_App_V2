@@ -1,3 +1,6 @@
+> 2026-10-27 LC双路UART修订：CON11 pin5/7现用于LC0、pin6/8用于LC1，替代本文旧RD105预留；当前接口以 [LC_DUAL_UART_20261027.md](integration/LC_DUAL_UART_20261027.md) 为准。
+
+> **正式 HC2A GPIO 修订（2026-11-13）**：CON11-13 / AK13 为 HC2A_UART_TXD，CON11-15 / AL13 为 HC2A_UART_RXD，均3.3 V；HC2A替换逻辑HMP通道0x0041但不占CON19。TFA1500继续使用CON21及CON11-4，AI8保持CON19。详见 `integration/sensors/HC2A_ROASCII.md`；历史HMP配置与压力补偿不适用。
 > 2026-10-04：已将2026-10-02上板验证的DLIA精度版本同步至正式V2，当前ID/profile为0101/00040101。历史构建记录保留；本次范围及验证见[同步记录](MERGE_MANIFEST_20261004.md)。
 
 > 2026-09-28 更新：正式工程第二路 ADC 已改用 CON16 / AD4630 CH1，与 ADC0 共用采样时钟；当前映射和寄存器语义以[双低速 ADC 修订](INTEGRATION_REVISION_20260928_DUAL_AD4630.md)为准。
@@ -1244,17 +1247,17 @@ time_sync_core 64-bit tick
 | 2 | `GPIO_BANK88_LP2` | AN13 | BMP390 INT |
 | 3 | `GPIO_BANK88_LN1` | AJ13 | I²C SDA |
 | 4 | `GPIO_BANK88_LN2` | AP13 | TFA1500-L 低频 TX 输入 |
-| 5 | `GPIO_BANK88_LP3` | AM12 | RD105 TX |
-| 6 | `GPIO_BANK88_LP4` | AP11 | 预留 |
-| 7 | `GPIO_BANK88_LN3` | AN12 | RD105 RX |
-| 8 | `GPIO_BANK88_LN4` | AP10 | 预留 |
+| 5 | `GPIO_BANK88_LP3` | AM12 | LC0 TX -> LC RX1 |
+| 6 | `GPIO_BANK88_LP4` | AP11 | LC1 TX -> LC RX1 |
+| 7 | `GPIO_BANK88_LN3` | AN12 | LC0 RX <- LC TX1 |
+| 8 | `GPIO_BANK88_LN4` | AP10 | LC1 RX <- LC TX1 |
 | 9 | `GPIO_BANK88_LP5` | AM11 | MOTOR_PUL |
 | 10 | `GPIO_BANK88_LP6` | AK12 | MOTOR_ENA |
 | 11 | `GPIO_BANK88_LN5` | AN11 | MOTOR_DIR |
 | 12 | `GPIO_BANK88_LN6` | AL12 | 预留 |
-| 13 | `GPIO_BANK88_LP7` | AK13 | 预留 |
+| 13 | `GPIO_BANK88_LP7` | AK13 | HC2A UART TX -> probe RXD |
 | 14 | `GPIO_BANK88_LP8` | AE13 | 预留 |
-| 15 | `GPIO_BANK88_LN7` | AL13 | 预留 |
+| 15 | `GPIO_BANK88_LN7` | AL13 | HC2A UART RX <- probe TXD |
 | 16 | `GPIO_BANK88_LN8` | AF13 | 预留 |
 | 17 | `GPIO_BANK88_LP9` | AG11 | 预留 |
 | 18 | `GPIO_BANK88_LP10` | AG12 | 预留 |
@@ -1265,7 +1268,7 @@ time_sync_core 64-bit tick
 | 23 | `GPIO_BANK88_LN11` | AF12 | 预留 |
 | 24 | `GPIO_BANK88_LN12` | AE11 | 预留 |
 
-该分配只占用 9 根 Bank88 GPIO，仍有大量余量。Bank89 可以完整保留给后续扩展，因此首版不会受 VADJ 选择影响。
+当前HC2A GPIO版占用 13 根 Bank88 GPIO，仍有大量余量。Bank89 可以完整保留给后续扩展，因此首版不会受 VADJ 选择影响。
 
 ---
 
@@ -1677,3 +1680,6 @@ stepper state/fault
 - DM422 驱动器说明书；
 - EPSILON/EPSILON2 组合导航资料。
 
+
+
+2026-10-27 PPS/DM422集成修订：当前同步接线、时间资格/UTC锚点、电机EN极性与有限运动接口以 [GNSS PPS与DM422整机集成](integration/GNSS_PPS_DM422_20261027.md) 为准。TIME ID=00020200、MOTOR ID=00470200；旧电机可变脉宽/高频/极性接口不再适用。

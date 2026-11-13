@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-module tb_vapor_lidar_top;
+module tb_vapor_lidar_top #(parameter integer HC2A_ENABLE=0);
     reg CLK_FPGA_25MHZ=0;
     wire [31:0] FPGA_GPIF_DQ;
     wire [12:0] FPGA_GPIF_CTL;
@@ -56,8 +56,8 @@ module tb_vapor_lidar_top;
     wire ADC_ADC3660_SYNC;
     wire ADC_ADC3660_SDIO;
     localparam COMMAND_WORDS=987,RESPONSES=73;
-    vapor_lidar_top #(.SIMULATION(1),.GPIF_CLK_HZ(50000000),.RAW0_MAX_SAMPLES(64),.RAW1_MAX_SAMPLES(64)) dut(
-        .CLK_FPGA_25MHZ(CLK_FPGA_25MHZ),
+    vapor_lidar_top #(.SIMULATION(1),.GPIF_CLK_HZ(50000000),.HC2A_ENABLE(HC2A_ENABLE),.RAW0_MAX_SAMPLES(64),.RAW1_MAX_SAMPLES(64)) dut(
+        .HC2A_UART_RXD(1'b1),.CLK_FPGA_25MHZ(CLK_FPGA_25MHZ),
         .FPGA_GPIF_DQ(FPGA_GPIF_DQ),
         .FPGA_GPIF_CTL(FPGA_GPIF_CTL),
         .FPGA_GPIF_INTN(FPGA_GPIF_INTN),
@@ -69,6 +69,7 @@ module tb_vapor_lidar_top;
         .FPGA_RS422_RXD_L(FPGA_RS422_RXD_L),
         .FPGA_UART_RXD_L(FPGA_UART_RXD_L),
         .TFA_LF_RXD(TFA_LF_RXD),
+        .LC_UART_RXD(2'b11),.LC_UART_TXD(),
         .FPGA_RS232A_TXD(FPGA_RS232A_TXD),
         .FPGA_RS485_TXD_L(FPGA_RS485_TXD_L),
         .FPGA_RS485_DERE_L(FPGA_RS485_DERE_L),
@@ -179,13 +180,22 @@ module tb_vapor_lidar_top;
         $readmemh("top_responses.hex",expected);
         $readmemh("top_response_masks.hex",masks);
         $readmemh("top_response_lengths.hex",lengths);
+        if(HC2A_ENABLE)begin
+            // Response 15 reads page 6100 identity through USB/GPIF and the crossbar.
+            expected[14*64+12]=8'h06;expected[14*64+13]=8'h01;
+            expected[14*64+14]=8'h41;expected[14*64+15]=8'h00;
+            masks[14*64+12]=8'hff;masks[14*64+13]=8'hff;
+            masks[14*64+14]=8'hff;masks[14*64+15]=8'hff;
+        end
         wait(got==RESPONSES);before_reset=dut.timestamp_now;
+        if(HC2A_ENABLE && (!dut.module_present[16] || dut.u_member3.bus_request[0]))
+            $fatal(1,"TFA_MUST_REMAIN_PRESENT_OR_HC2A_BUS_ISOLATION");
         wait(!dut.rst_control_n);
         if(!dut.rst_adc_n || !dut.rst_wms_n || !dut.rst_sensors_n || !CYUSB_RSTN)$fatal(1,"masked stream reset disturbed devices");
         wait(dut.rst_control_n);repeat(20)@(negedge CLK_FPGA_25MHZ);
         if(dut.timestamp_now<=before_reset || !dut.global_enable || dut.raw_stream_mask[33:32]!=3 || !dut.reset_reason[2])
             $fatal(1,"persistent system/time state after software reset");
-        $display("tb_vapor_lidar_top_PASS responses=%0d frames=%0d all21pages=1 RO21=1 range9=1 GPIF50=1 CRC_rejection=1 masked_reset=1",got,frame_count);$finish;
+        $display("tb_vapor_lidar_top_PASS HC2A=%0d responses=%0d frames=%0d all21pages=1 RO22=1 range8=1 GPIF50=1 CRC_rejection=1 masked_reset=1",HC2A_ENABLE,got,frame_count);$finish;
     end
     initial begin #5000000;$fatal(1,"top timeout responses=%0d input_word=%0d",got,input_word);end
 endmodule

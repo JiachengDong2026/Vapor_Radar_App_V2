@@ -98,18 +98,26 @@ foreach {label pattern bits} $gray_specs {
 # Only the FIRST metastability capture flop is excepted for asynchronous pins.
 # Zero input delays below identify the nominal bookkeeping clock; these pins
 # have no synchronous external launch contract and are explicitly excepted.
-foreach {port endpoint} {
-    FPGA_RS232A_RXD u_member3/u_0/u_uart_rx/rxd_meta_reg/D
-    FPGA_RS485_RXD_L u_member3/u_1/core/transport/rx/rxd_meta_reg/D
-    FPGA_RS232B_RXD u_member3/u_2/u_rx/rxd_meta_reg/D
-    FPGA_UART_RXD_L u_member3/u_5/u_hf_rx/rxd_meta_reg/D
-    TFA_LF_RXD u_member3/u_5/u_lf_rx/rxd_meta_reg/D
-    FPGA_RS485_RXD_L u_member3/u_6/core/master/rx/rxd_meta_reg/D
-    SYNC_IN u_time/sync_meta_reg/D
-    BMP390_INT u_member3/u_3/int_meta_reg/D
-    I2C_SCL u_member3/u_i2c_master/scl_meta_reg/D
-    I2C_SDA u_member3/u_i2c_master/sda_meta_reg/D
-} {
+set hc2a_capture u_member3/gen_hc2a.u_1/rx/rxd_meta_reg/D
+set uart_captures [list]
+if {[llength [get_pins -quiet $hc2a_capture]]} {
+    lappend uart_captures HC2A_UART_RXD $hc2a_capture
+} else {
+    lappend uart_captures FPGA_RS485_RXD_L u_member3/gen_hmp.u_1/core/transport/rx/rxd_meta_reg/D
+}
+set async_captures [concat $uart_captures [list \
+    FPGA_UART_RXD_L u_member3/u_5/u_hf_rx/rxd_meta_reg/D \
+    TFA_LF_RXD u_member3/u_5/u_lf_rx/rxd_meta_reg/D \
+    FPGA_RS232A_RXD u_member3/u_0/u_uart_rx/rxd_meta_reg/D \
+    FPGA_RS232B_RXD u_member3/u_2/u_rx/rxd_meta_reg/D \
+    {LC_UART_RXD[0]} u_lc0/u_rx/rxd_meta_reg/D \
+    {LC_UART_RXD[1]} u_lc1/u_rx/rxd_meta_reg/D \
+    FPGA_RS485_RXD_L u_member3/u_6/core/master/rx/rxd_meta_reg/D \
+    SYNC_IN u_time/sync_meta_reg/D \
+    BMP390_INT u_member3/u_3/int_meta_reg/D \
+    I2C_SCL u_member3/u_i2c_master/scl_meta_reg/D \
+    I2C_SDA u_member3/u_i2c_master/sda_meta_reg/D]]
+foreach {port endpoint} $async_captures {
     set_input_delay -clock $sysclock -max 0 [get_ports $port]
     set_input_delay -clock $sysclock -min 0 [get_ports $port]
     set capture [get_pins -quiet $endpoint]
@@ -128,13 +136,14 @@ set_false_path -from [get_ports ADC_AD4630_BUSY] -to $ad_busy
 # disabled (read_enable=0), DAC readback unsupported, CTL15 interrupt reserved.
 set unused_inputs [get_ports {ADC_ADC3660_DB5 ADC_ADC3660_DB6 ADC_ADC3660_SDIO dac_sdo[*] FPGA_GPIF_INTN FPGA_RS422_RXD_L}]
 if {$adc1root eq ""} {set unused_inputs [concat $unused_inputs [get_ports {ADC_ADC3660_DA5 ADC_ADC3660_DA6 ADC_ADC3660_DCLK ADC_ADC3660_FCLK}]]}
+if {![llength [get_pins -quiet $hc2a_capture]]} {lappend unused_inputs [get_ports HC2A_UART_RXD]}
 set_input_delay -clock $sysclock -max 0 $unused_inputs
 set_input_delay -clock $sysclock -min 0 $unused_inputs
 set_false_path -from $unused_inputs
 
 # Slow GPIO/UART/ADC configuration pins: bound fabric-to-pad propagation. SPI data has
 # >=50 ns half cycles (ADC3660 100 ns); 20 ns bounds preserve setup margins.
-set slow_outputs [get_ports {FPGA_RS232A_TXD FPGA_RS485_TXD_L FPGA_RS485_DERE_L FPGA_RS422_TXD_L FPGA_UART_TXD_L FPGA_UART_EN_L RS232_PHY_FORCEON FPGA_RS232B_TXD MOTOR_PUL MOTOR_DIR MOTOR_ENA I2C_SCL I2C_SDA dac_ldac_n[*] ADC_ADC3660_SEN ADC_ADC3660_SCLK ADC_ADC3660_SDIO ADC_ADC3660_RST ADC_ADC3660_SYNC ADC_ADC3660_DCLKIN ADC_ADC3660_CLKP ADC_ADC3660_CLKN CYUSB_RSTN}]
+set slow_outputs [get_ports {HC2A_UART_TXD LC_UART_TXD[*] FPGA_RS232A_TXD FPGA_RS485_TXD_L FPGA_RS485_DERE_L FPGA_RS422_TXD_L FPGA_UART_TXD_L FPGA_UART_EN_L RS232_PHY_FORCEON FPGA_RS232B_TXD MOTOR_PUL MOTOR_DIR MOTOR_ENA I2C_SCL I2C_SDA dac_ldac_n[*] ADC_ADC3660_SEN ADC_ADC3660_SCLK ADC_ADC3660_SDIO ADC_ADC3660_RST ADC_ADC3660_SYNC ADC_ADC3660_DCLKIN ADC_ADC3660_CLKP ADC_ADC3660_CLKN CYUSB_RSTN}]
 set_output_delay -clock board25 -max 10.000 $slow_outputs
 set_output_delay -clock board25 -min -1.000 $slow_outputs
 # all_registers -clock_pins also returns INBUF/OSC_EN and ODDRE1/CLKDIV in

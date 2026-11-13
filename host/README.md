@@ -1,3 +1,5 @@
+> 2026-11-13：正式BIT默认使用HC2A（ID `0x00410106` / HCD2），旧六路HMP计划不能直接套用。请先阅读[最新下位机说明](../Docs/LOWER_COMPUTER_RELEASE_20261113.md)与[HC2A规范](../Docs/integration/sensors/HC2A_ROASCII.md)。电机窗口及Qt参考源码保留。
+
 # 主机工具与 Qt 上位机参考实现
 
 - **最新 Qt 上位机 V0.2.5**：[源码及构建](qt_monitor/README.md)、[正式开发对接](../Docs/protocol/QT_HOST_HANDOFF_20261011.md)。
@@ -37,3 +39,8 @@ SensorRun只允许限定的诊断读取、六路使能和BMP局部复位/地址�
 工具退出成功仅表示捕获完成。验收还需要CRC、帧完整性、各路真实样本、错误/丢弃计数以及设备报警检查。既有2026-09-18板测证据为91087帧全部VLP CRC通过，不能代替新BIT的实板验收。本次板卡未连接，尚未运行上述上板命令。
 
 完整格式和工程量单位见 [VLP协议](../Docs/protocol/FPGA_HOST_PROTOCOL_V1.0.md)；BMP390在FPGA上传原始ADC和标定，由bmp_compensation.py按Bosch公式补偿。
+
+
+2026-10-27：`gnss_motor_control.py --bridge <VaporUsbBridge.exe> status` 可读PPS校准快照与DM422状态；`move --steps <signed1..400> --hz <20..400>` 为显式有限运动，运行时发送真实心跳，退出释放。`anchor --seq <PPS序号> --utc-seconds <确认的UTC整秒>` 提交明确对应关系。连接和接口条件见 [整机说明](../Docs/integration/GNSS_PPS_DM422_20261027.md)。独立电机JTAG GUI不能用于此整机固件。
+
+2026-11-10：新增简易窗口 `motor_panel.py`。双击 `start_motor_panel.cmd`，提供正反向有限点动、停止/禁用、错误及脉冲计数显示；启动和连接不发送运动。使用说明见 [电机窗口](../Docs/integration/MOTOR_PANEL_20261110.md)。
