@@ -84,3 +84,6 @@ python -B fpga/scripts/run_regression.py --output E:/Documents/Vapor_Lc_App_Test
 临时图像、PDF中间文件、日志、缓存和测试输出归入外部Test目录。本次将原V2根目录的 `output/`、`tmp/`、`.pytest_cache/`、`.Xil/` 、两处Python `__pycache__/` 和Vivado/webtalk日志原样迁入 `formal_sync_20261113/existing_generated/`；未删除原始内容。同步前工作树修改已备份到同目录 `backup/`，另有 `changes_before.patch` 与 `status_before.txt`。个人资料和与本次发布无关的未跟踪文件不纳入提交。
 
 2026-10-28候选/诊断文档保留为历史过程记录；本说明与HC2A正式接口规范为当前入口。旧HMP、自动扫描/RD105、早期接线和旧BIT说明不得覆盖本版身份及能力边界。
+
+
+2026-11-14 源码修订：AI8 扫描/schema3 已按 `Docs/protocol/AI8_SCAN_CONTRACT_20261114.md` 实现；通用参数事务和 RD105 仍不支持。此修订不改变本文旧镜像的验收结论，新 BIT 尚受目标器件包缺失阻塞。

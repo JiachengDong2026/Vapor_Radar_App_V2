@@ -6,6 +6,8 @@ module ai8_poll_core #(
     parameter integer SYS_CLK_HZ = 25000000, SHARED_BUS = 0
 )(
     input wire clk, input wire rst_n, input wire uart_rxd,
+    input wire scan_enable, input wire [7:0] set_channel,
+    output reg [7:0] sample_channel,
     input wire enable, input wire [31:0] baud_hz, input wire [7:0] slave_addr, channel,
     input wire [1:0] parity_mode, stop_bits, retry_limit,
     input wire [31:0] poll_interval_ms, input wire [15:0] timeout_ms,
@@ -35,6 +37,8 @@ module ai8_poll_core #(
     localparam START = 0, REQUEST = 1, RESPONSE = 2, HOLD = 3, GAP = 4,
         WRITE_REQ = 5, WRITE_RSP = 6, VERIFY_REQ = 7, VERIFY_RSP = 8;
     reg [3:0] state;
+    reg [7:0] scan_channel, command_channel;
+    wire [7:0] poll_channel = scan_enable ? scan_channel : channel;
     reg [2:0] item;
     reg [31:0] ms_div, gap_ms;
     reg [15:0] pending_sp, pending_pv, pending_sv, pending_op;
@@ -47,18 +51,18 @@ module ai8_poll_core #(
     wire [15:0] value = {read_data[7:0], read_data[15:8]};
     wire command_active = state == WRITE_REQ || state == WRITE_RSP ||
                           state == VERIFY_REQ || state == VERIFY_RSP;
-    wire [15:0] selected_sp_address = channel - 1;
+    wire [15:0] selected_sp_address = command_channel - 1;
     // Invalid builds still consume commands and report CONFIG_ERROR; the
     // master remains disabled, so the command frontend cannot deadlock.
     assign set_ready = rst_n && enable && !set_rsp_valid && (state == START || state == GAP);
     always @* begin
         case (item)
-            0: address = 16'h0000 + channel - 1;
-            1: address = 16'h0600 + channel - 1;
-            2: address = 16'h0480 + channel - 1;
-            3: address = 16'h0360 + channel - 1;
-            4: address = 16'h0680 + (channel - 1)/2;
-            5: address = 16'h06c0 + (channel - 1)/2;
+            0: address = 16'h0000 + poll_channel - 1;
+            1: address = 16'h0600 + poll_channel - 1;
+            2: address = 16'h0480 + poll_channel - 1;
+            3: address = 16'h0360 + poll_channel - 1;
+            4: address = 16'h0680 + (poll_channel - 1)/2;
+            5: address = 16'h06c0 + (poll_channel - 1)/2;
             default: address = 16'h0851;
         endcase
     end
@@ -77,6 +81,7 @@ module ai8_poll_core #(
     );
     always @(posedge clk) begin
         if (!rst_n || !enable) begin
+            scan_channel <= 1; sample_channel <= 1; command_channel <= 1;
             state <= START; item <= 0; ms_div <= 0; gap_ms <= 0;
             sample_valid <= 0; pv_raw <= 0; sp_raw <= 0; sv_raw <= 0; op_raw <= 0;
             alarm <= 0; control <= 0; host_status <= 0; online <= 0;
@@ -95,6 +100,7 @@ module ai8_poll_core #(
                 end else ms_div <= ms_div + 1'b1;
             end
             if (set_valid && set_ready) begin
+                command_channel <= set_channel;
                 set_requested <= set_raw; set_readback <= 0;
                 set_error <= 0; set_exception <= 0;
                 if (!CONFIG_OK) begin
@@ -104,7 +110,10 @@ module ai8_poll_core #(
                 end else state <= WRITE_REQ;
             end else case (state)
                 START: begin
-                    item <= 0;
+                    item <= 0; sample_channel <= poll_channel;
+                    if (scan_enable) begin
+                        pv_raw<=0;sp_raw<=0;sv_raw<=0;op_raw<=0;alarm<=0;control<=0;host_status<=0;
+                    end
                     if (CONFIG_OK) state <= REQUEST;
                     else begin
                         sample_valid <= 1; online <= 0; last_error <= 6;
@@ -134,14 +143,17 @@ module ai8_poll_core #(
                             1: pending_pv <= value;
                             2: pending_sv <= value;
                             3: pending_op <= value;
-                            4: pending_alarm <= channel % 2 ? value[15:8] : value[7:0];
-                            5: pending_control <= channel % 2 ? value[15:8] : value[7:0];
+                            4: pending_alarm <= poll_channel % 2 ? value[15:8] : value[7:0];
+                            5: pending_control <= poll_channel % 2 ? value[15:8] : value[7:0];
                         endcase
                         item <= item + 1'b1; state <= REQUEST;
                     end
                 end
                 HOLD: if (sample_ready) begin sample_valid <= 0; state <= GAP; end
-                GAP: if (gap_ms >= poll_interval_ms) state <= START;
+                GAP: if ((!scan_enable || scan_channel == 8) ? gap_ms >= poll_interval_ms : 1'b1) begin
+                    if (scan_enable) scan_channel <= scan_channel == 8 ? 1 : scan_channel + 1'b1;
+                    state <= START;
+                end
                 WRITE_REQ: if (req_ready) state <= WRITE_RSP;
                 WRITE_RSP: if (done) begin
                     if (master_error != 0) begin

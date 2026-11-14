@@ -16,6 +16,13 @@ module ai8_modbus_rs485 #(
     output reg [3:0] cfg_error_code,
     output wire bus_request,bus_busy,input wire bus_grant
 );
+    reg scan_enable;
+    reg [7:0] target_channel,pending_channel,cache_channel;
+    wire [7:0] core_channel;
+    reg [31:0] cache_quality[0:7],cache_pvsp[0:7],cache_svop[0:7],cache_status[0:7];
+    reg [31:0] cache_good[0:7],cache_bad[0:7];
+    reg [63:0] cache_ticks[0:7];
+    integer cache_i;
     reg enabled,pending,submitted,result_valid;
     reg [31:0] baud,slave,format,channel,interval_ms,timeout_ms,retry_limit;
     reg [15:0] shadow_raw,pending_raw,last_requested,last_readback;
@@ -110,6 +117,18 @@ module ai8_modbus_rs485 #(
             92:cfg_rdata={sv,op};
             96:begin cfg_rdata=timeout_ms;writable=1;config_busy=enabled;end
             100:begin cfg_rdata=retry_limit;writable=1;config_busy=enabled;end
+            104:begin cfg_rdata=scan_enable;writable=1;config_busy=enabled;end
+            108:begin cfg_rdata=target_channel;writable=1;config_busy=pending;end
+            152:begin cfg_rdata=cache_channel;writable=1;end
+            160:cfg_rdata=cache_quality[cache_channel-1];
+            164:cfg_rdata=cache_pvsp[cache_channel-1];
+            168:cfg_rdata=cache_svop[cache_channel-1];
+            172:cfg_rdata=cache_status[cache_channel-1];
+            176:cfg_rdata=cache_ticks[cache_channel-1][31:0];
+            180:cfg_rdata=cache_ticks[cache_channel-1][63:32];
+            184:cfg_rdata=cache_good[cache_channel-1];
+            188:cfg_rdata=cache_bad[cache_channel-1];
+            252:cfg_rdata=11;
             default:known=0;
         endcase
         cfg_error=0;cfg_error_code=`SENSOR_CFG_OK;
@@ -131,6 +150,9 @@ module ai8_modbus_rs485 #(
                     80:if($signed(raw_merged)<-9990 || $signed(raw_merged)>32000)cfg_error=1;
                     96:if(merged<1 || merged>65535)cfg_error=1;
                     100:if(merged>3)cfg_error=1;
+                    104:if(merged>1)cfg_error=1;
+                    108:if(merged>8)cfg_error=1;
+                    152:if(merged<1 || merged>8)cfg_error=1;
                     default:;
                 endcase
                 if(config_busy && !cfg_error)begin cfg_error=1;cfg_error_code=`SENSOR_CFG_BUSY;end
@@ -139,7 +161,7 @@ module ai8_modbus_rs485 #(
         end
     end
     ai8_poll_core #(.SYS_CLK_HZ(SYS_CLK_HZ),.SHARED_BUS(SHARED_BUS)) core (
-        .clk(sys_clk),.rst_n(local_rst_n),.enable(enabled),.baud_hz(baud),.slave_addr(slave[7:0]),.channel(channel[7:0]),
+        .clk(sys_clk),.rst_n(local_rst_n),.enable(enabled),.baud_hz(baud),.slave_addr(slave[7:0]),.channel(channel[7:0]),.scan_enable(scan_enable),.set_channel(pending_channel),.sample_channel(core_channel),
         .parity_mode({1'b0,format[1]}),.stop_bits(format[0]?2'd2:2'd1),
         .poll_interval_ms(interval_ms),.timeout_ms(timeout_ms[15:0]),.retry_limit(retry_limit[1:0]),
         .uart_rxd(uart_rxd),.uart_txd(uart_txd),.rs485_de(rs485_de),
@@ -164,12 +186,13 @@ module ai8_modbus_rs485 #(
         put_tlv(`TLV_TAG_AI8_SET_RESULT,`TLV_TYPE_U32,command_status);
         put_tlv(`TLV_TAG_DEVICE_STATUS,`TLV_TYPE_U32,{19'd0,core_exception,core_error,core_online});
         put_tlv(`TLV_TAG_DEVICE_ERROR,`TLV_TYPE_U32,{core_host,core_control,core_alarm});
-        put_tlv(`TLV_TAG_SAMPLE_COUNTER,`TLV_TYPE_U32,core_good);
+        put_tlv(`TLV_TAG_SAMPLE_COUNTER,`TLV_TYPE_U32,scan_enable ? cache_good[core_channel-1]+core_online : core_good);
         if($signed(core_sp)>=-21474 && $signed(core_sp)<=21474)
             put_tlv(`TLV_TAG_TARGET_TEMP_UC,`TLV_TYPE_I32,$signed(core_sp)*32'sd100000);
         if($signed(core_pv)>=-21474 && $signed(core_pv)<=21474)
             put_tlv(`TLV_TAG_ACTUAL_TEMP_UC,`TLV_TYPE_I32,$signed(core_pv)*32'sd100000);
-        next_record[15:0]=2;next_record[31:16]=tlvs;
+        if(scan_enable) put_tlv(`TLV_TAG_AI8_CHANNEL,`TLV_TYPE_U32,{24'd0,core_channel});
+        next_record[15:0]=scan_enable ? 3 : 2;next_record[31:16]=tlvs;
     end
     sensor_record_fifo #(.SOURCE_ID(`SRC_AI8),.FIFO_DEPTH(FIFO_DEPTH)) records(
         .sys_clk(sys_clk),.rst_sys_n(local_rst_n),.clear_fifo(clear_fifo),.record_valid(record_valid),
@@ -180,6 +203,11 @@ module ai8_modbus_rs485 #(
         .m_source_id(m_source_id),.m_msg_id(m_msg_id),.m_timestamp(m_timestamp),.m_cycle_id(m_cycle_id),.m_flags(m_flags));
     always @(posedge sys_clk)begin
         if(!local_rst_n)begin
+            scan_enable<=0;target_channel<=0;pending_channel<=1;cache_channel<=1;
+            for(cache_i=0;cache_i<8;cache_i=cache_i+1)begin
+                cache_quality[cache_i]<=0;cache_pvsp[cache_i]<=0;cache_svop[cache_i]<=0;
+                cache_status[cache_i]<=0;cache_ticks[cache_i]<=0;cache_good[cache_i]<=0;cache_bad[cache_i]<=0;
+            end
             enabled<=0;pending<=0;submitted<=0;result_valid<=0;
             baud<=19200;slave<=1;format<=0;channel<=1;interval_ms<=1000;timeout_ms<=200;retry_limit<=1;
             shadow_raw<=250;shadow_uc_cached<=25000000;pending_raw<=0;last_requested<=0;last_readback<=0;
@@ -203,9 +231,10 @@ module ai8_modbus_rs485 #(
                     else shadow_uc_cached<=0;
                 end
                 96:timeout_ms<=merged;100:retry_limit<=merged;
+                104:scan_enable<=merged[0];108:target_channel<=merged[7:0];152:cache_channel<=merged[7:0];
                 default:;
             endcase
-            if(commit)begin pending<=1;submitted<=0;pending_raw<=shadow_raw;result_valid<=0;end
+            if(commit)begin pending_channel<=target_channel==0?channel[7:0]:target_channel;pending<=1;submitted<=0;pending_raw<=shadow_raw;result_valid<=0;end
             if(pending && !submitted && core_set_ready)submitted<=1;
             if(core_rsp_valid)begin
                 pending<=0;submitted<=0;result_valid<=1;result<=core_result;
@@ -218,6 +247,11 @@ module ai8_modbus_rs485 #(
                 else errors[1]<=1;
             end
             if(core_sample_valid)begin
+                cache_quality[core_channel-1]<={18'd0,core_exception,core_error,1'b1,core_online};
+                cache_pvsp[core_channel-1]<={core_sp,core_pv};cache_svop[core_channel-1]<={core_sv,core_op};
+                cache_status[core_channel-1]<={core_host,core_control,core_alarm};cache_ticks[core_channel-1]<=core_ticks;
+                if(core_online)cache_good[core_channel-1]<=cache_good[core_channel-1]+1'b1;
+                else cache_bad[core_channel-1]<=cache_bad[core_channel-1]+1'b1;
                 pv<=core_pv;sp<=core_sp;sv<=core_sv;op<=core_op;host<=core_host;
                 alarm<=core_alarm;control<=core_control;sample_online<=core_online;
                 if(core_online)frame_count<=frame_count+1'b1;

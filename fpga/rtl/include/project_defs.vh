@@ -10,8 +10,9 @@
 `define TIMESTAMP_WIDTH              64
 `define CYCLE_ID_WIDTH               32
 `define CFG_ADDR_WIDTH               32
-// RAW schema 2, EPSILON downlink/RTCM and DLIA cutoff profiles.
-`define HOST_EXTENSION_FLAGS         32'h00000029
+// RAW schema 2, AI8 scan/schema 3, EPSILON downlink/RTCM and DLIA cutoff profiles.
+`define TLV_TAG_AI8_CHANNEL          16'h0468
+`define HOST_EXTENSION_FLAGS         32'h0000002B
 `define CFG_DATA_WIDTH               32
 `define SAMPLE_DATA_WIDTH            32
 `define SAMPLE_FLAGS_WIDTH           8

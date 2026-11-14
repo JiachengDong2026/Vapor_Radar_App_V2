@@ -49,3 +49,6 @@ tb_dila_cutoff            tb_seven_devices
 首次外部综合脚本用了 Vivado 2020.2 不接受的 `read_verilog -include_dirs` 选项，未开始综合即退出；改为 project fileset 的 include_dirs 后重跑通过。保留 `bank_synth.log` 失败记录，成功结果为 `bank_synth_retry.log`、`synthesis_summary.json`。此脚本适配未修改生产 RTL。
 
 本轮不执行完整顶层布局布线、时序/CDC 签核或 BIT 生成，未重跑全套 RTL 回归。上一轮公共 smoke 的综合后 hold 违例也不能因本次功能回归通过而视为已解决；之前的记录在外部 `github_sync_v2_20261027_01/REPORT.md`。
+
+
+2026-11-14 源码修订：AI8 扫描/schema3 已按 `Docs/protocol/AI8_SCAN_CONTRACT_20261114.md` 实现；通用参数事务和 RD105 仍不支持。此修订不改变本文旧镜像的验收结论，新 BIT 尚受目标器件包缺失阻塞。

@@ -120,3 +120,6 @@ RTCM staging 可通过多条 VLP WRITE_REG 装载，但在整帧完成前不会�
 
 
 2026-10-27：PPS/DM422补充见 [GNSS_PPS_DM422_20261027](../integration/GNSS_PPS_DM422_20261027.md)。EPSILON MAIN及RTCM路径保留，新增PPS标定和主机确认历元；MOTOR_CTRL子操作5为主机heartbeat，不自动使能或重放运动。
+
+
+2026-11-14 源码修订：AI8 扫描/schema3 已按 `Docs/protocol/AI8_SCAN_CONTRACT_20261114.md` 实现；通用参数事务和 RD105 仍不支持。此修订不改变本文旧镜像的验收结论，新 BIT 尚受目标器件包缺失阻塞。
