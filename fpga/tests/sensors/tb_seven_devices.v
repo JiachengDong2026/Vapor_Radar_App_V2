@@ -3,7 +3,7 @@ module tb_seven_devices;
     reg clk=0;always #20 clk=~clk;
     reg rst=0;reg [63:0] now=0;always @(posedge clk)now<=now+1'b1;
     reg cv=0,cw=0;reg [31:0] ca=0,cd=0;wire cr,ce;wire [31:0] rd;
-    wire ptb_rx,ptb_tx,bus_rx,bus_tx,bus_de,eps_tx,tfa_hf,tfa_lf,tfa_tx;
+    wire ptb_rx,ptb_tx,bus_rx,bus_tx,bus_de,eps_tx,sdfm300_rx,sdfm300_tx;
     reg eps_rx=1,sync_pulse=0;
     wire scl_low,sda_low;tri1 scl,sda;assign scl=scl_low?0:1'bz;assign sda=sda_low?0:1'bz;
     wire [6:0] mv,ms,ml,online;reg [6:0] ready=0;
@@ -15,7 +15,7 @@ module tb_seven_devices;
         .sync_event_pulse(sync_pulse),.cfg_valid(cv),.cfg_write(cw),.cfg_addr(ca),.cfg_wdata(cd),.cfg_wstrb(4'hf),
         .cfg_ready(cr),.cfg_error(ce),.cfg_rdata(rd),
         .ptb_rxd(ptb_rx),.ptb_txd(ptb_tx),.rs485_rxd(bus_rx),.rs485_txd(bus_tx),.rs485_de(bus_de),
-        .epsilon_rxd(eps_rx),.epsilon_txd(eps_tx),.tfa_hf_rxd(tfa_hf),.tfa_lf_rxd(tfa_lf),.tfa_txd(tfa_tx),
+        .epsilon_rxd(eps_rx),.epsilon_txd(eps_tx),.sdfm300_rxd(sdfm300_rx),.sdfm300_txd(sdfm300_tx),
         .scl_i(scl),.sda_i(sda),.bmp_int(1'b0),
         .scl_drive_low(scl_low),.sda_drive_low(sda_low),.gnss_time_tag(tag),.gnss_time_tag_valid(tag_valid),
         .m_valid(mv),.m_ready(ready),.m_data(data),.m_keep(keep),.m_sof(ms),.m_last(ml),
@@ -39,9 +39,9 @@ module tb_seven_devices;
         .scl(scl),.sda(sda),.rst_n(rst),.inject_nack(1'b0),.inject_bad_crc(1'b0),.transactions(bt),.measurements(bs),.last_command(bc));
     i2c_sensor_model #(.NS_PER_LOGICAL_MS(1000000))sht(
         .scl(scl),.sda(sda),.rst_n(rst),.inject_nack(1'b0),.inject_bad_crc(1'b0),.transactions(st),.measurements(ss),.last_command(sc));
-    tfa1500_model tfa(.hf_rxd(tfa_hf),.lf_rxd(tfa_lf));
+    sdfm300_model sdfm300(.uart_rxd(sdfm300_rx));
     reg run_sources=0;
-    initial begin wait(run_sources);forever begin tfa.high_frame(209,0);#900000;end end
+    initial begin wait(run_sources);forever begin sdfm300.distance_frame(209,0);#900000;end end
     reg [7:0] eps_frame[0:109];integer e,n;
     reg [7:0] h;reg [15:0] c;
     function [7:0] crc8;input [7:0] a,b;integer j;reg [7:0] v;begin v=a^b;for(j=0;j<8;j=j+1)v=v[0]?(v>>1)^8'h8c:v>>1;crc8=v;end endfunction
@@ -106,7 +106,7 @@ module tb_seven_devices;
         if(hreq==0 || requests<=hreq)$fatal(1,"shared RS485 client starvation");
         if(ai8_writes!=0 || ai8_verifies!=0 || hwrite!=0 || ai8_sp!=500)
             $fatal(1,"polling caused an unsolicited device write");
-        $display("SEVEN_DEVICES_CONCURRENT_PASS packets=%0d,%0d,%0d,%0d,%0d,%0d,%0d tags=%0d TFA_drop=%0d",
+        $display("SEVEN_DEVICES_CONCURRENT_PASS packets=%0d,%0d,%0d,%0d,%0d,%0d,%0d tags=%0d SDFM300_drop=%0d",
             packets[0],packets[1],packets[2],packets[3],packets[4],packets[5],packets[6],tags,drops[160+:32]);
         $finish;
     end

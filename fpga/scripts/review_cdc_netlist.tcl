@@ -82,8 +82,7 @@ set uart_specs [list \
  PTB210 FPGA_RS232A_RXD u_member3/u_0/u_uart_rx \
  AI8 FPGA_RS485_RXD_L u_member3/u_6/core/master/rx \
  EPSILON FPGA_RS232B_RXD u_member3/u_2/u_rx \
- TFA_HF FPGA_UART_RXD_L u_member3/u_5/u_hf_rx \
- TFA_LF TFA_LF_RXD u_member3/u_5/u_lf_rx]
+ SDFM300 FPGA_UART_RXD_L u_member3/u_5/u_rx]
 set hc2a_rx_base u_member3/gen_hc2a.u_1/rx
 if {[llength [get_cells -quiet ${hc2a_rx_base}/rxd_meta_reg]]} {
     lappend uart_specs HC2A HC2A_UART_RXD $hc2a_rx_base

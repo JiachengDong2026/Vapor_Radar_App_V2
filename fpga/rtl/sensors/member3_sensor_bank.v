@@ -1,6 +1,6 @@
 `include "project_defs.vh"
 `include "sensor_cfg_codes.vh"
-// Lane order: PTB210,HC2A/HMP,EPSILON,BMP390,SHT45,TFA1500,AI8.
+// Lane order: PTB210,HC2A/HMP,EPSILON,BMP390,SHT45,SDFM300,AI8.
 // SDA/SCL drive_low outputs feed top-level open-drain IOBUF controls.
 module member3_sensor_bank #(
     parameter integer SYS_CLK_HZ=100000000,FIFO_DEPTH=256,PTB_BOOT_MS=2000,EPSILON_PASSIVE_MS=2500,
@@ -14,7 +14,7 @@ module member3_sensor_bank #(
     input wire ptb_rxd,output wire ptb_txd,
     input wire rs485_rxd,output wire rs485_txd,rs485_de,
     input wire epsilon_rxd,output wire epsilon_txd,epsilon_correction_txd,
-    input wire tfa_hf_rxd,tfa_lf_rxd,output wire tfa_txd,
+    input wire sdfm300_rxd,output wire sdfm300_txd,
     input wire hc2a_rxd,output wire hc2a_txd,
     input wire scl_i,sda_i,bmp_int,output wire scl_drive_low,sda_drive_low,
     output wire [63:0] gnss_time_tag,output wire gnss_time_tag_valid,
@@ -276,7 +276,7 @@ module member3_sensor_bank #(
         .done(i_done[1]),
         .error(i_error[3+:3]),
         .read_data(i_read_data[256+:256]));
-    tfa1500_uart #(.SYS_CLK_HZ(SYS_CLK_HZ),.FIFO_DEPTH(FIFO_DEPTH)) u_5(
+    sdfm300_uart #(.SYS_CLK_HZ(SYS_CLK_HZ),.FIFO_DEPTH(FIFO_DEPTH)) u_5(
         .sys_clk(sys_clk),
         .rst_sys_n(rst_sys_n),
         .timestamp_now(timestamp_now),
@@ -287,9 +287,8 @@ module member3_sensor_bank #(
         .cfg_addr(cfg_addr),
         .cfg_wdata(cfg_wdata),
         .cfg_wstrb(cfg_wstrb),
-        .hf_rxd(tfa_hf_rxd),
-        .lf_rxd(tfa_lf_rxd),
-        .uart_txd(tfa_txd),
+        .uart_rxd(sdfm300_rxd),
+        .uart_txd(sdfm300_txd),
         .cfg_ready(ready[5]),
         .cfg_error(error[5]),
         .cfg_error_code(cfg_error_code[20+:4]),

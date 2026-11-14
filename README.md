@@ -1,8 +1,10 @@
+> **2026-11-15 SDFM300迁移**：当前距离设备为300米SDFM300，默认460800/8N1、单UART、4字节主动输出；旧模式/命令与LF管脚已撤回。寄存器、有效性、电气接线及上行兼容语义以[SDFM300接口](Docs/integration/sensors/SDFM300.md)为准。历史板测和旧BIT仅覆盖当时设备。
+
 # Vapor_Radar_App_V2
 
 ## 当前正式版本：2026-11-13
 
-已同步最近实板使用的 **HC2A GPIO RH 修正版（HCD2）**：HC2A独立CON11 UART，保留AI8、TFA、EPSILON、双LC UART、GNSS PPS/UTC、DM422、双AD4630/DLIA和WMS/DAC。原2026-10-28构建BIT与配套128项源码输入已核对，归档日期不代表重新综合或重新上板。
+历史归档保留 **HC2A GPIO RH 修正版（HCD2）**：HC2A独立CON11 UART，保留AI8、TFA、EPSILON、双LC UART、GNSS PPS/UTC、DM422、双AD4630/DLIA和WMS/DAC。原2026-10-28构建BIT与配套128项源码输入已核对，归档日期不代表重新综合或重新上板。
 
 - [最新下位机说明、接线、能力和验证边界](Docs/LOWER_COMPUTER_RELEASE_20261113.md)
 - [正式BIT、SHA256与来源清单](firmware/fpga/releases/20261113_hc2a_rhfix/README.md)
@@ -40,7 +42,7 @@ HMP、AI8 与 CON19 双设备仲裁恢复至同步前 `d2e2f8f` 的实现，保�
 
 ## 当前交付范围
 
-已合入 PTB210、EPSILON MAIN RS232、BMP390、SHT45、TFA1500-L、AI-8 温控的驱动，配套时钟复位、统一时间、消息仲裁/缓存、VLP 封包、命令/寄存器及动作控制、USB GPIF 和 FX3 GP01 固件构建。
+已合入 PTB210、EPSILON MAIN RS232、BMP390、SHT45、SDFM300、AI-8 温控的驱动，配套时钟复位、统一时间、消息仲裁/缓存、VLP 封包、命令/寄存器及动作控制、USB GPIF 和 FX3 GP01 固件构建。
 
 完整顶层仍包含 ADC/DILA、WMS/DAC、HMP和电机依赖，但这些链路尚未全部实板验收。不能把实现存在、仿真通过或比特流生成当成实物通过。当前设备默认禁用，由主机显式配置和启用。
 
@@ -121,7 +123,7 @@ try {
 - PC主接口：CON23 USB，应用04B4:00F1，OUT 0x02、IN 0x86。
 - EPSILON MAIN：CON14，921600/8N1；PTB210：CON25。
 - AI8：CON19 RS485，19200/8N1，地址1、通道1。HMP暂未接，保持禁用。
-- TFA1500-L：CON21及LF输入；BMP390/SHT45：共享I2C。
+- SDFM300：CON21单UART；BMP390/SHT45：共享I2C。
 - BMP390复位默认0x76，实物为0x77：禁用时写0x6310=0x77并读回，再启用。主机六路计划包含此步骤。
 - AI8使用schema2、原始温度0.1摄氏度/LSB；ACTION17的value单位为微摄氏度。独立测试串口的ASCII SET指令不适用于完整USB系统。
 

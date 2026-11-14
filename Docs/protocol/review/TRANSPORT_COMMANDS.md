@@ -125,7 +125,7 @@ module/source mask 位采用 `source_id & 0x3F`。广播/SYSTEM 的采集集合�
 
 START/STOP 选择 WMS/ADC/DILA 任一位会控制对应完整采集通道；START 预检并按顺序启用，不隐式提交参数；STOP 等待管线排空。SET_STREAM_MASK 的 raw_enable_mask 只允许 ADC bits32/33。正常 action 总超时默认 200000000 tick=2 s；top 给 decoder 300000000 tick=3 s 上限，最终主机等待还应覆盖 USB 排队/背压。实际实测工具等待命令应答上限为 10 s。不能从应答超时推断操作一定未生效。
 
-SENSOR_ACTION：1=enable(value0/1)，2=commit(value0)，3=clear FIFO(value0)，4=soft reset/disable(value0)，5=clear error(value为W1C mask)；16 仅 HMP0041，value 为压力 F32 位模式；17 仅 AI8 **0046**，value 为 signed 微摄氏度；32/33 仅 TFA0045，分别为模式0..2和命令1..4。当前0046是AI8，不能继续按旧RD105理解。MOTOR_ACTION：1=有符号相对目标并启动（成功表示接受，不表示运动完成），2=stop并等待idle(value0)，3=idle时位置清零(value0)，4=enable(value0/1)。TIME_ACTION：1=enable0/1，2=rearm(value0)，3=边沿0上升/1下降，4=timeout_ms范围1..3600000，5=W1C error mask。见 `rtl/action_controller.v:114` 和 `docs/ACTION_CONTROLLER.md:39`；HMP/电机实物验证状态应单独说明。
+SENSOR_ACTION：1=enable(value0/1)，2=commit(value0)，3=clear FIFO(value0)，4=soft reset/disable(value0)，5=clear error(value为W1C mask)；16 仅 HMP0041，value 为压力 F32 位模式；17 仅 AI8 **0046**，value 为 signed 微摄氏度；32/33已撤回，返回UNSUPPORTED=13，无配置/串口副作用。当前0046是AI8，不能继续按旧RD105理解。MOTOR_ACTION：1=有符号相对目标并启动（成功表示接受，不表示运动完成），2=stop并等待idle(value0)，3=idle时位置清零(value0)，4=enable(value0/1)。TIME_ACTION：1=enable0/1，2=rearm(value0)，3=边沿0上升/1下降，4=timeout_ms范围1..3600000，5=W1C error mask。见 `rtl/action_controller.v:114` 和 `docs/ACTION_CONTROLLER.md:39`；HMP/电机实物验证状态应单独说明。
 
 ### status 错误枚举
 

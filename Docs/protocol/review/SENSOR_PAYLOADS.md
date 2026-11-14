@@ -1,3 +1,5 @@
+> **2026-11-15 SDFM300迁移**：当前距离设备为300米SDFM300，默认460800/8N1、单UART、4字节主动输出；旧模式/命令与LF管脚已撤回。寄存器、有效性、电气接线及上行兼容语义以[SDFM300接口](../../integration/sensors/SDFM300.md)为准。历史板测和旧BIT仅覆盖当时设备。
+
 # 六传感器 payload 与温控确认协议
 
 核对日期：2026-09-19。依据封存 `integrated_20260916/member3_uart_sensors/rtl`、`lead_system/rtl`、`common_baseline/fpga/rtl/include`，对照当前 `fx3_gpif_debug_20260918/host/analyze_sensors.py`、`bmp_compensation.py`、`plot_six_sensors.py` 以及六路实测摘要。本文件只描述已实现接口；本次未操作硬件，未修改 V2、封存源码或现有解码脚本。
@@ -12,7 +14,7 @@
 | EPSILON | 0x0042 | 0x10 | 0x1200 | 无TLV，完整FDILink帧 | 0x6200 / 0x00420101 |
 | BMP390 | 0x0043 | 0x10 | 0x1100 | 1 | 0x6300 / 0x00430101 |
 | SHT45 | 0x0044 | 0x10 | 0x1100 | 1 | 0x6400 / 0x00440101 |
-| TFA1500-L | 0x0045 | 0x10 | 0x1100 | 1 | 0x6500 / 0x00450100 |
+| SDFM300 | 0x0045 | 0x10 | 0x1100 | 1 | 0x6500 / 0x00450200 |
 | AI8 | 0x0046 | 0x10 | 0x1100 | 2 | 0x6600 / 0x00460200 |
 
 0x0041 为未接入的 HMP；0x0046 当前必须按 AI8 schema 2 处理，不能套旧 RD105 schema 1。上述数据 `cycle_id=0xFFFFFFFF`。health `(type,msg)=(0x12,0x1400)/(0x12,0x1401)/(0x11,0x1402)` 不是测量样本。
@@ -58,9 +60,9 @@ payload 固定28字节，schema=1、count=3：
 
 三个length均4。FPGA已验证原始两组CRC，执行 `floor(rawT*175000/65535)-45000` 和 `clamp(floor(rawRH*125000/65535)-6000,0,100000)`；不要把湿度值再按65535缩放。heater非零同时使外层bit4置位，须标为加热测量；常规环境温湿度显示应保留该标识。
 
-## 5. TFA1500-L 距离
+## 5. SDFM300 距离
 
-payload固定12字节、schema=1、count=1，header offset4、value offset8，tag=0x0013/type=U32/length=4，数值已经是 **mm**。HF原始距离由FPGA乘10；LF使用配置的比例。主机不能再统一乘10。checksum/格式/无效距离由解析器处理，只有 distance_pulse 形成测量记录；寄存器 LAST_DISTANCE 的历史值不能代替当前有效样本。
+payload固定12字节、schema=1、count=1，header offset4、value offset8，tag=0x0013/type=U32/length=4，数值已经是 **mm**。SDFM300的u16厘米距离由FPGA乘10，接受5..30000 cm；FFFF或越界不发布距离。主机不能再统一乘10。checksum/格式/无效距离由解析器处理，只有 distance_pulse 形成测量记录；寄存器 LAST_DISTANCE 的历史值不能代替当前有效样本。
 
 ## 6. EPSILON FDILink与姿态
 
@@ -281,7 +283,7 @@ COMMAND_STATUS与TLV0x0467：bits3:0=result，bits7:4=transport_error，bits15:8
 | EPS | 0x6200..623C / 16 | +10 baud；+14/+18 ID0x40..5F/60..7F掩码；+1C raw_forward；+20 good_frames；+24 CRC计数；+28 sync事件数；+2C最后内部ID；+30/+34最近有效GNSS时间标签µs低/高字；+38 FIFO；+3C drop |
 | BMP | 0x6300..6340 / 17 | +10 I2C地址；+14 poll_ms；+18 OSR；+1C ODR；+20 IIR；+24 PWR；+28 chip_id；+2C压力ADC；+30温度ADC；+34 I2C错误数；+38 compensation_mode=0；+3C FIFO；+40 drop |
 | SHT | 0x6400..643C / 16 | +10固定I2C0x44；+14 poll_ms；+18 repeatability；+1C heater；+20 rawT；+24 rawRH；+28 CRC错误数；+2C I2C错误数；+30 serial低字；+34 serial高字固定0；+38 FIFO；+3C drop |
-| TFA | 0x6500..655C / 24 | +10 baud；+14 mode；+18 command（读0）；+1C距离mm；+20距离有效；+24 APD温度raw；+28帧数；+2C checksum错误；+30无效帧数；+34 FIFO；+38 drop；+3C timeout_ticks；+40超时数；+44 silence_ticks；+48 gap_ticks；+4C LF比例；+50 LF mask；+54设备status raw；+58 version命令；+5C格式错误数 |
+| SDFM300 | 0x6500页，稀疏地址 | +10接收baud；+1C距离mm；+20有效；+28帧；+2C校验错；+30无效；+34 FIFO；+38 drop；+3C在线超时tick；+40超时数；+48帧间隔tick；+5C格式错；已撤回地址返回5，禁止连续读取整页 |
 
 CRC/解析错误为历史诊断，不应由单个非零sticky位推出所有当前数据失效。禁用、复位、清FIFO和enable的外部行为各不相同：enable可触发设备初始化/测量命令，不能把寄存器写1叫“纯被动读取”。
 
@@ -293,9 +295,9 @@ CRC/解析错误为历史诊断，不应由单个非零sticky位推出所有当�
 |---|---|
 | PTB210 | 响应第一个UART起始脉冲 |
 | EPSILON | 完整FDILink帧起始0xFC字节的UART起始脉冲 |
-| TFA1500-L | 解析帧首字节的UART起始脉冲 |
+| SDFM300 | 解析帧首字节的UART起始脉冲 |
 | BMP390 | 优先此前捕获的INT上升沿；否则raw读取I2C请求被接受时；校准记录为校准发布时 |
 | SHT45 | 启动本次测量的I2C请求被接受时 |
 | AI8 | 七次读取完成、完整快照发布时；失败记录为失败完成时 |
 
-时间戳适合共同时间轴，但六设备的物理采样时刻与延迟并不相同。当前60秒记录实测：PTB57、EPS44629（其中AHRS3053）、BMP60样本+1元数据、SHT61、TFA42137、AI8 56 flagged样本。全部91087外层帧CRC通过、无framing issue；这一结论不消除AI8报警或赋予EPS GNSS有效性。
+时间戳适合共同时间轴，但六设备的物理采样时刻与延迟并不相同。历史旧设备60秒记录实测：PTB57、EPS44629（其中AHRS3053）、BMP60样本+1元数据、SHT61、TFA42137、AI8 56 flagged样本。全部91087外层帧CRC通过、无framing issue；这一结论不消除AI8报警或赋予EPS GNSS有效性。

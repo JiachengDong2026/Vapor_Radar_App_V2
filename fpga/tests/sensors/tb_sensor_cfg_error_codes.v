@@ -7,7 +7,7 @@ module tb_sensor_cfg_error_codes;
     member3_sensor_bank #(.FIFO_DEPTH(16),.PTB_BOOT_MS(1),.HC2A_ENABLE(0)) dut(
         .sys_clk(clk),.rst_sys_n(rst),.timestamp_now(64'd0),.time_sync_valid(1'b0),.time_sync_seq(32'd0),.sync_event_pulse(1'b0),
         .cfg_valid(cv),.cfg_write(cw),.cfg_addr(ca),.cfg_wdata(cd),.cfg_wstrb(ws),.cfg_ready(ready),.cfg_error(error),.cfg_rdata(rd),.cfg_error_code(reasons),
-        .ptb_rxd(1'b1),.rs485_rxd(1'b1),.epsilon_rxd(1'b1),.tfa_hf_rxd(1'b1),.tfa_lf_rxd(1'b1),
+        .ptb_rxd(1'b1),.rs485_rxd(1'b1),.epsilon_rxd(1'b1),.sdfm300_rxd(1'b1),
         .scl_i(1'b1),.sda_i(1'b1),.bmp_int(1'b0),.m_ready(7'h7f));
     task access;input integer l;input write;input [7:0] ofs;input [31:0] value;input [3:0] strobes,code;
         reg [27:0] expected;begin
@@ -43,7 +43,7 @@ module tb_sensor_cfg_error_codes;
         access(2,1,8'h10,0,15,7);access(2,1,8'h1c,2,15,7);
         access(3,1,8'h10,8'h75,15,7);access(3,1,8'h18,63,15,7);access(3,1,8'h1c,18,15,7);access(3,1,8'h20,1,15,7);access(3,1,8'h24,4,15,7);access(3,1,8'h38,1,15,7);
         access(4,1,8'h10,8'h44,15,6);access(4,1,8'h14,0,15,7);access(4,1,8'h18,3,15,7);access(4,1,8'h1c,7,15,7);access(4,1,8'h1c,2,15,7);
-        access(5,1,8'h10,115199,15,7);access(5,1,8'h14,3,15,7);access(5,1,8'h18,5,15,7);access(5,1,8'h18,1,0,7);access(5,1,8'h3c,0,15,7);access(5,1,8'h4c,1001,15,7);
+        access(5,1,8'h10,115199,15,7);access(5,1,8'h14,3,15,5);access(5,1,8'h18,5,15,5);access(5,1,8'h18,1,0,5);access(5,1,8'h3c,0,15,7);access(5,1,8'h4c,1001,15,5);
         access(6,1,8'h18,1,15,7);access(6,1,8'h1c,9,15,7);access(6,1,8'h20,32'd25000001,15,7);access(6,1,8'h20,-32'sd400000001,15,7);access(6,1,8'h2c,0,15,7);
         // The hardware-tested AI8 interface has no scan/parameter extension.
         access(6,0,8'h68,0,15,5);access(6,1,8'h68,1,15,5);
@@ -60,8 +60,8 @@ module tb_sensor_cfg_error_codes;
         access(2,1,8'h10,500000,15,8);access(2,1,8'h10,0,15,7);
         access(3,1,8'h10,8'h76,15,8);access(3,1,8'h10,8'h75,15,7);
         access(4,1,8'h14,1000,15,8);access(4,1,8'h14,0,15,7);access(4,1,8'h18,1,15,8);access(4,1,8'h18,3,15,7);access(4,1,8'h1c,0,15,8);access(4,1,8'h1c,2,15,7);
-        access(5,1,8'h18,1,15,8);access(5,1,8'h18,5,15,7);access(5,1,8'h4c,10,15,8);access(5,1,8'h4c,0,15,7);
-        access(5,1,8'h50,0,15,8);access(5,1,8'h50,256,15,7);access(5,1,8'h58,8'hcb,15,8);access(5,1,8'h58,256,15,7);
+        access(5,1,8'h18,1,15,5);access(5,1,8'h18,5,15,5);access(5,1,8'h4c,10,15,5);access(5,1,8'h4c,0,15,5);
+        access(5,1,8'h50,0,15,5);access(5,1,8'h50,256,15,5);access(5,1,8'h58,8'hcb,15,5);access(5,1,8'h58,256,15,5);
         access(6,1,8'h10,19200,15,8);access(6,1,8'h14,1,15,8);access(6,1,8'h18,0,15,8);access(6,1,8'h18,1,15,7);
         access(6,1,8'h1c,1,15,8);access(6,1,8'h1c,9,15,7);access(6,1,8'h2c,1000,15,8);access(6,1,8'h2c,0,15,7);
         access(6,1,8'h04,5,15,0);access(6,1,8'h04,5,15,8);access(6,1,8'h04,32'h15,15,7);

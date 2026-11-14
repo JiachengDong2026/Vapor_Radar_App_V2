@@ -1,6 +1,8 @@
+> **2026-11-15 SDFM300迁移**：当前距离设备为300米SDFM300，默认460800/8N1、单UART、4字节主动输出；旧模式/命令与LF管脚已撤回。寄存器、有效性、电气接线及上行兼容语义以[SDFM300接口](integration/sensors/SDFM300.md)为准。历史板测和旧BIT仅覆盖当时设备。
+
 > 2026-10-27 LC双路UART修订：CON11 pin5/7现用于LC0、pin6/8用于LC1，替代本文旧RD105预留；当前接口以 [LC_DUAL_UART_20261027.md](integration/LC_DUAL_UART_20261027.md) 为准。
 
-> **正式 HC2A GPIO 修订（2026-11-13）**：CON11-13 / AK13 为 HC2A_UART_TXD，CON11-15 / AL13 为 HC2A_UART_RXD，均3.3 V；HC2A替换逻辑HMP通道0x0041但不占CON19。TFA1500继续使用CON21及CON11-4，AI8保持CON19。详见 `integration/sensors/HC2A_ROASCII.md`；历史HMP配置与压力补偿不适用。
+> **正式 HC2A GPIO 修订（2026-11-13）**：CON11-13 / AK13 为 HC2A_UART_TXD，CON11-15 / AL13 为 HC2A_UART_RXD，均3.3 V；HC2A替换逻辑HMP通道0x0041但不占CON19。SDFM300使用CON21单UART，CON11-4撤回，AI8保持CON19。详见 `integration/sensors/HC2A_ROASCII.md`；历史HMP配置与压力补偿不适用。
 > 2026-10-04：已将2026-10-02上板验证的DLIA精度版本同步至正式V2，当前ID/profile为0101/00040101。历史构建记录保留；本次范围及验证见[同步记录](MERGE_MANIFEST_20261004.md)。
 
 > 2026-09-28 更新：正式工程第二路 ADC 已改用 CON16 / AD4630 CH1，与 ADC0 共用采样时钟；当前映射和寄存器语义以[双低速 ADC 修订](INTEGRATION_REVISION_20260928_DUAL_AD4630.md)为准。
@@ -61,7 +63,7 @@ flowchart LR
         EPS[EPSILON2 GNSS/INS]
         BMP[BMP390 MEMS]
         SHT[SHT45 MEMS]
-        TFA[TFA1500-L 测距雷达]
+        SDFM300[SDFM300 测距雷达]
         RD[RD105 温控器]
         MOT[DM422 电机驱动器]
     end
@@ -113,7 +115,7 @@ flowchart LR
     EPS --> SYNC --> TIME
     BMP --> GPIO --> SEN
     SHT --> GPIO --> SEN
-    TFA --> TTL --> SEN
+    SDFM300 --> TTL --> SEN
     RD --> GPIO --> SEN
     MOTC --> GPIO --> MOT
 
@@ -167,7 +169,7 @@ flowchart LR
 | EPSILON2 GNSS/INS | RS422 + SYNC | **CON24 RS422** + **CON22 SYNC_IN SMA** | 见 3.4 | RX AM15；TX AN18；SYNC AP18 | `epsilon_rs422` + `time_sync_core` |
 | BMP390 MEMS | I²C | **CON11 Bank88 GPIO** | SCL=CON11-1；SDA=CON11-3；INT=CON11-2（可选） | AH13 / AJ13 / AN13 | `i2c_master` + `bmp390_driver` |
 | SHT45 MEMS | I²C | 与 BMP390 共用 **CON11** I²C 总线 | SCL=CON11-1；SDA=CON11-3；地址 0x44 | AH13 / AJ13 | `i2c_master` + `sht45_driver` |
-| TFA1500-L 测距雷达 | 3.3V TTL UART | **CON21 TTL UART**；低频输出另占 CON11-4 | 高频 TX→CON21-1；RX←CON21-2；EN←CON21-3；GND→CON21-4；低频 TX→CON11-4 | RX AN14；TX AP14；EN AK16；LF RX AP13 | `tfa1500_uart` |
+| SDFM300 测距雷达 | UART，设备逻辑电平待接线核对 | **CON21 单UART** | 设备TX→CON21-1；RX←CON21-2（恒高）；串口GND→CON21-4；9–36V独立供电，CON21-3不接设备 | RX AN14；TX AP14；接口EN AK16；AP13撤回 | `sdfm300_uart` |
 | RD105 温控器 | TTL 串口（协议手册） | **CON11 GPIO 软件 UART** | FPGA TX=CON11-5；FPGA RX=CON11-7 | AM12 / AN12 | `rd105_uart` |
 | DM422 电机驱动器 | PUL/DIR/ENA | **CON11 GPIO** + 外置驱动/开漏级 | PUL=CON11-9；DIR=CON11-11；ENA=CON11-10 | AM11 / AN11 / AK12 | `stepper_ctrl` |
 
@@ -310,34 +312,9 @@ i2c_master
 
 ---
 
-## 3.6 TFA1500-L 测距雷达 → 板载 TTL UART
+## 3.6 SDFM300 测距雷达
 
-该设备使用 3.3 V TTL UART，默认 500000 baud，并提供“高频输出 TX”和“低频输出 TX”两个独立输出脚。
-
-### 推荐连接
-
-| TFA1500-L pin | 功能 | 板卡连接 |
-|---|---|---|
-| 1 | GND | CON21 pin4 GND |
-| 2 | Vin 3–5 V | 独立电源 |
-| 3 | 高频 UART TX | CON21 pin1 `FPGA_UART_RXD` |
-| 4 | 低频 UART TX | CON11 pin4 `GPIO_BANK88_LN2` |
-| 5 | UART RX | CON21 pin2 `FPGA_UART_TXD` |
-| 6 | Power_EN | CON21 pin3 `FPGA_UART_EN` |
-
-### FPGA 网络
-
-板载 TTL UART：
-
-- RX：`FPGA_UART_RXD_L` = **AN14**；
-- TX：`FPGA_UART_TXD_L` = **AP14**；
-- EN：`FPGA_UART_EN_L` = **AK16**。
-
-低频 TX 备用输入：
-
-- `GPIO_BANK88_LN2` = **AP13**。
-
-这样上位机既可以选择高频输出，也可以切换到低频模式而不重新接线。
+设备独立9–36 V供电，5针线束，单UART默认460800/8N1；TX接CON21-1、串口GND接CON21-4，RX可接CON21-2，CON21-3不接设备。FPGA侧保留AN14 RX、AP14 TX、AK16接口EN及LVCMOS18转换侧约束，撤回AP13独立低频输入。设备逻辑电压需接线前核对。完整针脚及协议见[SDFM300接口](integration/sensors/SDFM300.md)。
 
 ---
 
@@ -602,7 +579,7 @@ rtl/
 │   ├── epsilon_rs422.v
 │   ├── bmp390_driver.v
 │   ├── sht45_driver.v
-│   ├── tfa1500_uart.v
+│   ├── sdfm300_uart.v
 │   └── rd105_uart.v
 ├── motor/
 │   └── stepper_ctrl.v
@@ -927,7 +904,7 @@ cfg_rvalid
 | `0x6200–0x62FF` | EPSILON2 |
 | `0x6300–0x63FF` | BMP390 |
 | `0x6400–0x64FF` | SHT45 |
-| `0x6500–0x65FF` | TFA1500-L |
+| `0x6500–0x65FF` | SDFM300 |
 | `0x6600–0x66FF` | RD105 |
 | `0x6700–0x67FF` | Stepper |
 | `0x7000–0x70FF` | Buffer / stream statistics |
@@ -1100,7 +1077,7 @@ ADC cycle / DILA / sensors / status
 | `0x0042` | EPSILON2 |
 | `0x0043` | BMP390 |
 | `0x0044` | SHT45 |
-| `0x0045` | TFA1500-L |
+| `0x0045` | SDFM300 |
 | `0x0046` | RD105 |
 | `0x0047` | Stepper |
 | `0x0050` | Time sync event |
@@ -1195,7 +1172,7 @@ reg_ctrl_crossbar
  ├─→ DAC0/DAC1
  ├─→ ADC0/ADC1
  ├─→ DILA0/DILA1
- ├─→ PTB/HMP/EPS/BMP/SHT/TFA/RD105
+ ├─→ PTB/HMP/EPS/BMP/SHT/SDFM300/RD105
  └─→ stepper_ctrl
 ```
 
@@ -1206,7 +1183,7 @@ AD4630 ─→ adc0 ─┬─→ dila0 → fragmenter → DILA0 bulk FIFO ─┐
                 └─→ adc_cycle_framer0 → RAW0 bulk FIFO ─────┤
 ADC3660 ─→ adc1 ─┬─→ dila1 → fragmenter → DILA1 bulk FIFO ─┤
                  └─→ adc_cycle_framer1 → RAW1 bulk FIFO ─────┤
-PTB/HMP/EPS/BMP/SHT/TFA/RD105                                 │
+PTB/HMP/EPS/BMP/SHT/SDFM300/RD105                                 │
    └→ per-source msg FIFO → sensor_hub ──────────────────────┤
 stepper/status/time/error/response FIFOs ─────────────────────┤
                                                               ▼
@@ -1246,7 +1223,7 @@ time_sync_core 64-bit tick
 | 1 | `GPIO_BANK88_LP1` | AH13 | I²C SCL |
 | 2 | `GPIO_BANK88_LP2` | AN13 | BMP390 INT |
 | 3 | `GPIO_BANK88_LN1` | AJ13 | I²C SDA |
-| 4 | `GPIO_BANK88_LN2` | AP13 | TFA1500-L 低频 TX 输入 |
+| 4 | `GPIO_BANK88_LN2` | AP13 | 空闲（旧LF已撤回） |
 | 5 | `GPIO_BANK88_LP3` | AM12 | LC0 TX -> LC RX1 |
 | 6 | `GPIO_BANK88_LP4` | AP11 | LC1 TX -> LC RX1 |
 | 7 | `GPIO_BANK88_LN3` | AN12 | LC0 RX <- LC TX1 |
@@ -1568,13 +1545,13 @@ BMP390 + SHT45 I2C
 → PC
 ```
 
-## 22.7 TFA1500-L
+## 22.7 SDFM300
 
 ```text
-TFA UART
+SDFM300 UART
 → CON21
 → FPGA AN14/AP14/AK16
-→ tfa1500_uart
+→ sdfm300_uart
 → timestamp/message
 → USB
 → PC
@@ -1623,8 +1600,8 @@ stepper state/fault
 2. **RD105 设备侧物理插座针脚和 TTL 电平。**  
    项目包协议 PDF 不足以安全冻结设备端线束；FPGA 板侧 AM12/AN12 已可冻结。
 
-3. **TFA1500-L 实际使用高频 TX 还是低频 TX。**  
-   本方案已经把两个 TX 都预留，所以不影响 PCB/FPGA 管脚分配。
+3. **SDFM300 UART逻辑电平。**
+   采用单TX；说明书未给出逻辑电压，接线前核对板载转换接口。旧AP13输入撤回。
 
 4. **DM422 输入端最终外置驱动电路。**  
    需要确认采用 N-MOS、三极管还是专用隔离/缓冲器，FPGA 不建议直接驱动光耦输入。
@@ -1649,7 +1626,7 @@ stepper state/fault
 - **PTB210**：RS232A/CON25；
 - **HMP**：RS485/CON19；
 - **EPSILON2**：RS422/CON24 + SYNC_IN/CON22；
-- **TFA1500-L**：TTL UART/CON21，低频 TX 辅助接 Bank88；
+- **SDFM300**：单UART/CON21，独立9–36V供电；
 - **BMP390 + SHT45**：共用 Bank88 I²C；
 - **RD105**：Bank88 软件 UART；
 - **DM422**：Bank88 PUL/DIR/ENA + 外部驱动级；
@@ -1675,7 +1652,7 @@ stepper state/fault
 - HMP 系列温湿度传感器资料；
 - BMP390 资料；
 - SHT45 资料；
-- TFA1500-L 测距雷达资料；
+- SDFM300 测距雷达资料；
 - RD105 温控通信协议；
 - DM422 驱动器说明书；
 - EPSILON/EPSILON2 组合导航资料。

@@ -1,3 +1,5 @@
+> **2026-11-15 SDFM300迁移**：当前距离设备为300米SDFM300，默认460800/8N1、单UART、4字节主动输出；旧模式/命令与LF管脚已撤回。寄存器、有效性、电气接线及上行兼容语义以[SDFM300接口](sensors/SDFM300.md)为准。历史板测和旧BIT仅覆盖当时设备。
+
 > 正式归档：2026-09-23。本文源于2026-09-16集成版本；旧文中的Test专用、V2只读和当轮未上板描述属于当时记录。当前目录、六路既有实测及本轮离线边界以[正式集成修订](../INTEGRATION_REVISION_20260923.md)为准。
 
 # Action controller
@@ -51,10 +53,9 @@ SENSOR_ACTION payload is `{u32 action,u32 value}`, with explicit sensor source00
 |5|Clear error bits|W1C mask|
 |16 (10h)|HMP pressure shadow at6134, then ACK-checked commit|IEEE754 F32 bits|
 |17 (11h)|AI8 target shadow at6620, then ACK-checked commit|signed microdegrees C|
-|32 (20h)|TFA range/mode at6514, wait driver ready|0 standby,1 low,2 high|
-|33 (21h)|TFA low-rate command at6518|1 single,2 continuous,3 self-test,4 version|
+|32/33 (20h/21h)|Retired SDFM300 legacy mode/command actions|UNSUPPORTED=13; no cfg/UART writes|
 
-TFA action33 confirms driver acceptance; its later device response is reported through normal records/status. Physical units and range enforcement belong to the existing device drivers.
+SDFM300 action32/33 are rejected before execution. Physical units and range enforcement belong to the existing device drivers.
 
 MOTOR_ACTION source0047 (SYSTEM/broadcast also allowed): action1 sets signed relative target pulse count, enables global/motor and starts motion; response means accepted, not completed. Action2 STOP waits motor busy clear. Action3 zeros position while idle. Action4 enables/disables with value0/1. Actions2/3 require value0. Driver retains DM422 pulse/guard timing ownership.
 

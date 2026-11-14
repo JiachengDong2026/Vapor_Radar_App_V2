@@ -1,3 +1,5 @@
+> **2026-11-15 SDFM300迁移**：当前距离设备为300米SDFM300，默认460800/8N1、单UART、4字节主动输出；旧模式/命令与LF管脚已撤回。寄存器、有效性、电气接线及上行兼容语义以[SDFM300接口](sensors/SDFM300.md)为准。历史板测和旧BIT仅覆盖当时设备。
+
 > 正式归档：2026-09-23。本文源于2026-09-16集成版本；旧文中的Test专用、V2只读和当轮未上板描述属于当时记录。当前目录、六路既有实测及本轮离线边界以[正式集成修订](../INTEGRATION_REVISION_20260923.md)为准。
 
 # cfg error reason extension, revision 1.4 — 2026-09-16
@@ -22,7 +24,7 @@ Address/RO classification has priority over parameter validation; an invalid par
 
 `reg_ctrl_crossbar.slave_error_code[N*4-1:0]` uses nibble k for slot k and emits `cfg_error_code[3:0]`. Its own missing-page/alignment rejection returns5 and deadline returns9. `cfg_bus_arbiter.m_error_code` is distributed only to the granted master's nibble in `s_error_code[N*4-1:0]`. `cmd_decoder.cfg_error_code` supplies READ/WRITE/MASK response status. `action_controller.cfg_error_code` is preserved in `action_status` and then returned by the decoder; opcode/source/sequence retain the original command identity.
 
-Member1 emits four nibbles in ADC0/ADC1/DILA0/DILA1 order; member3 emits seven in PTB/HMP/EPS/BMP/SHT/TFA/RD order. Member2's channel and dual wrappers merge the active page into one four-bit reason because page selection is exclusive. The leader top connects each physical slave slot to that member's corresponding nibble. The status poller consumes the existing error bit; it does not convert background polling into command responses.
+Member1 emits four nibbles in ADC0/ADC1/DILA0/DILA1 order; member3 emits seven in PTB/HMP/EPS/BMP/SHT/SDFM300/RD order. Member2's channel and dual wrappers merge the active page into one four-bit reason because page selection is exclusive. The leader top connects each physical slave slot to that member's corresponding nibble. The status poller consumes the existing error bit; it does not convert background polling into command responses.
 
 Older instantiations using named ports may omit the new output only if they do not need reasons. A command/action master must connect its new reason input; tying it to a generic5 is allowed only in legacy verification fixtures modeling a generic error. No generic fallback is used by the real system. Sequential writes retain earlier successful shadow writes if a later transfer fails, and no AUTO_COMMIT is issued after that failure. This extension does not change register addresses or message formats; it restores the already documented distinct VLP response codes.
 

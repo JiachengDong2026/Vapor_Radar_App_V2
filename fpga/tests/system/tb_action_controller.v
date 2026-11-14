@@ -129,8 +129,8 @@ module tb_action_controller;
         if(memory[32'h610c>>2]!=0)$fatal(1,"CLEAR_ERROR");
         base=writes;action(10,1,{64'h0000000100000000,64'h0001000000000000},0);
         if(writes-base!=6)$fatal(1,"MASK writes");expect_write(base+4,32'h403c,1);expect_write(base+5,32'h413c,0);
-        base=writes;action(11,16'h45,{64'd0,32'd1,32'd32},0);expect_write(base,32'h6514,1);
-        base=writes;action(11,16'h45,{64'd0,32'd2,32'd33},0);expect_write(base,32'h6518,2);
+        base=writes;action(11,16'h45,{64'd0,32'd1,32'd32},13);if(writes!=base)$fatal(1,"retired mode wrote bus");
+        base=writes;action(11,16'h45,{64'd0,32'd2,32'd33},13);if(writes!=base)$fatal(1,"retired command wrote bus");
         base=writes;action(12,16'h47,{64'd0,32'hffffffef,32'd1},0);
         expect_write(base,32'h6710,32'hffffffef);expect_write(base+3,32'h672c,1);
         if(!memory[32'h6708>>2][3])$fatal(1,"MOVE should acknowledge accepted motion");
@@ -142,7 +142,7 @@ module tb_action_controller;
         action(13,2,{64'd0,32'd1000,32'd4},0);if(memory[32'h1028>>2]!=1000)$fatal(1,"time timeout");
         // Validation, downstream error, stall timeout and cancellation have no new writes.
         oldwrites=writes;action(5,16'h50,128'h10000,4);action(6,1,{32'd0,32'd1,64'h10000},13);
-        action(10,1,{64'd1,64'd0},7);action(11,16'h45,{64'd0,32'd5,32'd33},7);action(16'h99,1,0,1);
+        action(10,1,{64'd1,64'd0},7);action(11,16'h45,{64'd0,32'd5,32'd33},13);action(16'h99,1,0,1);
         if(writes!=oldwrites)$fatal(1,"invalid action side effects");
         inject_error=1;
         for(reason_index=5;reason_index<=15;reason_index=reason_index+1)begin

@@ -119,8 +119,7 @@ module action_controller #(
                     5:begin end
                     16:if(source!=16'h41)validation_error=4;
                     17:if(source!=16'h46)validation_error=4;
-                    32:begin if(source!=16'h45)validation_error=4;if(args[63:32]>2)validation_error=7;end
-                    33:begin if(source!=16'h45)validation_error=4;if(args[63:32]<1 || args[63:32]>4)validation_error=7;end
+                    32,33:validation_error=13; // SDFM300 has no legacy mode/single-shot commands.
                     default:validation_error=13;
                 endcase
             end

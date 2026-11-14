@@ -13,7 +13,7 @@ module tb_hc2a_sensor_bank_select;
     wire [111:0] m_source_id,m_msg_id;
     wire [447:0] m_timestamp;
     wire hc2a_txd;
-    wire ptb_txd,rs485_txd,rs485_de,epsilon_txd,epsilon_correction_txd,tfa_txd;
+    wire ptb_txd,rs485_txd,rs485_de,epsilon_txd,epsilon_correction_txd,sdfm300_txd;
     wire scl_drive_low,sda_drive_low;
     wire [63:0] gnss_time_tag;
     wire gnss_time_tag_valid;
@@ -24,7 +24,7 @@ module tb_hc2a_sensor_bank_select;
         .cfg_ready(cfg_ready),.cfg_error(cfg_error),.cfg_rdata(cfg_rdata),.cfg_error_code(cfg_error_code),
         .ptb_rxd(1'b1),.ptb_txd(ptb_txd),.rs485_rxd(1'b1),.rs485_txd(rs485_txd),.rs485_de(rs485_de),
         .epsilon_rxd(1'b1),.epsilon_txd(epsilon_txd),.epsilon_correction_txd(epsilon_correction_txd),
-        .hc2a_rxd(1'b1),.hc2a_txd(hc2a_txd),.tfa_hf_rxd(1'b1),.tfa_lf_rxd(1'b1),.tfa_txd(tfa_txd),.scl_i(1'b1),.sda_i(1'b1),.bmp_int(1'b0),
+        .hc2a_rxd(1'b1),.hc2a_txd(hc2a_txd),.sdfm300_rxd(1'b1),.sdfm300_txd(sdfm300_txd),.scl_i(1'b1),.sda_i(1'b1),.bmp_int(1'b0),
         .scl_drive_low(scl_drive_low),.sda_drive_low(sda_drive_low),.gnss_time_tag(gnss_time_tag),.gnss_time_tag_valid(gnss_time_tag_valid),
         .m_valid(m_valid),.m_ready(7'h7f),.m_data(m_data),.m_keep(m_keep),.m_sof(m_sof),.m_last(m_last),
         .m_source_id(m_source_id),.m_msg_id(m_msg_id),.m_timestamp(m_timestamp),.m_cycle_id(m_cycle),.m_flags(m_flags),
@@ -45,9 +45,9 @@ module tb_hc2a_sensor_bank_select;
         read32(32'h6114,99);
         read32(32'h6118,0);
         read32(32'h6600,32'h00460200);
-        read32('h6500,'h00450100);
-        if(tfa_txd!==1 || rs485_de!==0 || hc2a_txd!==1)$fatal(1,"PORT_STARTUP");
-        $display("HC2A_SENSOR_BANK_SELECT_PASS checks=%0d HC2A_lane=1 AI8_lane=6 HC2A_CON11_AI8_CON19_TFA_CON21",checks);
+        read32('h6500,'h00450200);
+        if(sdfm300_txd!==1 || rs485_de!==0 || hc2a_txd!==1)$fatal(1,"PORT_STARTUP");
+        $display("HC2A_SENSOR_BANK_SELECT_PASS checks=%0d HC2A_lane=1 AI8_lane=6 HC2A_CON11_AI8_CON19_SDFM300_CON21",checks);
         $finish;
     end
     initial begin #1000000;$fatal(1,"HC2A_BANK_SELECT_TIMEOUT");end

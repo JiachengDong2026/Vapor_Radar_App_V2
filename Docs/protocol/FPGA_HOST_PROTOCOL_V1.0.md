@@ -1,3 +1,5 @@
+> **2026-11-15 SDFM300迁移**：当前距离设备为300米SDFM300，默认460800/8N1、单UART、4字节主动输出；旧模式/命令与LF管脚已撤回。寄存器、有效性、电气接线及上行兼容语义以[SDFM300接口](../integration/sensors/SDFM300.md)为准。历史板测和旧BIT仅覆盖当时设备。
+
 > **2026-11-13 正式版本**：默认 lane/source `0x0041` 为 HC2A，ID `0x00410106`、page `0x6100`、诊断 HCD2。VLP1 帧及 RH/T schema 1 保持兼容；旧 HMP 压力补偿/COMMIT 不适用。接口以[HC2A正式规范](../integration/sensors/HC2A_ROASCII.md)为准，整机身份与BIT见[最新说明](../LOWER_COMPUTER_RELEASE_20261113.md)。AI8 为配置单通道，八路需主机依次切换，非自动扫描。
 
 > 2026-10-27：HMP/AI8 与 CON19 恢复实测双设备实现，AI8 保留单通道 schema 2 和设温核验；撤回扫描、通用参数事务及独立 RD105，扩展能力 word 为 `0x29`。EPSILON MAIN 下行/RTCM 和 DLIA 截止频率扩展保留。当前接口及验证边界见[恢复记录](../INTEGRATION_REVISION_20261027_HMP_AI8.md)。
@@ -86,7 +88,7 @@
 | EPSILON | 0x0042 | 0x6200 | 2 | 0x1200 |
 | BMP390 | 0x0043 | 0x6300 | 3 | 0x1100，含标定元数据 |
 | SHT45 | 0x0044 | 0x6400 | 4 | 0x1100 |
-| TFA1500-L | 0x0045 | 0x6500 | 5 | 0x1100 |
+| SDFM300 | 0x0045 | 0x6500 | 5 | 0x1100 |
 | AI8 温控 | 0x0046 | 0x6600 | 6 | 0x1100 schema 2 |
 | 电机 | 0x0047 | 0x6700 | 7，仅相关动作 | 0x1300 |
 | LC0原始UART | 0x0048 | 0x6800 | 通过本页CONTROL操作 | 寄存器读取原始字节 |
@@ -231,7 +233,7 @@ module/source mask 位采用 `source_id & 0x3F`。广播/SYSTEM 的采集集合�
 
 START/STOP 选择 WMS/ADC/DILA 任一位会控制对应完整采集通道；START 预检并按顺序启用，不隐式提交参数；STOP 等待管线排空。SET_STREAM_MASK 的 raw_enable_mask 只允许 ADC bits32/33。正常 action 总超时默认 200000000 tick=2 s；top 给 decoder 300000000 tick=3 s 上限，最终主机等待还应覆盖 USB 排队/背压。实际实测工具等待命令应答上限为 10 s。不能从应答超时推断操作一定未生效。
 
-SENSOR_ACTION：1=enable(value0/1)，2=commit(value0)，3=clear FIFO(value0)，4=soft reset/disable(value0)，5=clear error(value为W1C mask)；16 仅 HMP0041，value 为压力 F32 位模式；17 仅 AI8 **0046**，value 为 signed 微摄氏度；32/33 仅 TFA0045，分别为模式0..2和命令1..4。当前0046是AI8，不能继续按旧RD105理解。MOTOR_ACTION：1=有符号相对目标并启动（成功表示接受，不表示运动完成），2=stop并等待idle(value0)，3=idle时位置清零(value0)，4=enable(value0/1)。TIME_ACTION：1=enable0/1，2=rearm(value0)，3=边沿0上升/1下降，4=timeout_ms范围1..3600000，5=W1C error mask。见 `rtl/action_controller.v:114` 和 `docs/ACTION_CONTROLLER.md:39`；HMP/电机实物验证状态应单独说明。
+SENSOR_ACTION：1=enable(value0/1)，2=commit(value0)，3=clear FIFO(value0)，4=soft reset/disable(value0)，5=clear error(value为W1C mask)；16 仅 HMP0041，value 为压力 F32 位模式；17 仅 AI8 **0046**，value 为 signed 微摄氏度；32/33已撤回，返回UNSUPPORTED=13，不写总线。当前0046是AI8，不能继续按旧RD105理解。MOTOR_ACTION：1=有符号相对目标并启动（成功表示接受，不表示运动完成），2=stop并等待idle(value0)，3=idle时位置清零(value0)，4=enable(value0/1)。TIME_ACTION：1=enable0/1，2=rearm(value0)，3=边沿0上升/1下降，4=timeout_ms范围1..3600000，5=W1C error mask。见 `rtl/action_controller.v:114` 和 `docs/ACTION_CONTROLLER.md:39`；HMP/电机实物验证状态应单独说明。
 
 ### status 错误枚举
 
@@ -340,7 +342,7 @@ C6 88 B7 DB
 | EPSILON | 0x0042 | 0x10 | 0x1200 | 无TLV，完整FDILink帧 | 0x6200 / 0x00420101 |
 | BMP390 | 0x0043 | 0x10 | 0x1100 | 1 | 0x6300 / 0x00430101 |
 | SHT45 | 0x0044 | 0x10 | 0x1100 | 1 | 0x6400 / 0x00440101 |
-| TFA1500-L | 0x0045 | 0x10 | 0x1100 | 1 | 0x6500 / 0x00450100 |
+| SDFM300 | 0x0045 | 0x10 | 0x1100 | 1 | 0x6500 / 0x00450200 |
 | AI8 | 0x0046 | 0x10 | 0x1100 | 2 | 0x6600 / 0x00460200 |
 
 0x0041 为未接入的 HMP；0x0046 当前必须按 AI8 schema 2 处理，不能套旧 RD105 schema 1。上述数据 `cycle_id=0xFFFFFFFF`。health `(type,msg)=(0x12,0x1400)/(0x12,0x1401)/(0x11,0x1402)` 不是测量样本。
@@ -386,9 +388,9 @@ payload 固定28字节，schema=1、count=3：
 
 三个length均4。FPGA已验证原始两组CRC，执行 `floor(rawT*175000/65535)-45000` 和 `clamp(floor(rawRH*125000/65535)-6000,0,100000)`；不要把湿度值再按65535缩放。heater非零同时使外层bit4置位，须标为加热测量；常规环境温湿度显示应保留该标识。
 
-### 5. TFA1500-L 距离
+### 5. SDFM300 距离
 
-payload固定12字节、schema=1、count=1，header offset4、value offset8，tag=0x0013/type=U32/length=4，数值已经是 **mm**。HF原始距离由FPGA乘10；LF使用配置的比例。主机不能再统一乘10。checksum/格式/无效距离由解析器处理，只有 distance_pulse 形成测量记录；寄存器 LAST_DISTANCE 的历史值不能代替当前有效样本。
+payload固定12字节、schema=1、count=1，header offset4、value offset8，tag=0x0013/type=U32/length=4，数值已经是 **mm**。SDFM300的u16厘米距离由FPGA乘10，接受5..30000 cm；FFFF或越界不发布距离。主机不能再统一乘10。checksum/格式/无效距离由解析器处理，只有 distance_pulse 形成测量记录；寄存器 LAST_DISTANCE 的历史值不能代替当前有效样本。
 
 ### 6. EPSILON FDILink与姿态
 
@@ -609,7 +611,7 @@ COMMAND_STATUS与TLV0x0467：bits3:0=result，bits7:4=transport_error，bits15:8
 | EPS | 0x6200..623C / 16 | +10 baud；+14/+18 ID0x40..5F/60..7F掩码；+1C raw_forward；+20 good_frames；+24 CRC计数；+28 sync事件数；+2C最后内部ID；+30/+34最近有效GNSS时间标签µs低/高字；+38 FIFO；+3C drop |
 | BMP | 0x6300..6340 / 17 | +10 I2C地址；+14 poll_ms；+18 OSR；+1C ODR；+20 IIR；+24 PWR；+28 chip_id；+2C压力ADC；+30温度ADC；+34 I2C错误数；+38 compensation_mode=0；+3C FIFO；+40 drop |
 | SHT | 0x6400..643C / 16 | +10固定I2C0x44；+14 poll_ms；+18 repeatability；+1C heater；+20 rawT；+24 rawRH；+28 CRC错误数；+2C I2C错误数；+30 serial低字；+34 serial高字固定0；+38 FIFO；+3C drop |
-| TFA | 0x6500..655C / 24 | +10 baud；+14 mode；+18 command（读0）；+1C距离mm；+20距离有效；+24 APD温度raw；+28帧数；+2C checksum错误；+30无效帧数；+34 FIFO；+38 drop；+3C timeout_ticks；+40超时数；+44 silence_ticks；+48 gap_ticks；+4C LF比例；+50 LF mask；+54设备status raw；+58 version命令；+5C格式错误数 |
+| SDFM300 | 0x6500页，稀疏地址 | +10接收baud；+1C距离mm；+20有效；+28帧；+2C校验错；+30无效；+34 FIFO；+38 drop；+3C在线超时tick；+40超时数；+48帧间隔tick；+5C格式错；已撤回地址返回5，禁止连续读取整页 |
 
 CRC/解析错误为历史诊断，不应由单个非零sticky位推出所有当前数据失效。禁用、复位、清FIFO和enable的外部行为各不相同：enable可触发设备初始化/测量命令，不能把寄存器写1叫“纯被动读取”。
 
@@ -621,12 +623,12 @@ CRC/解析错误为历史诊断，不应由单个非零sticky位推出所有当�
 |---|---|
 | PTB210 | 响应第一个UART起始脉冲 |
 | EPSILON | 完整FDILink帧起始0xFC字节的UART起始脉冲 |
-| TFA1500-L | 解析帧首字节的UART起始脉冲 |
+| SDFM300 | 解析帧首字节的UART起始脉冲 |
 | BMP390 | 优先此前捕获的INT上升沿；否则raw读取I2C请求被接受时；校准记录为校准发布时 |
 | SHT45 | 启动本次测量的I2C请求被接受时 |
 | AI8 | 七次读取完成、完整快照发布时；失败记录为失败完成时 |
 
-时间戳适合共同时间轴，但六设备的物理采样时刻与延迟并不相同。当前60秒记录实测：PTB57、EPS44629（其中AHRS3053）、BMP60样本+1元数据、SHT61、TFA42137、AI8 56 flagged样本。全部91087外层帧CRC通过、无framing issue；这一结论不消除AI8报警或赋予EPS GNSS有效性。
+时间戳适合共同时间轴，但六设备的物理采样时刻与延迟并不相同。历史旧设备60秒记录实测：PTB57、EPS44629（其中AHRS3053）、BMP60样本+1元数据、SHT61、TFA42137、AI8 56 flagged样本。全部91087外层帧CRC通过、无framing issue；这一结论不消除AI8报警或赋予EPS GNSS有效性。
 
 
 <a id="section-11"></a>
@@ -719,9 +721,9 @@ link_ready 表示 FX3 复位后曾观察到 DMA 就绪标志，不是持续在�
 | 5 | W 0x6004=1 | 启用PTB210 |
 | 6 | W 0x6604=1 | 启用AI8轮询；不会自动设温或启动加热 |
 | 7 | W 0x6204=1 | 启用EPSILON，已有导航流时被动接收 |
-| 8 | W 0x6504=1 | 启用TFA1500-L |
+| 8 | W 0x6504=1 | 启用SDFM300 |
 | 9 | 连续接收约60s，间隔读取STATUS/ERROR/计数 | 核对六种source均收到数据，记录CRC、错误、drops增量 |
-| 10 | W 0x6504=0，等待约1s并读STATUS | TFA退出并进入standby |
+| 10 | W 0x6504=0，等待约1s并读STATUS | SDFM300仅禁用本地接收，设备继续主动输出 |
 | 11 | W 0x6204、0x6004、0x6604、0x6304、0x6404=0 | 依次停止其余采集，每次确认写响应 |
 | 12 | 持续接收尾部数据，读取状态及B0/B1 | 禁用不会撤回已排队记录；存档并结束本次会话 |
 

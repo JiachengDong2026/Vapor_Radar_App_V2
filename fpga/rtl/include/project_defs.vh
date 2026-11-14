@@ -46,7 +46,7 @@
 `define SRC_EPSILON2            16'h0042
 `define SRC_BMP390              16'h0043
 `define SRC_SHT45               16'h0044
-`define SRC_TFA1500             16'h0045
+`define SRC_SDFM300             16'h0045
 // AI8 replaces RD105 in integration revision 20260916. Legacy alias is reserved.
 `define SRC_AI8                 16'h0046
 `define SRC_RD105               16'h0046

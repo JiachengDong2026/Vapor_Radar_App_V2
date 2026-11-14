@@ -14,7 +14,7 @@ import struct
 from analyze_capture import analyze as analyze_vlp
 
 SOURCES = {0x40: 'PTB210', 0x41: 'HMP', 0x42: 'EPSILON', 0x43: 'BMP390',
-           0x44: 'SHT45', 0x45: 'TFA1500', 0x46: 'AI8', 0x48: 'RD105'}
+           0x44: 'SHT45', 0x45: 'SDFM300', 0x46: 'AI8', 0x48: 'RD105'}
 EXPECTED = [0x40, 0x42, 0x43, 0x44, 0x45, 0x46]
 ERRORS = ['timeout', 'protocol_or_crc', 'fifo_overflow', 'device_not_ready',
           'config_range', 'cdc_or_internal', 'device_reported_error', 'data_format']

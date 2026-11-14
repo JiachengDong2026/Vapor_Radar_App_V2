@@ -2,7 +2,7 @@
 module tb_vapor_clock_integration;
     reg clk=0;always #5 clk=~clk;
     wire rst;wire [31:0] gpif_dq;tri [12:0] ctl;wire pclk,fx3_rst;
-    tri1 scl,sda;wire ptb_rx,ptb_tx,hmp_rx,hmp_tx,hmp_de,eps_tx,tfa_hf,tfa_lf,tfa_tx,rd_rx,rd_tx;
+    tri1 scl,sda;wire ptb_rx,ptb_tx,hmp_rx,hmp_tx,hmp_de,eps_tx,sdfm300_rx,sdfm300_tx,rd_rx,rd_tx;
     reg eps_rx=1,sync_pulse=0;
     vapor_lidar_top #(.SIMULATION(1),.GPIF_CLK_HZ(50000000),.RAW0_MAX_SAMPLES(32),.RAW1_MAX_SAMPLES(32)) dut(
         .LC_UART_RXD(2'b11),.LC_UART_TXD(),
@@ -11,13 +11,13 @@ module tb_vapor_clock_integration;
         .FPGA_RS232A_RXD(ptb_rx),.FPGA_RS232A_TXD(ptb_tx),
         .FPGA_RS485_RXD_L(hmp_rx),.FPGA_RS485_TXD_L(hmp_tx),.FPGA_RS485_DERE_L(hmp_de),
         .FPGA_RS232B_RXD(eps_rx),.FPGA_RS232B_TXD(eps_tx),.FPGA_RS422_RXD_L(1'b1),
-        .FPGA_UART_RXD_L(tfa_hf),.TFA_LF_RXD(tfa_lf),.FPGA_UART_TXD_L(tfa_tx),
+        .FPGA_UART_RXD_L(sdfm300_rx),.FPGA_UART_TXD_L(sdfm300_tx),
         .SYNC_IN(sync_pulse),.BMP390_INT(1'b0),.I2C_SCL(scl),.I2C_SDA(sda),
         .dac_sdo(2'd0),.ADC_AD4630_BUSY(1'b0),.ADC_AD4630_SDO(8'd0),
         .ADC_ADC3660_DA5(1'b0),.ADC_ADC3660_DA6(1'b0),.ADC_ADC3660_DB5(1'b0),.ADC_ADC3660_DB6(1'b0),
         .ADC_ADC3660_DCLK(1'b0),.ADC_ADC3660_FCLK(1'b0));
     assign rst=dut.rst_sensors_n;
-    assign ptb_rx=1'b1;assign hmp_rx=1'b1;assign tfa_hf=1'b1;assign tfa_lf=1'b1;assign rd_rx=1'b1;
+    assign ptb_rx=1'b1;assign hmp_rx=1'b1;assign sdfm300_rx=1'b1;assign rd_rx=1'b1;
     reg [31:0] commands[0:4095];reg [7:0] command_bytes[0:127],frame[0:16383];
     integer cmd_read=0,cmd_write=0,sequence=0,seen_sequence=0,responses=0,frames=0;
     integer space=64,cooldown=0,read_delay=0,tick=0,frame_pos=0,addr_age=0;

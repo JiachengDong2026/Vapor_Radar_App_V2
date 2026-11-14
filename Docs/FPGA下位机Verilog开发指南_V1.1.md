@@ -1,6 +1,8 @@
+> **2026-11-15 SDFM300迁移**：当前距离设备为300米SDFM300，默认460800/8N1、单UART、4字节主动输出；旧模式/命令与LF管脚已撤回。寄存器、有效性、电气接线及上行兼容语义以[SDFM300接口](integration/sensors/SDFM300.md)为准。历史板测和旧BIT仅覆盖当时设备。
+
 > 2026-10-27 LC双路UART修订：CON11 pin5/7现用于LC0、pin6/8用于LC1，替代本文旧RD105预留；当前接口以 [LC_DUAL_UART_20261027.md](integration/LC_DUAL_UART_20261027.md) 为准。
 
-> **正式 HC2A GPIO 修订（2026-11-13）**：CON11-13 / AK13 为 HC2A_UART_TXD，CON11-15 / AL13 为 HC2A_UART_RXD，均3.3 V；HC2A替换逻辑HMP通道0x0041但不占CON19。TFA1500继续使用CON21及CON11-4，AI8保持CON19。详见 `integration/sensors/HC2A_ROASCII.md`；历史HMP配置与压力补偿不适用。
+> **正式 HC2A GPIO 修订（2026-11-13）**：CON11-13 / AK13 为 HC2A_UART_TXD，CON11-15 / AL13 为 HC2A_UART_RXD，均3.3 V；HC2A替换逻辑HMP通道0x0041但不占CON19。SDFM300使用CON21单UART，CON11-4撤回，AI8保持CON19。详见 `integration/sensors/HC2A_ROASCII.md`；历史HMP配置与压力补偿不适用。
 > 2026-10-04：已将2026-10-02上板验证的DLIA精度版本同步至正式V2，当前ID/profile为0101/00040101。历史构建记录保留；本次范围及验证见[同步记录](MERGE_MANIFEST_20261004.md)。
 
 > 2026-09-28 更新：正式工程第二路 ADC 已改用 CON16 / AD4630 CH1，与 ADC0 共用采样时钟；当前映射和寄存器语义以[双低速 ADC 修订](INTEGRATION_REVISION_20260928_DUAL_AD4630.md)为准。
@@ -122,7 +124,7 @@ rtl/
 │   ├── epsilon_rs422.v
 │   ├── bmp390_driver.v
 │   ├── sht45_driver.v
-│   ├── tfa1500_uart.v
+│   ├── sdfm300_uart.v
 │   ├── rd105_uart.v
 │   └── sensor_hub.v
 ├── motor/
@@ -147,7 +149,7 @@ sim/
 ├── tb_epsilon_rs422.v
 ├── tb_bmp390_driver.v
 ├── tb_sht45_driver.v
-├── tb_tfa1500_uart.v
+├── tb_sdfm300_uart.v
 ├── tb_rd105_uart.v
 ├── tb_stepper_ctrl.v
 ├── tb_protocol.v
@@ -324,7 +326,7 @@ input wire [31:0] time_sync_seq;
 | `0x0042` | EPSILON2 |
 | `0x0043` | BMP390 |
 | `0x0044` | SHT45 |
-| `0x0045` | TFA1500-L |
+| `0x0045` | SDFM300 |
 | `0x0046` | RD105 |
 | `0x0047` | STEPPER |
 | `0x0050` | DIAGNOSTICS |
@@ -483,7 +485,7 @@ FPGA 如果不做物理量补偿/换算，可以只上传 vendor raw field + `ra
 | 设备 PHY | EPSILON2 | RS422 + SYNC | FDILink + 1PPS/SYNC | `epsilon_rs422`/`time_sync_core` | 否 |
 | 设备 PHY | BMP390 | I²C | Bosch register protocol | `bmp390_driver` | 否 |
 | 设备 PHY | SHT45 | I²C | Sensirion command + per-word CRC | `sht45_driver` | 否 |
-| 设备 PHY | TFA1500-L | TTL UART | vendor binary protocol | `tfa1500_uart` | 否 |
+| 设备 PHY | SDFM300 | TTL UART | vendor binary protocol | `sdfm300_uart` | 否 |
 | 设备 PHY | RD105 | TTL UART | Modbus RTU（首选）/ASCII | `rd105_uart` | 否 |
 | 设备 PHY | DM422 | PUL/DIR/ENA | pulse/direction timing | `stepper_ctrl` | 否 |
 | 内部控制 | 所有 RTL | 32-bit synchronous | `cfg_bus` | `reg_ctrl_crossbar` | 是 |
@@ -493,7 +495,7 @@ FPGA 如果不做物理量补偿/换算，可以只上传 vendor raw field + `ra
 | FPGA-FX3 | XCKU11P↔FX3 | 32-bit GPIF II | VLP-GPIF V1.0 | `usb_fx3_gpif_if` | 仅 USB 层 |
 | FPGA-PC | FX3 USB Bulk | byte stream | VLP1 | `cmd_decoder`/`data_packetizer`/Qt | 对外接口 |
 
-**封装原则：设备原生协议只存在于对应 driver 内。**例如 HMP 的 Modbus 地址、EPSILON 的 FDILink 帧头、TFA 的 0x55/0x5C 都不得泄漏到 DILA、USB packetizer 或其他传感器模块；这些上层模块只看标准寄存器和标准数据流。
+**封装原则：设备原生协议只存在于对应 driver 内。**例如 HMP 的 Modbus 地址、EPSILON 的 FDILink 帧头、SDFM300 的 0x55/0x5C 都不得泄漏到 DILA、USB packetizer 或其他传感器模块；这些上层模块只看标准寄存器和标准数据流。
 
 ---
 
@@ -778,7 +780,7 @@ input  wire        tx_last;
 | `0x6200` | EPSILON2 |
 | `0x6300` | BMP390 |
 | `0x6400` | SHT45 |
-| `0x6500` | TFA1500-L |
+| `0x6500` | SDFM300 |
 | `0x6600` | RD105 |
 | `0x6700` | STEPPER |
 | `0x7000` | STREAM/BUFFER |
@@ -1042,19 +1044,9 @@ DILA 参数在对应 WMS 周期边界 commit；phase-lock 模式下基频来自 
 | `0x6430` | SERIAL_LO | RO | 若读取 serial |
 | `0x6434` | SERIAL_HI | RO | 若读取 serial |
 
-# 7.16 TFA1500-L `0x6500`
+# 7.16 SDFM300 `0x6500`
 
-| 地址 | 名称 | R/W | 说明 |
-|---:|---|---|---|
-| `0x6510` | BAUD | RW | 高频默认 500000；低频 >=115200 |
-| `0x6514` | RANGE_MODE | RW | 0=standby；1=low-freq；2=high-freq |
-| `0x6518` | COMMAND | WO | single/continuous/self-test/version |
-| `0x651C` | LAST_DISTANCE_MM | RO | 最近有效距离 |
-| `0x6520` | DISTANCE_VALID | RO | 0/1 |
-| `0x6524` | APD_TEMP_RAW | RO | 若低频帧提供 |
-| `0x6528` | RX_FRAME_COUNT | RO | 有效帧 |
-| `0x652C` | CHECKSUM_ERR_COUNT | RO | checksum |
-| `0x6530` | HF_INVALID_COUNT | RO | 0x3FFFFF 等无效目标 |
+ID_VERSION=0x00450200；完整稀疏寄存器表见[SDFM300接口](integration/sensors/SDFM300.md)。BAUD默认460800，仅禁用态可改。+14/+18等旧模式命令地址读写返回5；CONTROL不支持COMMIT。距离u32毫米、有效位、帧/校验/无效/drop/超时计数保留。
 
 # 7.17 RD105 `0x6600`
 
@@ -1598,35 +1590,9 @@ inout wire i2c_sda;
 
 ---
 
-# 8.18 `tfa1500_uart`
+# 8.18 `sdfm300_uart`
 
-### 物理模式
-
-TFA1500-L 有高频和低频工作方式，项目分配：
-
-- 高频数据 -> 板载 TTL UART RX；
-- 控制 TX/RX 通过 TTL UART；
-- 低频数据可用额外 GPIO RX。
-
-### 高频模式
-
-- 默认 500000 bps；8N1；
-- start：`55 AA CB CC CC CC CC FB`；
-- stop：`55 AA CC CC CC CC CC FC`；
-- 数据 5 B：header `0x5C` + 3-byte little-endian distance(cm) + checksum；
-- checksum = 对 3 个 distance byte 求和、按位取反的低 8 bit；
-- distance=0x3FFFFF 为无效。
-
-### 低频模式
-
-- baud >=115200；
-- frame header 0x55；
-- command + length + data + XOR checksum；
-- continuous ranging command：`55 02 02 20 00 75`。
-
-### V1.1 driver
-
-支持 high/low 两状态解析，并统一输出 `distance_mm`。模式切换时先停止当前模式、等待接收静默，再切 RX source，防止残留字节被误解析。
+单UART被动接收SDFM300的`5C + u16厘米LE + ~(low+high)`四字节流；默认460800/8N1。上电主动输出，自动1kHz/50Hz；不发送启停或频率设置。FFFF为无回波，5..30000 cm乘10发布毫米，时间戳为帧头起始位。详见[SDFM300接口](integration/sensors/SDFM300.md)。
 
 ---
 
@@ -2069,7 +2035,7 @@ RESET
 | EPSILON2 | CON24 RS422 + CON22 SYNC | `epsilon_rs422` + time |
 | BMP390 | CON11 I²C | `bmp390_driver` |
 | SHT45 | CON11 I²C | `sht45_driver` |
-| TFA1500-L | CON21 TTL UART + CON11 pin4 LF RX | `tfa1500_uart` |
+| SDFM300 | CON21 单UART；AP13撤回 | `sdfm300_uart` |
 | RD105 | CON11 pin5/7 GPIO UART | `rd105_uart` |
 | DM422 | CON11 pin9/10/11 + 外置驱动级 | `stepper_ctrl` |
 
@@ -2094,18 +2060,13 @@ RESET
 | BMP390 | INT | CON11 pin2 | AN13，可选 |
 | SHT45 | SCL | CON11 pin1 | 与 BMP 共 I²C |
 | SHT45 | SDA | CON11 pin3 | 地址 0x44 |
-| TFA1500-L | pin1 GND | CON21 pin4 | GND |
-| TFA1500-L | pin3 HF TX | CON21 pin1 | -> FPGA UART RX |
-| TFA1500-L | pin4 LF TX | CON11 pin4 | -> AP13 |
-| TFA1500-L | pin5 RX | CON21 pin2 | <- FPGA UART TX |
-| TFA1500-L | pin6 Power_EN | CON21 pin3 | FPGA UART EN |
 | RD105 | TTL RX | CON11 pin5 | <- AM12；设备侧 pin 号待线束确认 |
 | RD105 | TTL TX | CON11 pin7 | -> AN12；设备侧 pin 号待线束确认 |
 | DM422 | PUL drive | CON11 pin9 -> 外置驱动级 | AM11，不直接接光耦输入 |
 | DM422 | ENA drive | CON11 pin10 -> 外置驱动级 | AK12 |
 | DM422 | DIR drive | CON11 pin11 -> 外置驱动级 | AN11 |
 
-PTB/HMP/EPSILON/TFA 的设备供电按各自手册/现有线束提供，**不得从普通 FPGA I/O 引脚供电**。
+PTB/HMP/EPSILON/SDFM300 的设备供电按各自手册/现有线束提供，**不得从普通 FPGA I/O 引脚供电**。
 
 # 11.2 固定串口/SYNC FPGA pins
 
@@ -2120,8 +2081,8 @@ PTB/HMP/EPSILON/TFA 的设备供电按各自手册/现有线束提供，**不得
 | `FPGA_RS485_TXD_L` | AN16 | HMP |
 | `FPGA_RS485_RXD_L` | AM17 | HMP |
 | `FPGA_RS485_DERE_L` | AN19 | HMP DE/RE |
-| `FPGA_UART_TXD_L` | AP14 | TFA control TX |
-| `FPGA_UART_RXD_L` | AN14 | TFA HF RX |
+| `FPGA_UART_TXD_L` | AP14 | SDFM300 TX idle high |
+| `FPGA_UART_RXD_L` | AN14 | SDFM300 RX |
 | `FPGA_UART_EN_L` | AK16 | TTL UART enable |
 | `SYNC_IN` | AP18 | GNSS sync/1PPS |
 
@@ -2132,7 +2093,7 @@ PTB/HMP/EPSILON/TFA 的设备供电按各自手册/现有线束提供，**不得
 | 1 | `GPIO_BANK88_LP1` | AH13 | I²C SCL |
 | 2 | `GPIO_BANK88_LP2` | AN13 | BMP390 INT（可选） |
 | 3 | `GPIO_BANK88_LN1` | AJ13 | I²C SDA |
-| 4 | `GPIO_BANK88_LN2` | AP13 | TFA LF RX |
+| 4 | `GPIO_BANK88_LN2` | AP13 | unused (former LF RX) |
 | 5 | `GPIO_BANK88_LP3` | AM12 | LC0 TX -> LC RX1 |
 | 7 | `GPIO_BANK88_LN3` | AN12 | LC0 RX <- LC TX1 |
 | 9 | `GPIO_BANK88_LP5` | AM11 | MOTOR_PUL |
@@ -2271,7 +2232,7 @@ WMS1 -> DAC1 -> laser1                 detector1 -> ADC1 capture FIFO|
   |                                                   +--> DILA1 ----+
   +--------------------------------------------------->+--> RAW ------+
                                                                    |
-PTB/HMP/EPS/BMP/SHT/TFA/RD -> per-source msg FIFO -> sensor_hub ---+
+PTB/HMP/EPS/BMP/SHT/SDFM300/RD -> per-source msg FIFO -> sensor_hub ---+
 Stepper/status/time event -----------------------------------------+
                                                                    v
                                                            stream_arbiter
@@ -2464,7 +2425,7 @@ PC/模拟 host -> VLP CMD -> cmd_decoder -> reg -> RESP，全链路仿真。
 - HMP；
 - EPSILON + 1PPS；
 - BMP/SHT 共总线；
-- TFA high/low；
+- SDFM300 passive RX；
 - RD105；
 - motor。
 
@@ -2515,7 +2476,7 @@ PC/模拟 host -> VLP CMD -> cmd_decoder -> reg -> RESP，全链路仿真。
 4. AD4630 实际采用的串行输出 lane 配置与目标采样率。
 5. 两路 WMS 最终最高正弦频率与期望每周期 DAC 点数，以判断 AD5791 + 板上约 257 kHz LPF 是否完全满足；若不足，启用 AD3552R 预留路径。
 6. RD105 TTL 电平是否与 Bank88 3.3 V 直接兼容；不兼容时使用外置 level shifter。
-7. TFA1500-L 设备侧连接器 pinout 与高/低频物理输出脚，FPGA 侧分配已冻结，但线束必须按设备实物说明确认。
+7. SDFM300 使用5针线束、单TX、独立9–36V供电；接线前核对UART逻辑电压与板载转换接口，禁止沿用旧6针线束。
 8. EPSILON2 使用哪个 COMM 口输出 FDILink，以及该口实际配置是否为 921600/Main 或 NAV。
 
 这些事项不会改变内部统一协议和寄存器架构，只影响 PHY/driver 层，因此可以并行开发其余模块。
@@ -2559,7 +2520,7 @@ WMS0 synthetic/debug source
 - 两路 ADC 独立采集并统一输出；
 - 每 WMS 周期 raw ADC 仅一个 timestamp + cycle_id；
 - DILA 输出 1f/2f 且参数可通过寄存器配置；
-- PTB/HMP/EPS/BMP/SHT/TFA/RD105/stepper 全部接入标准接口；
+- PTB/HMP/EPS/BMP/SHT/SDFM300/RD105/stepper 全部接入标准接口；
 - GNSS 1PPS 与 local tick 有同步 event；
 - VLP1 CMD/RESP/DATA/EVENT/STATUS 全部可解析；
 - Qt 可读写任意合法寄存器；
@@ -2682,7 +2643,7 @@ end
 - HMP Series Quick Guide；
 - BMP390 资料；
 - SHT45/SHT4x 资料；
-- TFA1500-L 测距雷达资料；
+- SDFM300 测距雷达资料；
 - RD105 通讯协议 v1.3.0；
 - DM422 驱动器说明书；
 - EPSILON/EPSILON2 使用手册；

@@ -1,3 +1,5 @@
+> 2026-11-15：当前测距设备为[SDFM300](../../Docs/integration/sensors/SDFM300.md)，0x0045距离毫米TLV兼容；0x6500 ID=0x00450200，旧模式/命令地址已撤回。历史BIT/板测名称仅代表当时设备。
+
 # VaporMonitor V0.2.5 上位机参考源码
 
 2026-10-11 从外部测试工程 `qt_vapor_monitor_volts_20261009` 同步。供正式上位机开发人员参考、复用与继续开发；本次同步未重新进行实板验收。
@@ -14,7 +16,7 @@
 | `bridge/VaporUsbBridge.cs` | CyUSB 收发与本机 IPC；不直接操作界面 |
 | `tests/` | 离线单元测试与需显式执行的实板诊断源码 |
 
-支持 PTB210、TFA1500-L、EPSILON、AI8、SHT45、BMP390，两路 AD4630、H1/H2 和峰值，以及双路 WMS/DAC。HMP、电机不在本界面范围。详细交接见 [正式上位机开发说明](../../Docs/protocol/QT_HOST_HANDOFF_20261011.md)。
+支持 PTB210、SDFM300、EPSILON、AI8、SHT45、BMP390，两路 AD4630、H1/H2 和峰值，以及双路 WMS/DAC。HMP、电机不在本界面范围。详细交接见 [正式上位机开发说明](../../Docs/protocol/QT_HOST_HANDOFF_20261011.md)。
 
 ## 依赖
 

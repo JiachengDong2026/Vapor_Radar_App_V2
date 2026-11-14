@@ -15,7 +15,7 @@
 |2/0042/6200|EPSILON|CON14 MAIN RS232，921600/8N1|用户报告通信通过，室内无天线未验证定位|
 |3/0043/6300|BMP390|共享I2C，0x76|用户报告独立实测通过|
 |4/0044/6400|SHT45|共享I2C，0x44|用户报告独立实测通过|
-|5/0045/6500|TFA1500-L|CON21 TTL及LF输入|用户报告独立实测通过|
+|5/0045/6500|SDFM300|CON21单UART|本次仅离线验证，旧设备实测不适用|
 |6/0046/6600|AI8 AI-8288|CON19共享RS485|用户报告独立实测通过|
 |0047/6700|电机|原GPIO分配|尚未实测；复位禁用|
 
@@ -33,7 +33,7 @@ EPSILON启用后先被动接收有效FDILink，约2.5秒未收到有效帧才执
 
 ## 配置与数据路径
 
-所有驱动复位后默认禁用，通过VLP配置/START启用。EPSILON为P1流，其余传感器P2；FIFO与hub/packetizer保留背压与丢包计数。I2C只有一个物理master，BMP390和SHT45经仲裁共享。能力位0..15依次为ADC0/1、DILA0/1、WMS0/1、DAC0/1、PTB210、HMP、EPSILON、BMP390、SHT45、TFA1500、AI8、电机；表示已实现，不代表实物在线。
+所有驱动复位后默认禁用，通过VLP配置/START启用。EPSILON为P1流，其余传感器P2；FIFO与hub/packetizer保留背压与丢包计数。I2C只有一个物理master，BMP390和SHT45经仲裁共享。能力位0..15依次为ADC0/1、DILA0/1、WMS0/1、DAC0/1、PTB210、HMP、EPSILON、BMP390、SHT45、SDFM300、AI8、电机；表示已实现，不代表实物在线。
 
 命令decoder、action与status poller经事务仲裁访问21页crossbar。cfg错误码沿用地址5、只读6、范围7、忙8、超时9。动作最长2秒，decoder3秒；设温最终结果可读664C/6654，不能仅看WRITE shadow返回成功。
 

@@ -84,6 +84,13 @@ class SensorAnalysisTests(unittest.TestCase):
         self.assertEqual(result['sources']['0x0046']['valid_samples'], 0)
         self.assertEqual(result['sources']['0x0046']['values'], {})
 
+    def test_sdfm300_manual_distance_keeps_mm_contract(self):
+        result = analyze(frame(0x45, record((0x13, 3, 43540))))
+        sensor = result['sources']['0x0045']
+        self.assertEqual(sensor['name'], 'SDFM300')
+        self.assertEqual(sensor['valid_samples'], 1)
+        self.assertEqual(sensor['values']['distance_mm']['last'], 43540)
+
     def test_outer_crc_and_inner_crc_failures(self):
         raw = bytearray(frame(0x45, record((0x13, 3, 1234))))
         raw[48] ^= 1

@@ -2,7 +2,7 @@
 module tb_vapor_sensor_integration #(parameter integer GPIF_TEST_HZ=50000000);
     reg clk=0;always #5 clk=~clk;
     wire rst;wire [31:0] gpif_dq;tri [12:0] ctl;wire pclk,fx3_rst;
-    tri1 scl,sda;wire ptb_rx,ptb_tx,hmp_rx,hmp_tx,hmp_de,eps_tx,tfa_hf,tfa_lf,tfa_tx;
+    tri1 scl,sda;wire ptb_rx,ptb_tx,hmp_rx,hmp_tx,hmp_de,eps_tx,sdfm300_rx,sdfm300_tx;
     reg eps_rx=1,sync_pulse=0;
     // This legacy integration bench drives the shared HMP/AI8 RS485 model.
     // HC2A mode is covered by tb_hc2a_vapor_lidar_top and its dedicated BFM tests.
@@ -13,7 +13,7 @@ module tb_vapor_sensor_integration #(parameter integer GPIF_TEST_HZ=50000000);
         .FPGA_RS232A_RXD(ptb_rx),.FPGA_RS232A_TXD(ptb_tx),
         .FPGA_RS485_RXD_L(hmp_rx),.FPGA_RS485_TXD_L(hmp_tx),.FPGA_RS485_DERE_L(hmp_de),
         .FPGA_RS232B_RXD(eps_rx),.FPGA_RS232B_TXD(eps_tx),.FPGA_RS422_RXD_L(1'b1),
-        .FPGA_UART_RXD_L(tfa_hf),.TFA_LF_RXD(tfa_lf),.FPGA_UART_TXD_L(tfa_tx),
+        .FPGA_UART_RXD_L(sdfm300_rx),.FPGA_UART_TXD_L(sdfm300_tx),
         .SYNC_IN(sync_pulse),.BMP390_INT(1'b0),.I2C_SCL(scl),.I2C_SDA(sda),
         .dac_sdo(2'd0),.ADC_AD4630_BUSY(1'b0),.ADC_AD4630_SDO(8'd0),
         .ADC_ADC3660_DA5(1'b0),.ADC_ADC3660_DA6(1'b0),.ADC_ADC3660_DB5(1'b0),.ADC_ADC3660_DB6(1'b0),
@@ -35,9 +35,9 @@ module tb_vapor_sensor_integration #(parameter integer GPIF_TEST_HZ=50000000);
         .scl(scl),.sda(sda),.rst_n(rst),.inject_nack(1'b0),.inject_bad_crc(1'b0),.transactions(bt),.measurements(bs),.last_command(bc));
     i2c_sensor_model #(.NS_PER_LOGICAL_MS(1000000))sht(
         .scl(scl),.sda(sda),.rst_n(rst),.inject_nack(1'b0),.inject_bad_crc(1'b0),.transactions(st),.measurements(ss),.last_command(sc));
-    tfa1500_model tfa(.hf_rxd(tfa_hf),.lf_rxd(tfa_lf));
+    sdfm300_model sdfm300(.uart_rxd(sdfm300_rx));
     reg run_sources=0;
-    initial begin wait(run_sources);forever begin tfa.high_frame(209,0);#900000;end end
+    initial begin wait(run_sources);forever begin sdfm300.distance_frame(209,0);#900000;end end
     reg [7:0] eps_frame[0:109];integer e,n;
     reg [7:0] h;reg [15:0] c;
     function [7:0] crc8;input [7:0] a,b;integer j;reg [7:0] v;begin v=a^b;for(j=0;j<8;j=j+1)v=v[0]?(v>>1)^8'h8c:v>>1;crc8=v;end endfunction
@@ -108,7 +108,7 @@ module tb_vapor_sensor_integration #(parameter integer GPIF_TEST_HZ=50000000);
                 if(nbytes!=110)$fatal(1,"EPS raw length");
                 for(j=0;j<110;j=j+1)if(frame[40+j]!==eps_frame[j])$fatal(1,"EPS raw physical byte %d",j);
             end
-            if(lane==5&&(nbytes!=12||u32(48)!=2090))$fatal(1,"TFA physical model value mismatch");
+            if(lane==5&&(nbytes!=12||u32(48)!=2090))$fatal(1,"SDFM300 physical model value mismatch");
             if(lane==6)begin
                 if(nbytes!=108||u32(40)!=32'h000d0002||u32(48)!=244||u32(56)!=500||u32(64)!=450||
                     u32(72)!=12800||u32(80)!=21||u32(88)!=1||u32(96)!=32'h301)
