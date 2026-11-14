@@ -90,4 +90,6 @@ python -B fpga/scripts/run_regression.py --output E:/Documents/Vapor_Lc_App_Test
 
 2026-11-14 构建续验：Enterprise Vivado 2025.1 已识别 KU11P，但源 a40f2ed 的整机与公共综合均因 Synthesis/xcku11p 许可证 checkout 失败（Common 17-345）停止。未生成新 BIT，WNS/TNS、DRC、CDC 无新结果。详细证据及目录见 `Docs/protocol/AI8_SCAN_CONTRACT_20261114.md` 的 Enterprise 构建续验节。
 
-2026-11-14 最终续验：AI8扫描新镜像已在独立同轮重新签核后生成；接口能力0x2B，默认schema2，扫描schema3。BIT不入库、未烧录、未实板验收。详见 `Docs/protocol/AI8_BUILD_QUALIFICATION_20261114.md`；许可证路径与checker预算问题已解决，原失败证据保留。
+2026-11-14 最终续验：AI8扫描新镜像已在独立同轮重新签核后生成；接口能力0x2B，默认schema2，扫描schema3。BIT不入库。许可证路径与checker预算问题已解决，原失败证据保留。
+
+2026-11-14 后续实板加载：北京时间16:52:16，SHA256为 `b3de7ad484a442db20bc86e7e0425a6c912b5fc6a8d961e5c7103460c353adab` 的新BIT已通过JTAG加载到唯一XCKU11P的易失SRAM，DONE/EOS及配置错误检查通过；未写Flash/FX3 EEPROM。随后WinUSB只读身份检查通过：`04B4:00F1`、GP01/0x10AC、capability扩展0x2B、AI8 feature0x0B，AI8禁用且扫描为0；151帧CRC错误0。USB已释放，八路实物采集尚未启用或验收，旧镜像的历史板测结论不自动延续。证据见 [AI8构建与加载记录](protocol/AI8_BUILD_QUALIFICATION_20261114.md)，原始日志及生成物仅留本机Test目录。

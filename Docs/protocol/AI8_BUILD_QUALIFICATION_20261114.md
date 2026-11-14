@@ -1,6 +1,6 @@
 # AI8 扫描镜像构建与同轮重新签核（2026-11-14）
 
-结论：本轮新实现已生成可供后续实板测试的 BIT，未烧录、未实板验收。接口见 [AI8_SCAN_CONTRACT_20261114.md](AI8_SCAN_CONTRACT_20261114.md)。旧 HCD2 的硬件验收不覆盖本镜像。
+结论：本轮新 BIT 已于北京时间 2026-11-14 16:52:16 通过 JTAG 加载到 FPGA SRAM，配置状态及 USB 只读身份检查通过；尚未启用或验收八路实物采集，未写 Flash/FX3 EEPROM。接口见 [AI8_SCAN_CONTRACT_20261114.md](AI8_SCAN_CONTRACT_20261114.md)。旧 HCD2 的硬件验收不覆盖本镜像。
 
 ## 来源与产物
 
@@ -47,3 +47,11 @@ CDC证据在 c 轮 `cdc_review`。Critical端点为power_count_reg[7]/C→u_cloc
 公共smoke综合完成：setup WNS8.439/TNS0；未布线hold WHS-0.089/THS-63.518，顶层I/O未指定delay，不能当成整机签核。公共CDC含2条CDC-6 Warning和32条CDC-15 Warning，分别为Gray同步/握手数据结构。整机结果以上表为准。
 
 复用此前12项behavioral仿真（RTL未变），最终BASELINE_STATIC_CHECK_PASS。本轮没有历史stepper checker，不将旧STEPPER_TIMING记录当作本轮DM422管脚签核。板级flight/load/ppm仍为工程预算而非实测；内部时序裕量很小，新源码或工具变化必须重新验证。
+
+## JTAG 加载与只读身份检查（2026-11-14）
+
+按用户后续测试安排，核对上述 BIT 的 SHA256 和唯一 XCKU11P 后执行 `program_hw_devices`，于北京时间 16:52:16 成功结束。加载目标是易失 SRAM，未固化到 Flash，也未写 FX3 EEPROM。DONE 内部信号、DONE 引脚及 EOS 均为 1；CRC、IDCODE、SECURITY、BAD_PACKET 错误均为 0。
+
+重载后唯一 FX3 仍枚举为 `04B4:00F1`，使用 WinUSB。只读探针结果为 `AI8_NEW_BIT_READONLY_USB_PROBE_PASS`：B1 标识为 `GP01 / 0x10AC`，B0 的 PIB/DMA 错误均为 0；capability 扩展实读 `0x2B`，`0x6600=0x00460200`、`0x6604=0`、`0x6668=0`、`0x66FC=0x0B`。接收 151 帧，CRC 错误为 0，检查后已释放 USB。
+
+原始证据仅留在本机 `D:/Project/Test/ai8_jtag_program_20261114_a/program_console.log`、`usb_transport_probe.log` 和 `usb_identity_result.json`，不纳入 Git。此次只验证 FPGA 配置及 USB/固件身份，没有启用采集或任何输出、修改仪表参数，不能据此宣布八路实物采集或整机功能验收通过。AI8 当前禁用、扫描默认关闭；下一步需停用态勾选八路扫描，再显式启用并逐路核对样本、计数和报警。
