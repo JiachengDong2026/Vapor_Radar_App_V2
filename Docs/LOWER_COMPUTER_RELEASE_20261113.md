@@ -87,3 +87,5 @@ python -B fpga/scripts/run_regression.py --output E:/Documents/Vapor_Lc_App_Test
 
 
 2026-11-14 源码修订：AI8 扫描/schema3 已按 `Docs/protocol/AI8_SCAN_CONTRACT_20261114.md` 实现；通用参数事务和 RD105 仍不支持。此修订不改变本文旧镜像的验收结论，新 BIT 尚受目标器件包缺失阻塞。
+
+2026-11-14 构建续验：Enterprise Vivado 2025.1 已识别 KU11P，但源 a40f2ed 的整机与公共综合均因 Synthesis/xcku11p 许可证 checkout 失败（Common 17-345）停止。未生成新 BIT，WNS/TNS、DRC、CDC 无新结果。详细证据及目录见 `Docs/protocol/AI8_SCAN_CONTRACT_20261114.md` 的 Enterprise 构建续验节。

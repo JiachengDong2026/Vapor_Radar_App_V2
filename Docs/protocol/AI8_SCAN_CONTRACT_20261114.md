@@ -45,3 +45,16 @@ alarm.bit0 为本路输入错误/超量程；bits1..4 为本路 HA/LA/dHA/dLA。
 
 补充回归：tb_predev_common、tb_action_ai8、tb_hc2a_ai8_independent、tb_hc2a_ai8_tfa 均通过（b 轮各自测试结果为 PASS）。
 最终扫描回归见 `D:/Project/Test/ai8_scan_20261114_d`，增加了同一报警寄存器中相邻通道不同报警字节的检查，PASS。
+
+## 2026-11-14 Enterprise 构建续验
+
+源提交：`a40f2edb9ac39f8754f1f430563fa00424e869a4`。使用 `D:/AMD_Enterprise/2025.1/Vivado/bin/vivado.bat`，Vivado 2025.1 build 6140274；Python 为 Codex runtime 显式路径。RTL/约束/脚本输入未改变，复用此前 12 项仿真结果。
+
+用户补装器件包后，目标 `xcku11p-ffva1156-2-i` 已能创建工程。此前缺包阻碍已解除，但实际综合许可证 checkout 失败：`Common 17-348` 报告 Synthesis feature could not be found，随后 `Common 17-345` 报告 Synthesis/device xcku11p 无有效授权。整机综合与独立公共 smoke 综合均复现；没有更换 target 或放宽检查。
+
+本轮外部证据目录：
+- `D:/Project/Test/ai8_enterprise_full_20261114_b/build.log`、`build_result.json`：整机脚本返回 1，changed_inputs=[]，bit_sha256=null。
+- `D:/Project/Test/ai8_enterprise_common_20261114_b/synth_only.log`：同一目标的公共 smoke 综合授权失败。
+- 公共完整入口停留在 XSim 启动且没有结果；确认综合授权阻碍后终止本轮进程，不将此次仿真记为通过。此前公共仿真 PASS 仍有效。
+
+结果：综合未完成，布局布线、DRC、时序、CDC 均未进入；WNS/TNS 无结果，BIT 文件和 SHA256 不存在。下一步需配置覆盖该器件和 Synthesis 的有效许可证后重新执行原构建脚本。不继承旧 BIT 实板验收，本轮未操作硬件。
