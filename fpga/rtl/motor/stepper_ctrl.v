@@ -83,7 +83,7 @@ module stepper_ctrl #(parameter integer SYS_CLK_HZ=100000000)(
                 else case(offset)
                     8'h04:if(cfg_wdata>3 || (cfg_wdata[1] && (busy || cfg_wdata[0])))begin cfg_error=1;cfg_error_code=7;end
                     8'h10:if(busy)begin cfg_error=1;cfg_error_code=8;end
-                        else if(cfg_wdata==0 || (cfg_wdata[31]?(~cfg_wdata+1'b1):cfg_wdata)>400)begin cfg_error=1;cfg_error_code=7;end
+                        else if(cfg_wdata==0 || (cfg_wdata[31]?(~cfg_wdata+1'b1):cfg_wdata)>5000)begin cfg_error=1;cfg_error_code=7;end
                     8'h14:if(busy)begin cfg_error=1;cfg_error_code=8;end
                         else if(frequency_invalid)begin cfg_error=1;cfg_error_code=7;end
                     8'h20:if(cfg_wdata!=0)begin cfg_error=1;cfg_error_code=7;end

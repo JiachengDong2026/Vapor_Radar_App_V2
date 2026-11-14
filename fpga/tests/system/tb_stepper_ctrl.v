@@ -40,7 +40,7 @@ module tb_stepper_ctrl;
         repeat(4)@(negedge clk);rst=1;repeat(3)@(negedge clk);
         if(!ena || pul || busy)$fatal(1,"boot must disable DM422");
         rd_eq('h6700,'h00470200);rd_eq('h6730,4);rd_eq('h671c,100);
-        wr('h672c,1,11);wr('h6710,0,7);wr('h6710,401,7);wr('h6710,-401,7);
+        wr('h672c,1,11);wr('h6710,0,7);wr('h6710,5001,7);wr('h6710,-5001,7);
         wr('h6714,19,7);wr('h6714,401,7);wr('h6718,50,6);wr('h671c,100,6);
         wr('h6730,0,7);wr('h6738,0,7);
         wr('h6738,1,0);wr('h6704,1,0);repeat(4)@(negedge clk);
@@ -52,13 +52,22 @@ module tb_stepper_ctrl;
         move(-2);idle;if(rises!=5 || pos!=1 || !dir || id!=2)$fatal(1,"reverse accounting");
         wr('h6714,400,0);rd_eq('h6718,13);move(1);idle;
         if(last_high!=13 || rises!=6)$fatal(1,"400Hz ceiling");
+        // Long finite moves must be sustained by explicit host heartbeat writes.
+        saved=rises;move(5000);
+        while(busy)begin repeat(1000)@(negedge clk);wr('h6738,1,0);end
+        if(rises!=saved+5000 || remn!=0)$fatal(1,"5000 forward completion");
+        saved=rises;move(-5000);
+        while(busy)begin repeat(1000)@(negedge clk);wr('h6738,1,0);end
+        if(rises!=saved+5000 || pos!=2 || remn!=0)$fatal(1,"5000 reverse completion");
         saved=rises;move(10);repeat(8)@(negedge clk);wr('h672c,2,0);idle;
         if(rises!=saved || ena)$fatal(1,"stop during setup holds without pulses");
         move(10);wait(pul);wr('h672c,2,0);idle;
         if(rises!=saved+1 || remn!=9 || ena || last_high!=13)$fatal(1,"normal high stop");
+        // A 5000-pulse move cannot synthesize its own host heartbeat.
+        move(5000);allow_truncate=1;
         // A late heartbeat revives liveness but does not clear a latched fault.
         repeat(21000)@(negedge clk);
-        if(!ena || busy || pul || !(errors&1))$fatal(1,"watchdog release");
+        if(!ena || busy || pul || remn==0 || !(errors&1))$fatal(1,"watchdog release");
         wr('h6738,1,0);repeat(4)@(negedge clk);if(!ena)$fatal(1,"timeout auto enabled");
         wr('h672c,1,11);wr('h6704,0,0);repeat(4)@(negedge clk);
         wr('h670c,'hffffffff,0);wr('h6704,1,0);repeat(4)@(negedge clk);
@@ -70,5 +79,5 @@ module tb_stepper_ctrl;
         wr('h672c,3,0);rd_eq('h6724,0);
         $display("tb_stepper_ctrl_PASS register_adapter finite_reverse bounds settle normal_stop watchdog explicit_recovery no_replay EN_high_disable");$finish;
     end
-    initial begin #2000000;$fatal(1,"timeout");end
+    initial begin #10000000;$fatal(1,"timeout");end
 endmodule

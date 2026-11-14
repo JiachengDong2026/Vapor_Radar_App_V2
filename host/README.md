@@ -41,6 +41,6 @@ SensorRun只允许限定的诊断读取、六路使能和BMP局部复位/地址�
 完整格式和工程量单位见 [VLP协议](../Docs/protocol/FPGA_HOST_PROTOCOL_V1.0.md)；BMP390在FPGA上传原始ADC和标定，由bmp_compensation.py按Bosch公式补偿。
 
 
-2026-10-27：`gnss_motor_control.py --bridge <VaporUsbBridge.exe> status` 可读PPS校准快照与DM422状态；`move --steps <signed1..400> --hz <20..400>` 为显式有限运动，运行时发送真实心跳，退出释放。`anchor --seq <PPS序号> --utc-seconds <确认的UTC整秒>` 提交明确对应关系。连接和接口条件见 [整机说明](../Docs/integration/GNSS_PPS_DM422_20261027.md)。独立电机JTAG GUI不能用于此整机固件。
+2026-10-27：`gnss_motor_control.py --bridge <VaporUsbBridge.exe> status` 可读PPS校准快照与DM422状态；`move --steps <signed1..5000> --hz <20..400>` 为显式有限运动，运行时发送真实心跳，退出释放。`anchor --seq <PPS序号> --utc-seconds <确认的UTC整秒>` 提交明确对应关系。连接和接口条件见 [整机说明](../Docs/integration/GNSS_PPS_DM422_20261027.md)。独立电机JTAG GUI不能用于此整机固件。
 
 2026-11-10：新增简易窗口 `motor_panel.py`。双击 `start_motor_panel.cmd`，提供正反向有限点动、停止/禁用、错误及脉冲计数显示；启动和连接不发送运动。使用说明见 [电机窗口](../Docs/integration/MOTOR_PANEL_20261110.md)。

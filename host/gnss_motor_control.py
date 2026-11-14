@@ -123,14 +123,14 @@ def main():
     sub = parser.add_subparsers(dest='command')
     sub.add_parser('status');sub.add_parser('disable')
     move = sub.add_parser('move')
-    move.add_argument('--steps', type=int, required=True, help='signed pulse count, absolute value 1..400')
+    move.add_argument('--steps', type=int, required=True, help='signed pulse count, absolute value 1..5000')
     move.add_argument('--hz', type=int, default=100)
     anchor = sub.add_parser('anchor', help='epoch must be established from navigation timing evidence')
     anchor.add_argument('--seq', type=int, required=True)
     anchor.add_argument('--utc-seconds', type=int, required=True)
     args = parser.parse_args()
-    if args.command == 'move' and (not 1<=abs(args.steps)<=400 or not 20<=args.hz<=400):
-        parser.error('steps must be +/-1..400 and hz 20..400')
+    if args.command == 'move' and (not 1<=abs(args.steps)<=5000 or not 20<=args.hz<=400):
+        parser.error('steps must be +/-1..5000 and hz 20..400')
     if args.command == 'anchor' and (not 0<=args.seq<=0xffffffff or not 946684800<=args.utc_seconds<=0xffffffff):
         parser.error('anchor seconds/sequence outside uint32 or UTC range')
     usb = Usb(args.bridge)

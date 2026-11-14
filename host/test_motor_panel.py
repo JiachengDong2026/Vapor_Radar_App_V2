@@ -59,7 +59,7 @@ class MotorTest(unittest.TestCase):
         self.assertEqual(self.usb.writes, [])
 
     def test_forward_reverse_and_boundaries_release(self):
-        for steps, hz in ((40, 100), (-400, 20), (1, 400), (-1, 137)):
+        for steps, hz in ((40, 100), (-5000, 20), (5000, 400), (1, 400), (-1, 137)):
             with self.subTest(steps=steps, hz=hz):
                 usb = FakeUsb()
                 Motor(usb).move(steps, hz)
@@ -69,7 +69,7 @@ class MotorTest(unittest.TestCase):
                 self.assertEqual(usb.system[1], 0)
 
     def test_bad_parameters_send_nothing(self):
-        for steps, hz in ((0, 100), (401, 100), (-401, 100), (40, 19), (40, 401)):
+        for steps, hz in ((0, 100), (5001, 100), (-5001, 100), (40, 19), (40, 401)):
             with self.assertRaises(RuntimeError):
                 self.motor.move(steps, hz)
         self.assertEqual(self.usb.writes, [])

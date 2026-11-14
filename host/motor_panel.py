@@ -80,7 +80,7 @@ class Motor:
         return system, motor
 
     def move(self, steps, hz):
-        require(type(steps) is int and 1 <= abs(steps) <= 400, '脉冲数须为 1～400')
+        require(type(steps) is int and 1 <= abs(steps) <= 5000, '脉冲数须为 1～5000')
         require(type(hz) is int and 20 <= hz <= 400, '频率须为 20～400 Hz')
         self.guard()
         system, initial = self.status()
@@ -181,8 +181,8 @@ class Panel:
         ttk.Label(frame, textvariable=self.state, wraplength=720, font=('Microsoft YaHei UI', 10)).pack(anchor='w', pady=6)
         box = ttk.LabelFrame(frame, text='点动参数', padding=12); box.pack(fill='x', pady=8)
         self.steps = tk.StringVar(value='40'); self.hz = tk.StringVar(value='100')
-        ttk.Label(box, text='脉冲数（1～400）').grid(row=0, column=0, sticky='w')
-        ttk.Spinbox(box, from_=1, to=400, textvariable=self.steps, width=9).grid(row=0, column=1, padx=8)
+        ttk.Label(box, text='脉冲数（1～5000）').grid(row=0, column=0, sticky='w')
+        ttk.Spinbox(box, from_=1, to=5000, textvariable=self.steps, width=9).grid(row=0, column=1, padx=8)
         ttk.Label(box, text='频率（20～400 Hz）').grid(row=0, column=2)
         ttk.Spinbox(box, from_=20, to=400, textvariable=self.hz, width=9).grid(row=0, column=3, padx=8)
         ttk.Button(box, text='40 脉冲', command=lambda: self.steps.set('40')).grid(row=1, column=0, pady=8)
@@ -224,7 +224,7 @@ class Panel:
     def start_move(self, sign):
         try:
             steps, hz = int(self.steps.get()), int(self.hz.get())
-            require(1 <= steps <= 400 and 20 <= hz <= 400, '脉冲数 1～400，频率 20～400 Hz')
+            require(1 <= steps <= 5000 and 20 <= hz <= 400, '脉冲数 1～5000，频率 20～400 Hz')
         except (ValueError, RuntimeError) as exc:
             self.show('参数错误：' + str(exc)); return
         self.run('move', sign * steps, hz)
