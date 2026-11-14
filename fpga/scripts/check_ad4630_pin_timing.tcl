@@ -6,7 +6,7 @@ set ar [open "$ad4630_check_out/pad_timing.txt" w]
 set afail 0
 set aworst 1e9
 set atick [expr {10.0/1.0001}]
-set aedge 0.250
+set aedge 0.350
 set aflight 1.0
 set acap [get_cells -hier -filter {NAME =~ */cap_sck_reg}]
 if {[llength $acap]!=1} {error "Expected one AD4630 capture serializer"}
@@ -14,7 +14,7 @@ set aroot [file dirname [get_property NAME $acap]]
 set asys [get_clocks -of_objects [get_pins "$aroot/cap_sck_reg/C"]]
 if {[llength $asys]!=1 || abs([get_property PERIOD $asys]-10)>0.001} {error "AD4630 requires SYS100MHz"}
 puts $ar "AD4630 Rev0 Tables2/3/4, VIO1.8V, 25MHz capture H2; SYS100MHz +/-100ppm"
-puts $ar "Board flight each direction0..1ns; output10pF; return SDO load<=5pF datasheet premise; interval uncertainty0.250ns. Board values are budgets, not measurements."
+puts $ar "Board flight each direction0..1ns; output10pF; return SDO load<=5pF datasheet premise; interval uncertainty0.350ns. Board values are budgets, not measurements."
 proc areq {name have need} {
     global ar afail aworst
     set slack [expr {$have-$need}]
@@ -23,7 +23,7 @@ proc areq {name have need} {
     if {$slack<$aworst} {set aworst $slack}
 }
 proc aout {port reg transition type} {
-    global ar aroot
+    global ar aroot aedge
     set po [get_ports $port]
     if {[get_property LOAD $po]<10 || [get_property IOSTANDARD $po]!="LVCMOS18"} {error "AD4630 output load/voltage budget missing: $port"}
     set cp [get_pins "$aroot/$reg/C"]
@@ -34,6 +34,9 @@ proc aout {port reg transition type} {
     foreach net [concat [get_nets -of_objects $po] [get_nets -of_objects [get_pins -of_objects [get_cells -of_objects $cp] -filter {DIRECTION == OUT}]]] {
         if {[get_property ROUTE_STATUS $net] ni {ROUTED INTRASITE}} {error "Unrouted AD4630 output net $net"}
     }
+    set pu [get_property UNCERTAINTY $path]
+    if {$pu>$aedge+0.0001} {error "AD4630 output uncertainty exceeds budget"}
+    puts $ar "$port $transition $type uncertainty=$pu"
     set arrival [expr {[get_property ARRIVAL_TIME $path]-[get_property STARTPOINT_CLOCK_EDGE $path]}]
     puts $ar "$port $reg $transition $type arrival=$arrival clock=[get_property STARTPOINT_CLOCK_DELAY $path] datapath=[get_property DATAPATH_DELAY $path] corner=[get_property CORNER $path]"
     return $arrival

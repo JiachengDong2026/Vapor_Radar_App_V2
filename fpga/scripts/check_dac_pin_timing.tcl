@@ -11,14 +11,16 @@ set dac_check_worst 1.0e9
 set dac_period 10.0
 set dac_half 3
 set dac_board_skew 1.0
-set dac_edge_uncertainty 0.250
+# Conservative bound above observed 2025.1 setup uncertainty 0.312 ns.
+# Increasing this deduction tightens every datasheet interval check.
+set dac_edge_uncertainty 0.350
 set dac_frequency_ppm 100.0
 set dac_tick_min [expr {$dac_period/(1.0+$dac_frequency_ppm/1000000.0)}]
 puts $dac_check_report "AD5791 Rev F, 1.71..3.3 V; falling-edge capture; current RTL minimum H=3"
-puts $dac_check_report "SYS=100MHz, clock tolerance=100ppm, edge interval uncertainty=0.250ns, PCB differential=1.000ns, load>=10pF"
+puts $dac_check_report "SYS=100MHz, clock tolerance=100ppm, edge interval uncertainty=0.350ns, PCB differential=1.000ns, load>=10pF"
 puts $dac_check_report "All bounds are ns. Board load/skew/tolerance are explicit integration budgets, not PCB measurements."
 proc dac_bound {port transition delay_type} {
-    global dac_check_report
+    global dac_check_report dac_edge_uncertainty
     set pobj [get_ports -quiet $port]
     if {[llength $pobj]!=1} {error "Missing DAC pad $port"}
     if {[get_property LOAD $pobj]<10.0} {error "DAC pad $port load is below the 10pF qualification budget"}
@@ -38,7 +40,7 @@ proc dac_bound {port transition delay_type} {
         set route_state [get_property ROUTE_STATUS $net]
         if {$route_state ni {ROUTED INTRASITE}} {error "DAC pad $port has an unrouted output path: $net status=$route_state"}
     }
-    if {[get_property UNCERTAINTY $path]>0.2501} {error "Observed uncertainty exceeds declared 0.250ns edge budget at $port"}
+    if {[get_property UNCERTAINTY $path]>$dac_edge_uncertainty+0.0001} {error "Observed uncertainty exceeds declared 0.350ns edge budget at $port"}
     set arrival [expr {[get_property ARRIVAL_TIME $path]-[get_property STARTPOINT_CLOCK_EDGE $path]}]
     puts $dac_check_report "$port $transition $delay_type arrival=$arrival corner=[get_property CORNER $path] start=$start clock_delay=[get_property STARTPOINT_CLOCK_DELAY $path] datapath=[get_property DATAPATH_DELAY $path]"
     return $arrival
@@ -86,4 +88,4 @@ puts $dac_check_report "LDAC is statically tied low; pulsed-LDAC t10/t11/t12 not
 puts $dac_check_report [format "Overall minimum margin=%.3f ns; failing checks=%d" $dac_check_worst $dac_check_failures]
 close $dac_check_report
 if {$dac_check_failures} {error "DAC_PIN_TIMING_FAIL checks=$dac_check_failures; see $dac_check_out/pad_timing.txt"}
-puts [format "DAC_PIN_TIMING_PASS H=3 actual_SPI=16666666Hz minimum_margin=%.3fns PCB_skew=1ns edge_budget=0.250ns tolerance=100ppm" $dac_check_worst]
+puts [format "DAC_PIN_TIMING_PASS H=3 actual_SPI=16666666Hz minimum_margin=%.3fns PCB_skew=1ns edge_budget=0.350ns tolerance=100ppm" $dac_check_worst]
