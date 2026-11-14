@@ -6,7 +6,7 @@
 
 提供两路独立全双工 UART，经现有 USB VLP READ_REG(0x02)/WRITE_REG(0x03) 收发原始字节。不会自动发送启动、使能、温度或电流命令，不解析厂家应答。LC 产品手册仅确认 TX1/RX1/GND TTL 接线，未提供命令表、默认波特率及明确的串口逻辑电压。115200/8N1 是本接口的可配置初值，不代表厂家默认值；实物通信必须按厂家的串口协议配置。
 
-不修改 CON19 的 HMP+AI8 双设备模块或共享仲裁；保留 EPSILON 下行/RTCM 和 DLIA 档位。两个 LC UART 不属于原七路采样流，不占用该流的 lane 或 TLV；接收内容通过寄存器主动读取。原 HOST_EXTENSION_FLAGS=0x29 含义不变，LC 是否存在以 ID_VERSION 寄存器判断。
+2026-11-15补充：CON19事务仲裁现支持HMP/AI8/RD105三路（默认HC2A独立CON11、HMP槽不发送）；RD105占用4A/6A页，extensions=0x3B。两个LC UART继续仅通过寄存器收发，地址及ID完全保持。LC是否存在仍以ID_VERSION判断。RD105细节见[新契约](../protocol/RD105_INTEGRATION_20261115.md)。
 
 ## 管脚
 

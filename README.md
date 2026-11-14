@@ -1,3 +1,5 @@
+> **2026-11-15 RD105接入**：当前源码新增独立source004A/page6A00/ID004A0103，schema2自动双通道，参数写入需独立读回确认；extensions=0x3B。LC0/LC1保持6800/6900，AI8八路扫描、SDFM300与默认HC2A保持接入。RD105必须外部预设19200/8N1/站号2，复位禁用。本轮仅本地生成BIT，不连接板卡、不烧录。以[RD105契约](Docs/protocol/RD105_INTEGRATION_20261115.md)及[本轮构建记录](Docs/integration/sensors/RD105_BUILD_20261115.md)为准；下方历史归档BIT不能代表本次源码。
+
 > **2026-11-15 SDFM300迁移**：当前距离设备为300米SDFM300，默认460800/8N1、单UART、4字节主动输出；旧模式/命令与LF管脚已撤回。寄存器、有效性、电气接线及上行兼容语义以[SDFM300接口](Docs/integration/sensors/SDFM300.md)为准。历史板测和旧BIT仅覆盖当时设备。
 
 # Vapor_Radar_App_V2

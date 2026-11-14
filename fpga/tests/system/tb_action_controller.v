@@ -53,7 +53,7 @@ module tb_action_controller;
                         end
                         pending_timer[ba[15:8]]=11;
                         memory[(ba+4)>>2]=(memory[(ba+4)>>2]&32'hfffffffd)|4;
-                        if(ba==32'h6104 || ba==32'h6604)ack_pending[ba[15:8]]=1;
+                        if(ba==32'h6104 || ba==32'h6604 || ba==32'h6a04)ack_pending[ba[15:8]]=1;
                     end
                 end else if(ba==32'h672c)begin
                     if(bd==1)begin memory[32'h6708>>2]=9;pending_timer[8'h67]=30;end
@@ -140,6 +140,11 @@ module tb_action_controller;
         action(13,2,128'd2,0);if(memory[32'h1004>>2]!=1)$fatal(1,"time rearm enable");
         action(13,2,{64'd0,32'd1,32'd3},0);if(memory[32'h1024>>2]!=1)$fatal(1,"time edge");
         action(13,2,{64'd0,32'd1000,32'd4},0);if(memory[32'h1028>>2]!=1000)$fatal(1,"time timeout");
+        action(11,16'h4a,{64'd0,32'd1,32'd1},0);
+        action(11,16'h4a,{64'd0,32'd27000000,32'd17},0);
+        if(memory[32'h6a40>>2]!=27000000 || memory[32'h6a48>>2]!=1)$fatal(1,"RD105 action17");
+        action(11,16'h4a,{64'd0,32'd1,32'd18},13);
+        action(8,16'h4a,128'h400,0);
         // Validation, downstream error, stall timeout and cancellation have no new writes.
         oldwrites=writes;action(5,16'h50,128'h10000,4);action(6,1,{32'd0,32'd1,64'h10000},13);
         action(10,1,{64'd1,64'd0},7);action(11,16'h45,{64'd0,32'd5,32'd33},13);action(16'h99,1,0,1);

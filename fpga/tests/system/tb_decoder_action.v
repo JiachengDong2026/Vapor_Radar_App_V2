@@ -71,7 +71,7 @@ module tb_decoder_action;
                             if(ba==32'h2004 && memory[32'h3008>>2][2:1]!=1)$fatal(1,"WMS before DAC ready");
                             pending[ba[15:8]]<=30;
                             memory[(ba+4)>>2]<=4|(bd&1);
-                            if(ba==32'h6104 || ba==32'h6604)ack_pending[ba[15:8]]<=1;
+                            if(ba==32'h6104 || ba==32'h6604 || ba==32'h6a04)ack_pending[ba[15:8]]<=1;
                         end
                     end else memory[ba[15:2]]<=bd;
                 end
@@ -135,6 +135,11 @@ module tb_decoder_action;
         if(memory[32'h6640>>2]!=50000000 || memory[32'h6648>>2]!=1)$fatal(1,"RD ACK completion");
         fail_ack=1;auto_write(16'h41,32'h6134,32'h43480000,14);fail_ack=0;
         if(memory[32'h6140>>2]!=32'h42c80000 || memory[32'h6148>>2]!=1)$fatal(1,"missing ACK changed active");
+        auto_write(16'h4a,32'h6a20,27000000,0);
+        if(memory[32'h6a40>>2]!=27000000 || memory[32'h6a48>>2]!=1)$fatal(1,"RD105 confirmed auto commit");
+        reject_range(3,16'h4a,32'h6800,1,4);
+        reject_range(3,16'h48,32'h6a00,1,4);
+        reject_range(2,16'h4a,32'h6600,1,4);
         // All pages are validated, including holes between two owned endpoints.
         reject_range(2,16'h10,32'h20fc,962,4);
         reject_range(3,16'h10,32'h20fc,962,4);

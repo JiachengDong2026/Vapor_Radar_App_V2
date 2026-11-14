@@ -24,7 +24,7 @@
 `define REG_BASE_SHT45           32'h0000_6400
 `define REG_BASE_SDFM300         32'h0000_6500
 `define REG_BASE_AI8             32'h0000_6600
-`define REG_BASE_RD105           32'h0000_6600 // Legacy alias; ID/version identifies AI8.
+`define REG_BASE_RD105           32'h0000_6A00 // Independent RD105 page; LC0 remains 6800.
 // Independent raw TTL UART pages for the two LC laser controllers.
 `define REG_BASE_LC0             32'h0000_6800
 `define REG_BASE_LC1             32'h0000_6900
@@ -266,6 +266,17 @@
 `define REG_RD105_TIMEOUT_COUNT     8'h34
 `define REG_RD105_FIFO_LEVEL        8'h38
 `define REG_RD105_DROP_COUNT        8'h3C
+`define REG_RD105_CONFIRMED_TARGET  8'h40
+`define REG_RD105_FRAME_COUNT       8'h44
+`define REG_RD105_CONFIRMED_COUNT   8'h48
+`define REG_RD105_SAMPLE_CHANNEL    8'h4C
+`define REG_RD105_PARAM_COMMAND     8'h80
+`define REG_RD105_PARAM_ADDRESS     8'h84
+`define REG_RD105_PARAM_QUANTITY    8'h88
+`define REG_RD105_PARAM_STATUS      8'h8C
+`define REG_RD105_PARAM_COUNT       8'h90
+`define REG_RD105_PARAM_WRITE_DATA  8'hC0
+`define REG_RD105_PARAM_READ_DATA   8'hE0
 
 // STREAM/BUFFER offsets.
 `define REG_STREAM_ARB_MODE             8'h10

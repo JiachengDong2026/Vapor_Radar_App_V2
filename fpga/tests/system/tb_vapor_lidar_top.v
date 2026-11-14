@@ -54,7 +54,7 @@ module tb_vapor_lidar_top #(parameter integer HC2A_ENABLE=0);
     wire ADC_ADC3660_RST;
     wire ADC_ADC3660_SYNC;
     wire ADC_ADC3660_SDIO;
-    localparam COMMAND_WORDS=987,RESPONSES=73;
+    localparam COMMAND_WORDS=1183,RESPONSES=88;
     vapor_lidar_top #(.SIMULATION(1),.GPIF_CLK_HZ(50000000),.HC2A_ENABLE(HC2A_ENABLE),.RAW0_MAX_SAMPLES(64),.RAW1_MAX_SAMPLES(64)) dut(
         .HC2A_UART_RXD(1'b1),.CLK_FPGA_25MHZ(CLK_FPGA_25MHZ),
         .FPGA_GPIF_DQ(FPGA_GPIF_DQ),
