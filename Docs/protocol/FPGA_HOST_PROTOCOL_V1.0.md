@@ -1,4 +1,4 @@
-> **2026-11-15 RD105接入**：独立source004A/page6A00/ID004A0103，schema2双通道；extensions=0x3B（AI8 scan bit1、RD105 bit4）。LC0/LC1保持0048/0049、6800/6900。RD105参数事务仅在6A页提供，不能据此推断AI8有通用参数入口；完整约束见[RD105接口](RD105_INTEGRATION_20261115.md)。AI8自动扫描见[AI8接口](AI8_SCAN_CONTRACT_20261114.md)。后文撤回描述是历史记录，不能覆盖这些新契约。本轮仅本地构建，没有实板加载或验收。
+> **2026-11-15现场温控接入**：两台物理TEC103分别复用原位0048/6800/CON11-5/7、遥测0049/6900/CON11-6/8原始UART桥，各只访问本机内部通道1；主机在禁用且空闲时配置38400/8N1并负责仪表协议与在线状态。桥ID00480100/00490100不能当实体型号，已读到型号103、版本4370，详见[两路TEC103契约](../integration/sensors/TEC103_GPIO_20261115.md)。现用BIT仍有source004A/page6A00/ID004A0103和extensions=0x3B，但6A为legacy CON19实验接口，现场上位机不呈现、不自动启用或发送仪表事务；[旧6A契约](RD105_INTEGRATION_20261115.md)不代表GPIO两台设备。复用已JTAG SRAM加载及只读验证的同一BIT，不改RTL/ID/寄存器。AI8自动扫描仍见[AI8接口](AI8_SCAN_CONTRACT_20261114.md)。
 
 > **2026-11-15 SDFM300迁移**：当前距离设备为300米SDFM300，默认460800/8N1、单UART、4字节主动输出；旧模式/命令与LF管脚已撤回。寄存器、有效性、电气接线及上行兼容语义以[SDFM300接口](../integration/sensors/SDFM300.md)为准。历史板测和旧BIT仅覆盖当时设备。
 
@@ -223,7 +223,7 @@ FPGA OUT 接收同样保留坏候选内容并在长度/版本/CRC 失败后只�
 | 000D TIME_ACTION | +0 u32 action；+4 u32 value（8 B） | status |
 | 00FE PING | 任意 0..4052 B | +0 status；+4 原请求 payload，逐字节回显 |
 
-GET 当前常量依次为 `0, 0x0000FFFF, 0x00000100, 100000000, 8192, 4096, 0x3B`。capabilities=FFFF 是已实现能力常量，不能作为设备实物在线或已完成实测的证据；extensions.bit0/1/3/4/5 分别表示 RAW schema2、AI8扫描、EPSILON下行/RTCM、RD105独立接口、DLIA截止频率；bit2保留为0。当前值由 `project_defs.vh` 的 `HOST_EXTENSION_FLAGS` 统一定义。READ 成功固定前导确为 **12 B**，完整应答帧长 `56+4×count`。
+GET 当前常量依次为 `0, 0x0000FFFF, 0x00000100, 100000000, 8192, 4096, 0x3B`。capabilities=FFFF 是已实现能力常量，不能作为设备实物在线或已完成实测的证据；extensions.bit0/1/3/4/5 分别表示 RAW schema2、AI8扫描、EPSILON下行/RTCM、legacy CON19 RD105实验接口、DLIA截止频率；bit2保留为0。bit4不用于发现或启用6800/6900上的两台TTL温控。当前值由 `project_defs.vh` 的 `HOST_EXTENSION_FLAGS` 统一定义。READ 成功固定前导确为 **12 B**，完整应答帧长 `56+4×count`。
 
 READ/WRITE 地址按字节计，必须 4 B 对齐，addr 高 16 位为 0，count 非零，末字节不超过 FFFF。READ reserved 必须 0。WRITE 的 u16 flags 仅 bit0=AUTO_COMMIT 有效，亦即合并的第二个 u32 bit16；其他 flags 位必须 0。MASKED_WRITE 执行 `(old & ~mask) | (value & mask)`。对只读/特殊写语义寄存器不能假设通用 RMW 总是合适。
 

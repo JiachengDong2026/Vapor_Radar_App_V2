@@ -1,14 +1,16 @@
-> **2026-11-15 RD105接入**：当前源码新增独立source004A/page6A00/ID004A0103，schema2自动双通道，参数写入需独立读回确认；extensions=0x3B。LC0/LC1保持6800/6900，AI8八路扫描、SDFM300与默认HC2A保持接入。RD105必须外部预设19200/8N1/站号2，复位禁用。本轮仅本地生成BIT，不连接板卡、不烧录。以[RD105契约](Docs/protocol/RD105_INTEGRATION_20261115.md)及[本轮构建记录](Docs/integration/sensors/RD105_BUILD_20261115.md)为准；下方历史归档BIT不能代表本次源码。
+> **2026-11-15 现场温控接入更正**：两台实体温控均在现有GPIO UART应答型号103、版本4370。原位使用LC0桥/source0048/page6800、CON11-5/7；遥测使用LC1桥/source0049/page6900、CON11-6/8，各访问本机内部通道1。主机在桥禁用且空闲时配置38400/8N1，负责仪表协议与在线状态；桥ID不是实体型号。接线、原始应答、诊断边界及现用BIT见[两路TEC103接入](Docs/integration/sensors/TEC103_GPIO_20261115.md)。无需改线、改RTL或新建BIT，复用已实现签核、后续已JTAG加载SRAM并完成只读身份验证的`rd105_full_20261115_c`。AI8八路扫描、HC2A、SDFM300保持原接口。
+
+> **旧6A路径为legacy实验接口**：现用BIT仍含source004A/page6A00/ID004A0103、CON19共享RS485的旧实现，extensions仍为0x3B。此路径不对应上述两台TTL模块，现场上位机不呈现、不自动启用或发送仪表事务；不要要求两台GPIO温控改成19200/站2。[旧接口](Docs/protocol/RD105_INTEGRATION_20261115.md)和[构建记录](Docs/integration/sensors/RD105_BUILD_20261115.md)保留历史事实，现有BIT并未硬禁用6A00。
 
 > **2026-11-15 SDFM300迁移**：当前距离设备为300米SDFM300，默认460800/8N1、单UART、4字节主动输出；旧模式/命令与LF管脚已撤回。寄存器、有效性、电气接线及上行兼容语义以[SDFM300接口](Docs/integration/sensors/SDFM300.md)为准。历史板测和旧BIT仅覆盖当时设备。
 
 # Vapor_Radar_App_V2
 
-## 当前正式版本：2026-11-13
+## 历史正式归档：2026-11-13
 
 历史归档保留 **HC2A GPIO RH 修正版（HCD2）**：HC2A独立CON11 UART，保留AI8、TFA、EPSILON、双LC UART、GNSS PPS/UTC、DM422、双AD4630/DLIA和WMS/DAC。原2026-10-28构建BIT与配套128项源码输入已核对，归档日期不代表重新综合或重新上板。
 
-- [最新下位机说明、接线、能力和验证边界](Docs/LOWER_COMPUTER_RELEASE_20261113.md)
+- [2026-11-13归档下位机说明、接线、能力和验证边界](Docs/LOWER_COMPUTER_RELEASE_20261113.md)
 - [正式BIT、SHA256与来源清单](firmware/fpga/releases/20261113_hc2a_rhfix/README.md)
 - [HC2A正式寄存器与接线规范](Docs/integration/sensors/HC2A_ROASCII.md)
 - [VLP1协议](Docs/protocol/FPGA_HOST_PROTOCOL_V1.0.md)、[PPS与电机接口](Docs/integration/GNSS_PPS_DM422_20261027.md)、[双LC UART](Docs/integration/LC_DUAL_UART_20261027.md)
@@ -20,7 +22,7 @@ BIT：`firmware/fpga/releases/20261113_hc2a_rhfix/vapor_lidar_hc2a_gpio_rhfix_20
 
 ## 历史同步与构建说明
 
-以下保留历次说明，含当时的“当前”及验收状态；设备选择、BIT路径、归档规则和最新验证结论以上方2026-11-13说明为准。通用构建/CDC复核命令仍可参考，输出须放外部Test目录。
+以下保留历次说明，含当时的“当前”及验收状态；现场温控接入、现用BIT和最新边界以上方2026-11-15说明为准，2026-11-13段落仅描述历史归档。通用构建/CDC复核命令仍可参考，输出须放外部Test目录。
 
 
 ## 2026-10-27 HMP / AI8 实测通信基线恢复

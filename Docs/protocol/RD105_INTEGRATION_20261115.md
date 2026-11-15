@@ -1,4 +1,6 @@
-# RD105 FPGA integration contract (2026-11-15)
+# Legacy CON19 RD105 FPGA experiment (2026-11-15)
+
+> **Field correction, 2026-11-15:** this document preserves the implemented CON19 RS485 experiment, not the two installed TTL controllers. Both installed modules reply TEC=103 / FPV=4370 through the existing LC0/LC1 raw UART bridges, pages6800/6900, CON11-5/7 and6/8, at38400/8N1. Each physical module uses its own internal channel1. The current field contract is [dual TEC103 GPIO UART](../integration/sensors/TEC103_GPIO_20261115.md); bridge IDs are not instrument identities. Field host software must not expose, automatically enable, or send instrument transactions through source004A/page6A00. The same BIT retains this legacy engine and capability bit4; it has not been removed or hard-disabled. The19200/address2 requirements below apply only to the legacy RS485 experiment and must not be imposed on the two installed GPIO modules.
 
 This contract supersedes withdrawn RD105 mappings. Source **004A**, page **6A00**, ID_VERSION **004A0103**, msg **1100**; HOST_EXTENSION_FLAGS.bit4 is present (flags **0000003B**). LC0 remains 0048/6800/00480100, LC1 0049/6900; AI8 remains 0046/6600. HC2A remains 00410106, 614C=48434432 (HCD2), independent CON11 UART.
 
