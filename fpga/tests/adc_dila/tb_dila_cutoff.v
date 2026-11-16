@@ -40,7 +40,7 @@ module tb_dila_cutoff;
         if(dut.cutoff_active!=10000 || !dut.pending)$fatal(1,"cutoff applied inside a capture cycle");
         sample(2);
         if(dut.cutoff_active!=250 || dut.pending)$fatal(1,"cutoff did not apply at boundary");
-        if(dut.lpf_profiles[0].coefficients.b0!==48'sd43344068)$fatal(1,"active coefficient profile");
+        if(dut.legacy_lpf_profiles[0].coefficients.b0!==48'sd43344068)$fatal(1,"active coefficient profile");
         $display("TEST_PASS tb_dila_cutoff seven profiles, default compatibility, invalid/readonly rejection, atomic capture-boundary commit");$finish;
     end
     initial begin #1000000;$fatal(1,"cutoff timeout");end

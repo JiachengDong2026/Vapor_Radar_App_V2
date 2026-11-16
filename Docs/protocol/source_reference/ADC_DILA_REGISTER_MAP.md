@@ -1,4 +1,6 @@
-> 2026-10-04：已将2026-10-02上板验证的DLIA精度版本同步至正式V2，当前ID/profile为0101/00040101。历史构建记录保留；本次范围及验证见[同步记录](../../MERGE_MANIFEST_20261004.md)。
+> 2026-11-16：DLIA新增2～8阶主机SOS系数上传，扩展+60…+FC；完整字段、字节布局、原子提交和错误恢复以[SOS对接规范](../DLIA_SOS_HOST_HANDOFF_20261116.md)为准。默认内置profile保留，自定义profile为80000000|阶数。
+
+> 2026-10-04：已将2026-10-02上板验证的DLIA精度版本同步至正式V2，默认ID/profile为0101/00040101。历史构建记录保留；本次范围及验证见[同步记录](../../MERGE_MANIFEST_20261004.md)。
 
 > 2026-09-28 正式双AD4630版本以[双低速ADC修订](../../INTEGRATION_REVISION_20260928_DUAL_AD4630.md)为准；下列高速ADC页为历史源参考。
 
@@ -6,7 +8,7 @@
 
 32-bit byte addresses, four byte strobes, same-cycle cfg_ready. Only the owning 256-byte page responds; foreign pages return ready=error=rdata=0. Invalid offsets, unsupported writes and invalid values assert cfg_error and latch bad-config bit4. ADC0 base=0x4000, ADC1=0x4100, DILA0=0x5000, DILA1=0x5100.
 
-CONTROL +04: bit0 enable (RW), bit1 soft reset pulse, bit2 commit pulse, bit3 clear pulse. Pulse bits read zero. A write with bit0=0 disables the channel; software must preserve enable when issuing an enabled commit (write5). Commit while already pending is rejected. Shadows can be written while pending, affecting only a subsequent commit.
+CONTROL +04: bit0 enable (RW), bit1 soft reset pulse, bit2 commit pulse, bit3 clear pulse. Pulse bits read zero. A write with bit0=0 disables the channel; software must preserve enable when issuing an enabled commit (write5). Commit while already pending is rejected. Ordinary shadows can be written while pending, affecting only a subsequent commit; DLIA filter-upload registers reject writes while pending. DLIA commit cannot be combined with reset/clear.
 
 ## ADC pages
 
@@ -40,17 +42,17 @@ The PHY initializes at power-up even when acquisition enable is zero. ADC0 reset
 |00|RO|00300101 or00310101 (source0030/0031, module version0101)|
 |04|RW/pulse|CONTROL|
 |08|RO|bit0 enable, bit1 implementation ready, bit2 commit pending, bit4 enable, bit5 point level>=MAX_POINTS, bit6 overflow, bit7 any error, bit8 current time-sync valid|
-|0C|W1C|error bit2 input/frame overflow, bit4 bad cfg, bit5 point lost due busy magnitude, bit6 filter saturation, bit7 sample error/invalid WMS phase|
+|0C|W1C|error bit2 input/frame overflow, bit4 bad cfg, bit5 point lost due busy magnitude, bit6 filter saturation, bit7 sample error/invalid WMS phase, bit8 custom SOS input-rate mismatch|
 |10|RW shadow|Independent reference frequency in mHz:1..1000000000; default1000000|
 |14|RW shadow|1f phase offset, U32 turn|
 |18|RW shadow|2f phase correction, U32 turn|
 |1C|RW shadow|Requested output Hz;1..input_rate/8, default10000|
 |20|RW shadow|MODE bit0 WMS reference (else independent), bit1 magnitude enable, bit2 LPF bypass. Bits31:3 rejected. Formats0/2 require bit1=1. Default3.|
-|24|RO|Fourth-order 1kHz Butterworth profile00040101 (1M) or00040102 (12.5M)|
+|24|RO|Built-in profile00040101 (1M) or00040102 (12.5M); custom SOS profile80000000 OR order|
 |28|RO|Numeric descriptor20112E10: sample32, LUTQ1.17, coeff46 fractional, state16 fractional|
 |2C|W1C|Input saturation count|
 |30|W1C|Mixer saturation count|
-|34|W1C|Filter saturation count: sum of saturation pulses from both sections; a simultaneous pair adds2|
+|34|W1C|Filter saturation count: sum of saturation pulses from enabled sections (up to4)|
 |38|RO|Output point count|
 |3C|RO|Total queued points in both banks|
 |40|RW shadow|Fragment points1..256, default256|
@@ -59,10 +61,19 @@ The PHY initializes at power-up even when acquisition enable is zero. ADC0 reset
 |4C|RO extension|Actual output Hz at most recent commit|
 |50|RO extension|Committed decimation factor|
 |54|RO extension|Committed independent-reference phase increment per100MHz tick|
+|58/5C|RW shadow / RO active|Legacy cutoff Hz; seven built-in choices; writing58 selects legacy mode for next commit|
+|60/64|RW start / RO active|Write60=2..8 starts a fresh coefficient upload;0 selects legacy;64 reports active order|
+|68..DC|RW shadow|30 full U32 words, packed four SOS sections x five signed48 Q2.46 coefficients|
+|E0/E4|RW shadow|Design sample rate / cutoff in integer Hz|
+|E8/EC|RO|Active design sample rate / declared cutoff Hz|
+|F0|RO|SOS API ID534F5301|
+|F4|RO|Upload flags; see SOS handoff|
+|F8|RO|Successful configuration application generation|
+|FC|RO|Current actual input sample rate Hz|
 
 The +4C/+50/+54 extensions occupy previously unused module offsets and do not alter frozen global IDs or widths. CLEAR empties data and resets arithmetic/cycle tracking; soft reset additionally clears counters/errors. Persistent loss or invalid phase marks partial output conservatively until the run is reset/cleared.
 
-The reference generator uses the existing1024-entry signed Q1.17 table with12-bit linear interpolation; its interface and phase equations are unchanged. The low-pass is two cascaded biquads, each with unity DC gain after Q2.46 coefficient quantization, lower-Q first. Both sections are bypassed by MODE.bit2 and participate in pipeline drain/reset. The second section adds3 clocks at100MHz (30ns) to arithmetic latency. Filter group delay also increases; this changes the transient/envelope timing, without changing the1f/2f phase-register definition. Coefficient values, frequency response, and group delay are specified in the precision revision. Runtime input-rate changes do not redesign this compile-time profile.
+The reference generator retains the1024-entry signed Q1.17 table with12-bit linear interpolation. The filter is now four pipelined SOS slots, with unused slots bypassed; the built-in four-order values remain bit exact. Arithmetic latency increases by6 clocks versus the two-slot revision. Custom mode requires a complete upload and matching actual sample rate; rate mismatch inhibits new samples and sets ERROR.bit8. MODE.bit2 bypasses all slots. See the SOS handoff for pole checks, atomic commits, odd-order placement, reset and settling behavior. Filter configuration writes are rejected while pending; this restriction does not change ordinary reference/output shadow-register behavior.
 
 2026-09-16 configuration cause extension: ADC/DILA slaves append cfg_error_code[3:0]; member1_adc_dila appends cfg_error_code[15:0], with ADC0 in[3:0], ADC1[7:4], DILA0[11:8], DILA1[15:12]. All nibbles are zero outside a corresponding rejected transaction. Codes are5=unknown/unaligned address,6=read-only write,7=invalid range/reserved CONTROL bits,8=repeated commit while pending. CONTROL bits31:4 are rejected using the byte-strobe mask. Runtime acquisition timeout stays in ERROR status; it never turns a later configuration request into transaction timeout9. The lead bridge owns missing-response timeout9. Public register IDs/pages/stream widths are unchanged.
 

@@ -28,7 +28,9 @@ module tb_cfg_error_codes;
         repeat(5)@(negedge clk);rst=1;
         for(page=0;page<4;page=page+1)begin
             case(page)0:base='h4000;1:base='h4100;2:base='h5000;3:base='h5100;endcase
-            access(0,base+1,0,5,page);access(0,base+'hfc,0,5,page);
+            access(0,base+1,0,5,page);
+            if(page<2)access(0,base+'hfc,0,5,page);
+            else begin access(0,base+'hfc,0,0,page);access(1,base+'hfc,0,6,page);end
             access(1,base,1,6,page);access(1,base+8,1,6,page);
             access(1,base+'h10,0,7,page);access(1,base+4,'h10,7,page);
             access(0,base+4,0,0,page);

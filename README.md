@@ -1,6 +1,10 @@
 # Vapor_Radar_App_V2
 
-## 当前正式版本：2026-11-13
+## 当前源码修订：2026-11-16 DLIA SOS
+
+在2026-11-13最新正式基线上增加DLIA 2～8阶可编程滤波器：上位机按实际采样率/截止频率设计SOS并下发，FPGA完成稳定性检查和边界原子提交。入口：[上位机对接规范](Docs/protocol/DLIA_SOS_HOST_HANDOFF_20261116.md)、[修改与验证记录](Docs/INTEGRATION_REVISION_20261116_DLIA_SOS.md)、[Python系数生成器](host/dlia_filter_coefficients.py)。本次源代码修订尚未产生新的整机发布BIT；Qt界面接入与实板联调另行进行。
+
+## 当前归档BIT：2026-11-13
 
 已同步最近实板使用的 **HC2A GPIO RH 修正版（HCD2）**：HC2A独立CON11 UART，保留AI8、TFA、EPSILON、双LC UART、GNSS PPS/UTC、DM422、双AD4630/DLIA和WMS/DAC。原2026-10-28构建BIT与配套128项源码输入已核对，归档日期不代表重新综合或重新上板。
 
@@ -10,7 +14,7 @@
 - [VLP1协议](Docs/protocol/FPGA_HOST_PROTOCOL_V1.0.md)、[PPS与电机接口](Docs/integration/GNSS_PPS_DM422_20261027.md)、[双LC UART](Docs/integration/LC_DUAL_UART_20261027.md)
 - [电机窗口](Docs/integration/MOTOR_PANEL_20261110.md)、[Qt上位机参考源码](host/qt_monitor/README.md)
 
-BIT：`firmware/fpga/releases/20261113_hc2a_rhfix/vapor_lidar_hc2a_gpio_rhfix_20261028.bit`。SHA256：`e5d0c1f691fd7a47cf83c108612f51d518f886ca57e7ca9a363f69c619c2f8a6`。核验命令：`python -B firmware/fpga/verify_release.py`。
+BIT：`firmware/fpga/releases/20261113_hc2a_rhfix/vapor_lidar_hc2a_gpio_rhfix_20261028.bit`。SHA256：`e5d0c1f691fd7a47cf83c108612f51d518f886ca57e7ca9a363f69c619c2f8a6`。该BIT不含SOS上传扩展。`firmware/fpga/verify_release.py`同时核对BIT与当前源码，须在旧发布提交`7cf6986`执行；修改后的源码不应再匹配旧来源清单。单独校验旧BIT可用PowerShell `Get-FileHash -Algorithm SHA256`。
 
 正式目录保存源码、规范、测试源以及本次明确归档的BIT；生成工程、DCP、日志、波形及临时数据留在外部 `Vapor_Lc_App_Test`。本版近期通过SRAM加载使用，未固化此BIT至Flash。AI8是可选择单通道轮询；HC2A占旧HMP逻辑页，但不支持HMP压力补偿。最近实测限制见最新说明。
 

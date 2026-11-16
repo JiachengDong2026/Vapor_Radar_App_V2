@@ -2,6 +2,8 @@
 
 当前版本：[2026-11-13 HC2A RH 修正版](releases/20261113_hc2a_rhfix/README.md)。
 
+2026-11-16的[DLIA SOS源码修订](../../Docs/INTEGRATION_REVISION_20261116_DLIA_SOS.md)尚无本目录中的对应发布BIT。此处旧BIT及来源清单保持其历史身份；`verify_release.py`应在旧发布提交`7cf6986`核验源码匹配。
+
 本目录只保存明确要求归档的正式 BIT、校验和及精简来源清单。可维护源码位于 `fpga/`，最新使用与验证说明见 [下位机说明](../../Docs/LOWER_COMPUTER_RELEASE_20261113.md)。
 
 - 发布目录按归档日期与功能命名；BIT 保留原始构建日期，避免把归档日期误认为重新综合日期。

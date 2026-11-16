@@ -151,7 +151,7 @@ CON16 电压 = -code1 × 5 / (8388608 × G) V = -code1 × 10 / 8388608 V
 
 当前硬件输出使用 format0；不要将 DLIA MODE 寄存器误认为 payload 格式选择。I/Q可以有正负，幅值H1/H2应非负。读取format1时GUI以 `min(2147483647, floor(hypot(I,Q)))` 生成对应幅值；format0/2直接读取H1/H2。
 
-H1/H2单位为数字幅值 code，不能直接套用 ADC 输入电压公式，也没有自动换算成浓度。H2峰值为合格完整周期内的 `max(H2[j])`；转成 ppm 需要另行浓度标定、基线处理及相关实验参数。当前四阶 Butterworth 版本 profile=0x00040101、截止频率固定1kHz（ADC 1MS/s）；这些配置不包含在每个 DLIA payload 中，应另外存档。
+H1/H2单位为数字幅值 code，不能直接套用 ADC 输入电压公式，也没有自动换算成浓度。H2峰值为合格完整周期内的 `max(H2[j])`；转成 ppm 需要另行浓度标定、基线处理及相关实验参数。默认内置四阶 Butterworth profile=0x00040101、截止频率默认1kHz（ADC 1MS/s）。2026-11-16扩展支持2～8阶自定义SOS，profile=0x80000000|阶数，详见[SOS对接规范](DLIA_SOS_HOST_HANDOFF_20261116.md)。滤波配置不包含在每个DLIA payload中，必须另外存档实际采样率、截止频率、阶数、完整整数系数、输出率、模式和生效配置序号，以支持正确回放。
 
 常用100Hz扫描、10kHz解调输出，对应约100点/扫描。GUI要求点数与 `output_rate/scan_hz` 相差不超过1且 flags 中无0x38异常位，才生成完整周期峰值。离线处理不能永远硬编码100点，应使用本次实际参数。
 

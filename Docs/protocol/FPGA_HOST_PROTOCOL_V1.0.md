@@ -1,5 +1,7 @@
 > **2026-11-13 正式版本**：默认 lane/source `0x0041` 为 HC2A，ID `0x00410106`、page `0x6100`、诊断 HCD2。VLP1 帧及 RH/T schema 1 保持兼容；旧 HMP 压力补偿/COMMIT 不适用。接口以[HC2A正式规范](../integration/sensors/HC2A_ROASCII.md)为准，整机身份与BIT见[最新说明](../LOWER_COMPUTER_RELEASE_20261113.md)。AI8 为配置单通道，八路需主机依次切换，非自动扫描。
 
+> 2026-11-16：DLIA新增主机计算SOS系数下发、2～8阶配置及设计采样率/截止频率回读。使用模块+F0的`534F5301`探测能力；全局扩展word仍为0x29。完整上位机流程见[SOS对接规范](DLIA_SOS_HOST_HANDOFF_20261116.md)，验证与归档BIT边界见[修订记录](../INTEGRATION_REVISION_20261116_DLIA_SOS.md)。
+
 > 2026-10-27：HMP/AI8 与 CON19 恢复实测双设备实现，AI8 保留单通道 schema 2 和设温核验；撤回扫描、通用参数事务及独立 RD105，扩展能力 word 为 `0x29`。EPSILON MAIN 下行/RTCM 和 DLIA 截止频率扩展保留。当前接口及验证边界见[恢复记录](../INTEGRATION_REVISION_20261027_HMP_AI8.md)。
 
 > 2026-10-17 历史版本：新增 AI8 扫描/参数事务、EPSILON MAIN 下行/RTCM、独立 RD105 source 0048/page 6800 和 DLIA 截止频率档位。AI8/RD105 部分已由上方修订撤回；仍保留的新增字段以[扩展交接](HOST_EXTENSIONS_20261017.md)为准，未上板验证。
@@ -842,7 +844,7 @@ RAW上传还需要raw_stream_mask对应bit32/33、global_enable及STREAM/USB使�
 | +0x14 / +0x18 | 1f相位/2f独立修正，U32整圈 |
 | +0x1C | 请求输出Hz（1..input_rate/8） |
 | +0x20 | MODE bit0用WMS参考、bit1启用幅值计算、bit2旁路低通；当前format0要求bit1=1 |
-| +0x24 / +0x28 | 四阶1kHz低通profile：0x00040101（1MHz）或0x00040102（12.5MHz）；数值格式描述仍为0x20112E10 |
+| +0x24 / +0x28 | 内置四阶低通profile：0x00040101（1MHz）或0x00040102（12.5MHz），默认1kHz；2026-11-16自定义SOS为0x80000000 OR 阶数，实际配置读+64/+E8/+EC；数值格式仍为0x20112E10 |
 | +0x2C / +0x30 / +0x34 | 输入/混频/滤波饱和计数 |
 | +0x38 / +0x3C | 输出点计数 / 排队点数 |
 | +0x40 | 分片点数1..256 |

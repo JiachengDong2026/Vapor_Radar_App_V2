@@ -25,7 +25,20 @@ module dila_core #(
 );
     reg enable,pending,prepared,div_start,phase_start;
     reg [31:0] cutoff_shadow,cutoff_commit,cutoff_active;
-    wire cutoff_changed=cutoff_active!=cutoff_commit;
+    reg [31:0] order_shadow,order_commit,order_active;
+    reg [31:0] design_rate_shadow,design_rate_commit,design_rate_active;
+    reg [31:0] design_cutoff_shadow,design_cutoff_commit,design_cutoff_active;
+    reg [31:0] filter_generation;
+    reg [29:0] coeff_words_written;
+    reg order_write_seen,coeff_upload_pending;
+    reg coeff_active_custom,coeff_commit_custom;
+    reg [959:0] coeff_shadow,coeff_commit,coeff_active;
+    wire filter_changed=(cutoff_active!=cutoff_commit) || (order_active!=order_commit) ||
+        (coeff_active_custom!=coeff_commit_custom) ||
+        (coeff_active_custom && coeff_commit_custom && (coeff_active!=coeff_commit ||
+        design_rate_active!=design_rate_commit || design_cutoff_active!=design_cutoff_commit));
+    wire custom_upload_requested=coeff_upload_pending || order_write_seen;
+    wire coeff_bank_complete=&coeff_words_written;
     reg [1:0] calc_state;
     reg [31:0] frequency_shadow,phase1_shadow,phase2_shadow,rate_shadow,mode_shadow,frag_shadow;
     reg [31:0] frequency_commit,phase1_commit,phase2_commit,rate_commit,mode_commit,frag_commit,input_rate_commit;
@@ -44,6 +57,7 @@ module dila_core #(
     wire [7:0] ofs=cfg_addr[7:0];
     wire [31:0] mask={{8{cfg_wstrb[3]}},{8{cfg_wstrb[2]}},{8{cfg_wstrb[1]}},{8{cfg_wstrb[0]}}};
     wire [31:0] wd=cfg_wdata&mask;
+    wire [4:0] coeff_word_index=(ofs-8'h68)>>2;
     wire wr=hit && cfg_write && !cfg_error;
     wire soft_reset=wr && ofs==4 && wd[1];
     wire clear_fifo=soft_reset || (wr && ofs==4 && wd[3]);
@@ -54,6 +68,42 @@ module dila_core #(
     wire div_done,div_busy,phase_done,phase_busy;
     wire [31:0] div_result;
     wire [63:0] phase_result;
+    function coefficients_stable;
+        input [959:0] bank;
+        integer section_index;
+        reg signed [47:0] a1_value,a2_value;
+        reg signed [49:0] one_value,a1_extended,a2_extended;
+        begin
+            one_value=50'sd70368744177664;
+            coefficients_stable=1'b1;
+            for(section_index=0;section_index<4;section_index=section_index+1)begin
+                a1_value=$signed(bank[section_index*240+144 +:48]);
+                a2_value=$signed(bank[section_index*240+192 +:48]);
+                a1_extended={{2{a1_value[47]}},a1_value};
+                a2_extended={{2{a2_value[47]}},a2_value};
+                if((one_value+a1_extended+a2_extended)<=0 ||
+                   (one_value-a1_extended+a2_extended)<=0 ||
+                   (one_value-a2_extended)<=0)
+                    coefficients_stable=1'b0;
+            end
+        end
+    endfunction
+    // Odd orders place the first-order section last. Remaining sections are unity.
+    function coefficients_shape_valid;
+        input [959:0] bank;
+        input [31:0] filter_order;
+        integer s;
+        begin
+            coefficients_shape_valid=1;
+            for(s=0;s<4;s=s+1)begin
+                if(s>=(filter_order+1)/2 && bank[s*240 +:240]!={192'd0,48'd70368744177664})
+                    coefficients_shape_valid=0;
+                if(filter_order[0] && s==filter_order/2 &&
+                   (bank[s*240+96 +:48]!=0 || bank[s*240+192 +:48]!=0))
+                    coefficients_shape_valid=0;
+            end
+        end
+    endfunction
     member1_divider u_rate(.clk(sys_clk),.rst_n(local_rst_n),.start(div_start),.numerator(div_num),.denominator(div_den),
         .busy(div_busy),.done(div_done),.quotient(div_result));
     member1_divider64 u_phase(.clk(sys_clk),.rst_n(local_rst_n),.start(phase_start),
@@ -62,9 +112,20 @@ module dila_core #(
     assign cfg_ready=hit;
     always @*begin
         cfg_rdata=0;cfg_error=0;merged=0;
-        if(hit)case(ofs)
+        if(hit && ofs>=8'h68 && ofs<=8'hDC)begin
+            cfg_rdata=coeff_shadow[coeff_word_index*32 +:32];
+            if(cfg_write && (pending || cfg_wstrb!=4'hf || !order_write_seen || order_shadow==0))cfg_error=1;
+        end else if(hit)case(ofs)
             8'h00:begin cfg_rdata={SOURCE_ID,16'h0101};cfg_error=cfg_write;end
-            8'h04:begin cfg_rdata={31'd0,enable};if(cfg_write && ((wd[2] && pending) || |wd[31:4]))cfg_error=1;end
+            8'h04:begin
+                cfg_rdata={31'd0,enable};
+                if(cfg_write && ((wd[2] && pending) || |wd[31:4]))cfg_error=1;
+                if(cfg_write && wd[2] && custom_upload_requested && order_shadow!=0 &&
+                   (!order_write_seen || order_shadow<2 || order_shadow>8 || !coeff_bank_complete || !coefficients_stable(coeff_shadow) ||
+                    !coefficients_shape_valid(coeff_shadow,order_shadow) ||
+                    design_rate_shadow!=input_rate || design_cutoff_shadow==0 || {design_cutoff_shadow,1'b0}>={1'b0,design_rate_shadow}))cfg_error=1;
+                if(cfg_write && wd[2] && wd[3:1]!=3'b010)cfg_error=1;
+            end
             8'h08:begin cfg_rdata={23'd0,time_sync_valid,|error_status,error_status[2],frame_level>=MAX_POINTS,enable,1'b0,pending,1'b1,enable};cfg_error=cfg_write;end
             8'h0c:cfg_rdata=error_status;
             8'h10:begin cfg_rdata=frequency_shadow;merged=(frequency_shadow&~mask)|wd;if(cfg_write && (merged==0 || merged>1000000000))cfg_error=1;end
@@ -72,7 +133,7 @@ module dila_core #(
             8'h18:cfg_rdata=phase2_shadow;
             8'h1c:begin cfg_rdata=rate_shadow;merged=(rate_shadow&~mask)|wd;if(cfg_write && (merged==0 || merged>(input_rate>>3)))cfg_error=1;end
             8'h20:begin cfg_rdata=mode_shadow;merged=(mode_shadow&~mask)|wd;if(cfg_write && (|merged[31:3] || (OUTPUT_FORMAT!=1 && !merged[1])))cfg_error=1;end
-            8'h24:begin cfg_rdata=INPUT_RATE_HZ==12500000?32'h00040102:32'h00040101;cfg_error=cfg_write;end
+            8'h24:begin cfg_rdata=coeff_active_custom?(32'h80000000|order_active):(INPUT_RATE_HZ==12500000?32'h00040102:32'h00040101);cfg_error=cfg_write;end
             8'h28:begin cfg_rdata=32'h20112e10;cfg_error=cfg_write;end
             8'h2c:cfg_rdata=in_sat_count;
             8'h30:cfg_rdata=mix_sat_count;
@@ -87,12 +148,24 @@ module dila_core #(
             8'h54:begin cfg_rdata=phase_step;cfg_error=cfg_write;end
             8'h58:begin
                 cfg_rdata=cutoff_shadow;merged=(cutoff_shadow&~mask)|wd;
-                if(cfg_write && merged!=100 && merged!=250 && merged!=500 && merged!=1000 && merged!=2000 && merged!=5000 && merged!=10000)cfg_error=1;
+                if(cfg_write && (pending || (merged!=100 && merged!=250 && merged!=500 && merged!=1000 && merged!=2000 && merged!=5000 && merged!=10000)))cfg_error=1;
             end
             8'h5c:begin cfg_rdata=cutoff_active;cfg_error=cfg_write;end
+            8'h60:begin cfg_rdata=order_shadow;merged=(order_shadow&~mask)|wd;if(cfg_write && ((merged!=0 && (merged<2 || merged>8)) || pending || cfg_wstrb!=4'hf))cfg_error=1;end
+            8'h64:begin cfg_rdata=order_active;cfg_error=cfg_write;end
+            8'hE0:begin cfg_rdata=design_rate_shadow;merged=(design_rate_shadow&~mask)|wd;if(cfg_write && (merged==0 || pending))cfg_error=1;end
+            8'hE4:begin cfg_rdata=design_cutoff_shadow;merged=(design_cutoff_shadow&~mask)|wd;if(cfg_write && (merged==0 || pending))cfg_error=1;end
+            8'hE8:begin cfg_rdata=design_rate_active;cfg_error=cfg_write;end
+            8'hEC:begin cfg_rdata=design_cutoff_active;cfg_error=cfg_write;end
+            8'hF0:begin cfg_rdata=32'h534f5301;cfg_error=cfg_write;end
+            8'hF4:begin cfg_rdata={26'd0,coeff_bank_complete,order_write_seen,coeff_upload_pending,pending,coeff_commit_custom,coeff_active_custom};cfg_error=cfg_write;end
+            8'hF8:begin cfg_rdata=filter_generation;cfg_error=cfg_write;end
+            8'hFC:begin cfg_rdata=input_rate;cfg_error=cfg_write;end
             default:cfg_error=1;
         endcase
-        if(hit && cfg_write && ofs==4 && wd[2] && cutoff_shadow!=1000 && input_rate!=INPUT_RATE_HZ)cfg_error=1;
+        if(hit && cfg_write && ofs==4 && wd[2] && order_shadow==0 && cutoff_shadow!=1000 && input_rate!=INPUT_RATE_HZ)cfg_error=1;
+        if(hit && cfg_write && ofs==4 && wd[2] && !custom_upload_requested && coeff_active_custom && order_shadow!=0 && input_rate!=design_rate_active)cfg_error=1;
+        if(hit && ofs[1:0]!=0)cfg_error=1;
     end
     wire [193:0] sample_tag=USE_CAPTURE_TAGS?capture_tag:
         {time_sync_valid,wms_phase_valid,wms_scan_start?timestamp_now:cycle_timestamp,
@@ -100,8 +173,10 @@ module dila_core #(
     wire input_new_cycle=!have_input_cycle || sample_tag[31:0]!=last_input_cycle;
     wire config_boundary_request=pending && prepared && (!enable || (sample_valid && input_new_cycle));
     wire config_pipeline_idle;
-    wire apply_config=config_boundary_request && config_pipeline_idle;
-    assign sample_ready=(enable || drain_pending) && cooldown==0 && !config_boundary_request;
+    wire commit_rate_valid=!coeff_commit_custom || input_rate==design_rate_commit;
+    wire active_rate_valid=!coeff_active_custom || input_rate==design_rate_active;
+    wire apply_config=config_boundary_request && config_pipeline_idle && commit_rate_valid;
+    assign sample_ready=(enable || drain_pending) && cooldown==0 && !config_boundary_request && active_rate_valid;
     wire sample_fire=sample_valid && sample_ready;
     reg ref_valid;
     reg [193:0] ref_tag;
@@ -116,40 +191,59 @@ module dila_core #(
     dila_mixer u_mix(.clk(sys_clk),.rst_n(local_rst_n),.in_valid(ref_valid),.sample(ref_sample),
         .cos_1f(cos1),.sin_1f(sin1),.cos_2f(cos2),.sin_2f(sin2),.in_tag(ref_tag),
         .out_valid(mix_valid),.out_iq(mix_iq),.out_tag(mix_tag),.saturation(mix_sat));
-    // Fourth-order Butterworth, 1 kHz cutoff. Each Q2.46 biquad has
-    // unity DC gain: B0+B1+B2 = 2^46+A1+A2 after coefficient rounding.
-    // Put the lower-Q section first to retain headroom at the cascade input.
-    localparam signed [47:0] B0=INPUT_RATE_HZ==12500000?48'sd4442812:48'sd690501114;
-    localparam signed [47:0] B1=INPUT_RATE_HZ==12500000?48'sd8885622:48'sd1381002230;
-    localparam signed [47:0] B2=B0;
-    localparam signed [47:0] A1=INPUT_RATE_HZ==12500000?-48'sd140672143489574:-48'sd139922478782895;
-    localparam signed [47:0] A2=INPUT_RATE_HZ==12500000?48'sd70303417083156:48'sd69556496609689;
-    localparam signed [47:0] C0=INPUT_RATE_HZ==12500000?48'sd4444020:48'sd692843472;
-    localparam signed [47:0] C1=INPUT_RATE_HZ==12500000?48'sd8888039:48'sd1385686942;
-    localparam signed [47:0] C2=C0;
-    localparam signed [47:0] D1=INPUT_RATE_HZ==12500000?-48'sd140710403851039:-48'sd140397131718583;
-    localparam signed [47:0] D2=INPUT_RATE_HZ==12500000?48'sd70341677449454:48'sd70031158914805;
+    wire [4:0] section_valid;
+    wire [127:0] section_iq[0:4];
+    wire [193:0] section_tag[0:4];
+    wire [3:0] section_saturation,section_sat_counted,section_busy;
     wire first_filtered_valid,first_filter_sat,first_filter_busy;
     wire [127:0] first_filtered_iq;
     wire [193:0] first_filtered_tag;
     wire filtered_valid,filter_sat,filter_busy;
     wire [127:0] filtered_iq;
     wire [193:0] filtered_tag;
-    wire signed [47:0] coeff_b0[0:1],coeff_b1[0:1],coeff_a1[0:1],coeff_a2[0:1];
+    wire signed [47:0] coeff_b0[0:3],coeff_b1[0:3],coeff_b2[0:3],coeff_a1[0:3],coeff_a2[0:3];
+    wire signed [47:0] legacy_b0[0:1],legacy_b1[0:1],legacy_a1[0:1],legacy_a2[0:1];
+    assign section_valid[0]=mix_valid;
+    assign section_iq[0]=mix_iq;
+    assign section_tag[0]=mix_tag;
+    assign first_filtered_valid=section_valid[1];
+    assign first_filtered_iq=section_iq[1];
+    assign first_filtered_tag=section_tag[1];
+    assign first_filter_sat=section_saturation[0];
+    assign first_filter_busy=section_busy[0];
+    assign filtered_valid=section_valid[4];
+    assign filtered_iq=section_iq[4];
+    assign filtered_tag=section_tag[4];
+    assign filter_busy=|section_busy;
+    assign filter_sat=section_saturation[1];
     genvar section;
-    generate for(section=0;section<2;section=section+1)begin : lpf_profiles
+    generate for(section=0;section<2;section=section+1)begin : legacy_lpf_profiles
         dila_lpf_coefficients #(.INPUT_RATE_HZ(INPUT_RATE_HZ),.SECTION(section)) coefficients(
-            .cutoff_hz(cutoff_active),.b0(coeff_b0[section]),.b1(coeff_b1[section]),.a1(coeff_a1[section]),.a2(coeff_a2[section]));
+            .cutoff_hz(cutoff_active),.b0(legacy_b0[section]),.b1(legacy_b1[section]),.a1(legacy_a1[section]),.a2(legacy_a2[section]));
     end endgenerate
-    dila_lpf #(.CONFIGURABLE(1),.B0(B0),.B1(B1),.B2(B2),.A1(A1),.A2(A2)) u_filter(
-        .clk(sys_clk),.rst_n(local_rst_n),.clear(apply_config && cutoff_changed),.in_valid(mix_valid),
-        .coefficient_b0(coeff_b0[0]),.coefficient_b1(coeff_b1[0]),.coefficient_a1(coeff_a1[0]),.coefficient_a2(coeff_a2[0]),.in_iq(mix_iq),.in_tag(mix_tag),
-        .bypass(mode_active[2]),.out_valid(first_filtered_valid),.out_iq(first_filtered_iq),.out_tag(first_filtered_tag),
-        .saturation(first_filter_sat),.busy(first_filter_busy));
-    dila_lpf #(.CONFIGURABLE(1),.B0(C0),.B1(C1),.B2(C2),.A1(D1),.A2(D2)) u_filter_second(
-        .clk(sys_clk),.rst_n(local_rst_n),.clear(apply_config && cutoff_changed),.in_valid(first_filtered_valid),
-        .coefficient_b0(coeff_b0[1]),.coefficient_b1(coeff_b1[1]),.coefficient_a1(coeff_a1[1]),.coefficient_a2(coeff_a2[1]),.in_iq(first_filtered_iq),.in_tag(first_filtered_tag),
-        .bypass(mode_active[2]),.out_valid(filtered_valid),.out_iq(filtered_iq),.out_tag(filtered_tag),.saturation(filter_sat),.busy(filter_busy));
+    generate for(section=0;section<4;section=section+1)begin : lpf_cascade
+        assign section_sat_counted[section]=section_saturation[section] && order_active>section*2;
+        if(section<2)begin : legacy_section
+            assign coeff_b0[section]=coeff_active_custom?$signed(coeff_active[section*240 +:48]):legacy_b0[section];
+            assign coeff_b1[section]=coeff_active_custom?$signed(coeff_active[section*240+48 +:48]):legacy_b1[section];
+            assign coeff_b2[section]=coeff_active_custom?$signed(coeff_active[section*240+96 +:48]):legacy_b0[section];
+            assign coeff_a1[section]=coeff_active_custom?$signed(coeff_active[section*240+144 +:48]):legacy_a1[section];
+            assign coeff_a2[section]=coeff_active_custom?$signed(coeff_active[section*240+192 +:48]):legacy_a2[section];
+        end else begin : identity_section
+            assign coeff_b0[section]=coeff_active_custom?$signed(coeff_active[section*240 +:48]):48'sd70368744177664;
+            assign coeff_b1[section]=coeff_active_custom?$signed(coeff_active[section*240+48 +:48]):48'sd0;
+            assign coeff_b2[section]=coeff_active_custom?$signed(coeff_active[section*240+96 +:48]):48'sd0;
+            assign coeff_a1[section]=coeff_active_custom?$signed(coeff_active[section*240+144 +:48]):48'sd0;
+            assign coeff_a2[section]=coeff_active_custom?$signed(coeff_active[section*240+192 +:48]):48'sd0;
+        end
+        dila_lpf #(.CONFIGURABLE(1)) filter_section(
+            .clk(sys_clk),.rst_n(local_rst_n),.clear(apply_config && filter_changed),.in_valid(section_valid[section]),
+            .coefficient_b0(coeff_b0[section]),.coefficient_b1(coeff_b1[section]),.coefficient_b2(coeff_b2[section]),
+            .coefficient_a1(coeff_a1[section]),.coefficient_a2(coeff_a2[section]),
+            .in_iq(section_iq[section]),.in_tag(section_tag[section]),.bypass(mode_active[2] || order_active<=section*2),
+            .out_valid(section_valid[section+1]),.out_iq(section_iq[section+1]),.out_tag(section_tag[section+1]),
+            .saturation(section_saturation[section]),.busy(section_busy[section]));
+    end endgenerate
     wire filter_new_cycle=!have_filter_cycle || filtered_tag[31:0]!=last_filter_cycle;
     wire point_due=filtered_valid && ((filter_new_cycle?32'd1:decim_count+1'b1)>=decimation);
     wire magnitude_busy,mag_valid,point_valid;
@@ -165,23 +259,25 @@ module dila_core #(
     always @*begin
         cfg_error_code=0;
         if(hit && cfg_error)case(ofs)
-            8'h00,8'h08,8'h24,8'h28,8'h38,8'h3c,8'h44,8'h48,8'h4c,8'h50,8'h54,8'h5c:cfg_error_code=6;
-            8'h04:cfg_error_code=(|wd[31:4])?7:8;
-            8'h10,8'h1c,8'h20,8'h40:cfg_error_code=7;
+            8'h00,8'h08,8'h24,8'h28,8'h38,8'h3c,8'h44,8'h48,8'h4c,8'h50,8'h54,8'h5c,8'h64,8'hE8,8'hEC,8'hF0,8'hF4,8'hF8,8'hFC:cfg_error_code=6;
+            8'h04:cfg_error_code=(pending && wd[2])?8:7;
+            8'h10,8'h1c,8'h20,8'h40,8'h60,8'hE0,8'hE4:cfg_error_code=7;
             default:cfg_error_code=5;
         endcase
+        if(hit && cfg_error && ofs>=8'h68 && ofs<=8'hDC && ofs[1:0]==0)cfg_error_code=pending?8:7;
+        if(hit && cfg_error && ofs[1:0]!=0)cfg_error_code=5;
     end
     wire [191:0] point_data=mode_active[1]?mag_data:{64'd0,direct_iq};
     wire [193:0] point_tag=mode_active[1]?mag_tag:direct_tag;
     assign point_valid=mode_active[1]?mag_valid:direct_valid;
-    assign config_pipeline_idle=!ref_valid && !mix_valid && !first_filter_busy && !first_filtered_valid &&
-        !filter_busy && !filtered_valid && !magnitude_busy && !mag_valid && !direct_valid;
+    assign config_pipeline_idle=!ref_valid && !mix_valid && !filter_busy && !(|section_valid[4:1]) &&
+        !magnitude_busy && !mag_valid && !direct_valid;
     assign output_queue_level=frame_level;
     assign datapath_idle=!enable && !sample_valid && config_pipeline_idle && frame_level==0 && !m_valid && !flush_pending && !drain_pending;
     dila_magnitude u_magnitude(.clk(sys_clk),.rst_n(local_rst_n),.start(point_due && mode_active[1] && !magnitude_busy),
         .iq(filtered_iq),.tag(filtered_tag),.valid(mag_valid),.busy(magnitude_busy),.point(mag_data),.point_tag(mag_tag));
     wire boundary_fire=flush_pending && flush_timer==0 && !sample_valid && !ref_valid && !mix_valid &&
-        !first_filter_busy && !first_filtered_valid && !filter_busy && !filtered_valid && !magnitude_busy && !point_valid;
+        !filter_busy && !(|section_valid[4:1]) && !magnitude_busy && !point_valid;
     dila_block_framer #(.MAX_POINTS(MAX_POINTS),.OUTPUT_FORMAT(OUTPUT_FORMAT),.SOURCE_ID(SOURCE_ID)) u_frame(
         .clk(sys_clk),.rst_n(local_rst_n),.clear(clear_fifo),.point_valid(point_valid),.point_data(point_data),.point_tag(point_tag),
         .point_flags((|error_status?32'h10:0)|(cycle_partial?32'h20:0)),.output_rate(rate_actual),.fragment_points(frag_active),
@@ -192,6 +288,11 @@ module dila_core #(
         if(!rst_sys_n)begin
             enable<=0;pending<=0;prepared<=0;calc_state<=0;div_start<=0;phase_start<=0;
             cutoff_shadow<=1000;cutoff_commit<=1000;cutoff_active<=1000;
+            order_shadow<=0;order_commit<=4;order_active<=4;coeff_words_written<=0;filter_generation<=0;
+            design_rate_shadow<=INPUT_RATE_HZ;design_rate_commit<=INPUT_RATE_HZ;design_rate_active<=INPUT_RATE_HZ;
+            design_cutoff_shadow<=1000;design_cutoff_commit<=1000;design_cutoff_active<=1000;
+            order_write_seen<=0;coeff_upload_pending<=0;coeff_active_custom<=0;coeff_commit_custom<=0;
+            coeff_shadow<=0;coeff_commit<=0;coeff_active<=0;
             frequency_shadow<=1000000;phase1_shadow<=0;phase2_shadow<=0;rate_shadow<=10000;mode_shadow<=3;frag_shadow<=256;
             frequency_commit<=1000000;phase1_commit<=0;phase2_commit<=0;rate_commit<=10000;mode_commit<=3;frag_commit<=256;input_rate_commit<=INPUT_RATE_HZ;
             phase1_active<=0;phase2_active<=0;mode_active<=3;frag_active<=256;
@@ -217,6 +318,15 @@ module dila_core #(
                     if(wd[2])begin
                         pending<=1;prepared<=0;cutoff_commit<=cutoff_shadow;frequency_commit<=frequency_shadow;phase1_commit<=phase1_shadow;phase2_commit<=phase2_shadow;
                         rate_commit<=rate_shadow;mode_commit<=mode_shadow;frag_commit<=frag_shadow;input_rate_commit<=input_rate;
+                        if(custom_upload_requested && order_shadow!=0)begin
+                            coeff_commit<=coeff_shadow;coeff_commit_custom<=1;order_commit<=order_shadow;
+                            design_rate_commit<=design_rate_shadow;design_cutoff_commit<=design_cutoff_shadow;
+                        end else if(order_shadow==0)begin
+                            coeff_commit_custom<=0;order_commit<=4;design_rate_commit<=INPUT_RATE_HZ;design_cutoff_commit<=cutoff_shadow;
+                        end else begin
+                            coeff_commit<=coeff_active;coeff_commit_custom<=coeff_active_custom;order_commit<=order_active;
+                            design_rate_commit<=design_rate_active;design_cutoff_commit<=design_cutoff_active;
+                        end
                     end
                 end
                 8'h0c:error_status<=error_status&~wd;
@@ -228,10 +338,18 @@ module dila_core #(
                 8'h2c:in_sat_count<=in_sat_count&~wd;
                 8'h30:mix_sat_count<=mix_sat_count&~wd;
                 8'h34:lpf_sat_count<=lpf_sat_count&~wd;
-                8'h58:cutoff_shadow<=(cutoff_shadow&~mask)|wd;
+                8'h58:begin cutoff_shadow<=(cutoff_shadow&~mask)|wd;order_shadow<=0;coeff_words_written<=0;order_write_seen<=0;coeff_upload_pending<=0;end
+                8'h60:begin order_shadow<=cfg_wdata;order_write_seen<=1;coeff_words_written<=0;coeff_upload_pending<=0;end
+                8'hE0:design_rate_shadow<=(design_rate_shadow&~mask)|wd;
+                8'hE4:design_cutoff_shadow<=(design_cutoff_shadow&~mask)|wd;
                 8'h40:frag_shadow<=(frag_shadow&~mask)|wd;
                 default:begin end
             endcase
+            if(wr && ofs>=8'h68 && ofs<=8'hDC)begin
+                coeff_shadow[coeff_word_index*32 +:32]<=cfg_wdata;
+                coeff_words_written[coeff_word_index]<=1'b1;
+                coeff_upload_pending<=1;
+            end
             if(pending && !prepared && calc_state==0)begin
                 div_num<=input_rate_commit+rate_commit-1;div_den<=rate_commit;div_start<=1;phase_start<=1;calc_state<=1;
             end
@@ -241,8 +359,16 @@ module dila_core #(
             end
             if(div_done && calc_state==2)begin rate_next<=div_result;calc_state<=3;end
             if(calc_state==3 && !phase_busy)begin prepared<=1;calc_state<=0;end
+            if(pending && prepared && !commit_rate_valid)begin
+                pending<=0;prepared<=0;error_status[8]<=1;
+            end
+            if(enable && !active_rate_valid)error_status[8]<=1;
             if(apply_config)begin
+                filter_generation<=filter_generation+1'b1;
                 cutoff_active<=cutoff_commit;
+                design_rate_active<=design_rate_commit;design_cutoff_active<=design_cutoff_commit;
+                order_active<=order_commit;coeff_active<=coeff_commit;coeff_active_custom<=coeff_commit_custom;
+                coeff_words_written<=0;order_write_seen<=0;coeff_upload_pending<=0;
                 phase1_active<=phase1_commit;phase2_active<=phase2_commit;mode_active<=mode_commit;frag_active<=frag_commit;
                 decimation<=factor_next;rate_actual<=rate_next;phase_step<=phase_next;pending<=0;prepared<=0;
             end
@@ -262,8 +388,9 @@ module dila_core #(
             end
             if(input_overflow_pulse)begin error_status[2]<=1;cycle_partial<=1;end
             if(mix_sat)mix_sat_count<=mix_sat_count+1'b1;
-            if(first_filter_sat || filter_sat)begin
-                lpf_sat_count<=lpf_sat_count+{31'd0,first_filter_sat}+{31'd0,filter_sat};error_status[6]<=1;
+            if(|section_sat_counted)begin
+                lpf_sat_count<=lpf_sat_count+section_sat_counted[0]+section_sat_counted[1]+
+                    section_sat_counted[2]+section_sat_counted[3];error_status[6]<=1;
             end
             if(point_due && magnitude_busy)begin error_status[5]<=1;cycle_partial<=1;end
             if(point_valid)out_count<=out_count+1'b1;
@@ -277,6 +404,7 @@ module dila_core #(
             if(clear_fifo)begin
                 have_input_cycle<=0;have_filter_cycle<=0;cycle_partial<=0;ref_valid<=0;cooldown<=0;
                 pending<=0;prepared<=0;calc_state<=0;flush_pending<=0;drain_pending<=0;decim_count<=0;
+                coeff_words_written<=0;order_write_seen<=0;coeff_upload_pending<=0;
             end
         end
     end

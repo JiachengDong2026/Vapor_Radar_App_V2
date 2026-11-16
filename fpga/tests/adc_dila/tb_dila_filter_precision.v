@@ -13,7 +13,7 @@ module dila_filter_precision_case #(
     wire [31:0] cfg_rdata;
     reg [193:0] vectors[0:COUNT-1];
     reg [127:0] bypass_expected[0:15];
-    integer n,first_count=0,final_count=0,score_mode=0,sat_count=0;
+    integer n,first_count=0,second_count=0,final_count=0,score_mode=0,sat_count=0;
     reg [31:0] rd;
     dila_core #(.INPUT_RATE_HZ(RATE),.USE_CAPTURE_TAGS(1),.OUTPUT_FORMAT(1),.MAX_POINTS(512)) dut(
         .sys_clk(clk),.rst_sys_n(rst_n),.sample_valid(sample_valid),.sample_ready(sample_ready),
@@ -83,15 +83,16 @@ module dila_filter_precision_case #(
                 $fatal(1,"First stage saturation RATE=%0d idx=%0d",RATE,first_count);
             sat_count=sat_count+vectors[first_count][192];first_count=first_count+1;
         end
+        if(dut.section_valid[2] && score_mode==1)begin
+            if(dut.filter_sat!==vectors[second_count][193])$fatal(1,"Second section saturation RATE=%0d idx=%0d",RATE,second_count);
+            sat_count=sat_count+vectors[second_count][193];second_count=second_count+1;
+        end
         if(dut.filtered_valid && score_mode!=0)begin
             if(score_mode==1)begin
                 if(dut.filtered_iq!==vectors[final_count][191:64])
                     $fatal(1,"Cascade IQ RATE=%0d idx=%0d got=%h expected=%h",RATE,final_count,dut.filtered_iq,vectors[final_count][191:64]);
                 if(dut.filtered_tag!==make_tag(final_count,vectors[final_count][63:32]))
                     $fatal(1,"Cascade tag RATE=%0d idx=%0d",RATE,final_count);
-                if(dut.filter_sat!==vectors[final_count][193])
-                    $fatal(1,"Second stage saturation RATE=%0d idx=%0d",RATE,final_count);
-                sat_count=sat_count+vectors[final_count][193];
             end else begin
                 if(dut.filtered_tag!==make_tag(final_count,0))$fatal(1,"Bypass/reset tag");
                 if(score_mode==2 && dut.filtered_iq!==bypass_expected[final_count])$fatal(1,"Cascade bypass changed IQ");

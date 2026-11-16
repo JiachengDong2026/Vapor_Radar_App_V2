@@ -99,6 +99,8 @@ RTCM staging 可通过多条 VLP WRITE_REG 装载，但在整帧完成前不会�
 
 ## DLIA 低通截止频率
 
+2026-11-16：以下为保留的内置模式。新增2～8阶主机SOS上传及能力探测，详见[SOS对接规范](DLIA_SOS_HOST_HANDOFF_20261116.md)；写旧截止寄存器会选择内置四阶模式供下一次commit生效。
+
 5000/5100 两路新增 `+58 CUTOFF_SHADOW` 和只读 `+5C CUTOFF_ACTIVE`，支持 100/250/500/1000/2000/5000/10000 Hz，默认 1000。沿用原 COMMIT，在停用时或新 capture cycle 边界、流水线排空后原子切换；改变截止频率会清除两级滤波历史，不能混用两套系数。旁路仍由 MODE.bit2 决定。
 
 每路是原有四阶 Butterworth，两节 Q2.46 biquad；1 kHz 系数和舍入保持原样。配置档位按编译时 INPUT_RATE_HZ（1 MHz / 12.5 MHz）生成；非默认截止频率仅允许在实际输入率等于该标称率时 COMMIT，否则范围拒绝，不能将标称 Hz 冒充其它采样率下的截止频率。ADC0/1 的共享采样时序未拆分。
