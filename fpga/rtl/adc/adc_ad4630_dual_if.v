@@ -17,6 +17,7 @@ module adc_ad4630_dual_if #(
     output wire m1_valid, input wire m1_ready, output wire [233:0] m1_tagged_sample,
     input wire [1:0] external_drop_increment0, output wire capture_drop_pulse0,
     input wire [1:0] external_drop_increment1, output wire capture_drop_pulse1,
+    output wire pps_capture_ready0,output wire pps_capture_ready1,
     output wire raw_enable0, output wire [31:0] sample_rate_actual0,
     output wire raw_enable1, output wire [31:0] sample_rate_actual1,
     output wire [31:0] capture_fifo_level0, output wire capture_idle0,
@@ -67,6 +68,8 @@ module adc_ad4630_dual_if #(
     wire push1=sample_pulse && in_flight1 && accept1;
     assign capture_idle0=!enable0 && !in_flight0 && !push0 && fifo_level0==0;
     assign capture_idle1=!enable1 && !in_flight1 && !push1 && fifo_level1==0;
+    assign pps_capture_ready0=initialized && enable0 && !timing_pending0 && !cancel0;
+    assign pps_capture_ready1=initialized && enable1 && !timing_pending0 && !cancel1;
     wire local_rst_n=rst_sys_n && !soft_reset0;
     reg spi_start;
     reg [2:0] init_index;

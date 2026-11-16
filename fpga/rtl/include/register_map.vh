@@ -368,4 +368,22 @@
 `define REG_MOTOR_WATCHDOG_MS       8'h44
 `define REG_MOTOR_PULSES_PER_MM     8'h48
 
+// PPS single-scan extension; independent per WMS channel, reset mode=0.
+`define REG_WMS_TRIGGER_MODE           8'h4C
+`define REG_WMS_IDLE_LEVEL             8'h50
+`define REG_WMS_TRIGGER_STATUS         8'h54
+`define REG_WMS_TRIGGER_COUNT          8'h58
+`define REG_WMS_MISSED_COUNT           8'h5C
+`define REG_WMS_LAST_PPS_SEQ           8'h60
+`define REG_WMS_LAST_PPS_LO            8'h64
+`define REG_WMS_LAST_PPS_HI            8'h68
+`define REG_WMS_ACTUAL_START_LO        8'h6C
+`define REG_WMS_ACTUAL_START_HI        8'h70
+`define REG_WMS_ACTUAL_END_LO          8'h74
+`define REG_WMS_ACTUAL_END_HI          8'h78
+`define REG_WMS_COMPLETED_COUNT        8'h7C
+`define REG_WMS_ABORTED_COUNT          8'h80
+`define REG_WMS_TRIGGER_API            8'h84
+`define REG_WMS_REJECTED_COUNT         8'h88
+
 `endif

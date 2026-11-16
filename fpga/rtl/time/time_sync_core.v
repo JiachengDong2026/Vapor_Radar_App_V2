@@ -12,6 +12,7 @@ module time_sync_core #(
     output reg sync_valid,
     output reg [31:0] sync_seq,
     output reg sync_event_pulse,
+    output wire pps_qualified,
     output reg [63:0] sync_event_tick,
     output reg [63:0] sync_event_gnss_tag,
     output reg sync_event_gnss_valid,
@@ -49,6 +50,7 @@ module time_sync_core #(
     wire [7:0] ofs = cfg_addr[7:0];
     wire edge_hit = falling_edge ? (sync_previous && !sync_level) : (!sync_previous && sync_level);
     wire clock_good = !CHECK_CLOCK_VALID || clock_valid;
+    assign pps_qualified=calibrated && sync_valid && clock_good;
     // Revoke the anchor on the first invalid age, not one ms later. A fresh
     // serial tag in that maintenance window must never revive an old epoch.
     wire tag_expiry_tick = clock_good && sub_ms == MS_TICKS-1 && tag_age_ms >= timeout_ms-1;

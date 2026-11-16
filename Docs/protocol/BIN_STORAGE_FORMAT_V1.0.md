@@ -1,3 +1,5 @@
+> **2026-11-16 PPS扫描记录补充**：BIN仍为原始VLP拼接，不新增文件头或payload字段。PPS模式需旁车记录每通道模式、等待电平、WMS/DAC/ADC/DLIA及SOS配置、PPS seq/tick与WMS cycle_id、实际START/END、计数/错误、TIME资格及UTC锚点依据。DLIA帧中没有新增PPS seq；模式不能仅由旧帧ID推断。当前Qt不会自动保存新增字段，具体关联和一致性读取见[PPS对接规范](PPS_WMS_DLIA_HOST_HANDOFF_20261116.md)。
+
 > **2026-11-15 SDFM300迁移**：当前距离设备为300米SDFM300，默认460800/8N1、单UART、4字节主动输出；旧模式/命令与LF管脚已撤回。寄存器、有效性、电气接线及上行兼容语义以[SDFM300接口](../integration/sensors/SDFM300.md)为准。历史板测和旧BIT仅覆盖当时设备。
 
 > 2026-10-11 同步：本文存储格式适用于仓库 `host/qt_monitor` V0.2.5；V0.2.5 仅改变 WMS 电压输入显示及边界检查，BIN 格式未变。下述采集记录为历史证据。

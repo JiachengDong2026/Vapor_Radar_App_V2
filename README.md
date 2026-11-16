@@ -8,6 +8,10 @@
 
 # Vapor_Radar_App_V2
 
+## 当前源码修订：2026-11-16 PPS—WMS—DLIA
+
+新增可切换的PPS单次同步扫描：默认保留连续模式，合格PPS触发一次WMS扫描，DLIA按实际DAC窗口解调并独立收尾。上位机通过WMS `+4C`切换，`+84=50505301`识别能力。入口：[详细上位机对接](Docs/protocol/PPS_WMS_DLIA_HOST_HANDOFF_20261116.md)、[修改与验证记录](Docs/INTEGRATION_REVISION_20261116_PPS_WMS_DLIA.md)。本次源码功能尚未生成新的发布BIT、未做实板验收，Qt控件需上位机开发方接入。
+
 ## 当前源码修订：2026-11-16 DLIA SOS
 
 DLIA 2～8阶可编程滤波器已与GitHub `80f8319` 的AI8扫描、SDFM300、DM422及TEC103接入更新合并：上位机按实际采样率/截止频率设计SOS并下发，FPGA完成稳定性检查和边界原子提交。入口：[上位机对接规范](Docs/protocol/DLIA_SOS_HOST_HANDOFF_20261116.md)、[修改与验证记录](Docs/INTEGRATION_REVISION_20261116_DLIA_SOS.md)、[Python系数生成器](host/dlia_filter_coefficients.py)。本次源代码修订尚未产生新的整机发布BIT；Qt界面接入与实板联调另行进行。

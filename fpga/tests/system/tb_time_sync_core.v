@@ -6,7 +6,13 @@ module tb_time_sync_core;
     wire[31:0] seq,errors;
     reg cv=0,cw=0;reg[31:0] ca=0,cd=0;reg[3:0] cs=0;
     wire cr,ce;wire[31:0] rd;
-    time_sync_core #(.SYS_CLK_HZ(10000)) dut(clk,rst,sync_pin,tag,tag_valid,ticks,valid,seq,event_pulse,event_tick,event_tag,event_tag_valid,errors,cv,cw,ca,cd,cs,cr,rd,ce,1'b1,);
+    time_sync_core #(.SYS_CLK_HZ(10000)) dut(
+        .sys_clk(clk),.rst_sys_n(rst),.sync_in_async(sync_pin),
+        .gnss_time_tag(tag),.gnss_time_tag_valid(tag_valid),.timestamp_now(ticks),
+        .sync_valid(valid),.sync_seq(seq),.sync_event_pulse(event_pulse),.pps_qualified(),
+        .sync_event_tick(event_tick),.sync_event_gnss_tag(event_tag),.sync_event_gnss_valid(event_tag_valid),
+        .error_status(errors),.cfg_valid(cv),.cfg_write(cw),.cfg_addr(ca),.cfg_wdata(cd),.cfg_wstrb(cs),
+        .cfg_ready(cr),.cfg_rdata(rd),.cfg_error(ce),.clock_valid(1'b1),.cfg_error_code());
     reg[31:0] got;reg[63:0] t0,previous=0;integer events=0;
     always @(negedge clk) if(rst)begin
         if(previous!=0 && ticks!=previous+1)$fatal(1,"time must be monotonic");

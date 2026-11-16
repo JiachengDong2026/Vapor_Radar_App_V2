@@ -55,6 +55,8 @@ module vapor_lidar_top #(parameter integer SIMULATION=0,GPIF_CLK_HZ=50000000,
     wire [31:0] watchdog_timeout_ms,watchdog_expirations;
     wire [63:0] timestamp_now,gnss_time_tag,sync_event_tick,sync_event_gnss_tag;
     wire time_sync_valid,gnss_time_tag_valid,sync_event_pulse,sync_event_gnss_valid;
+    wire pps_qualified;
+    wire [1:0] pps_mode,scan_aborted,pps_trigger_ready,pps_scan_drained;
     wire [31:0] sync_seq,time_errors;
     wire [63:0] stream_mask,raw_stream_mask;
     wire arb_mode,acquisition_running,acquisition_requested,action_busy;
@@ -359,6 +361,7 @@ module vapor_lidar_top #(parameter integer SIMULATION=0,GPIF_CLK_HZ=50000000,
         .gnss_time_tag(gnss_time_tag),
         .gnss_time_tag_valid(gnss_time_tag_valid),
         .sync_seq(sync_seq),
+        .pps_qualified(pps_qualified),
         .sync_event_pulse(sync_event_pulse),
         .sync_event_tick(sync_event_tick),
         .sync_event_gnss_tag(sync_event_gnss_tag),
@@ -369,6 +372,8 @@ module vapor_lidar_top #(parameter integer SIMULATION=0,GPIF_CLK_HZ=50000000,
         .clock_valid(rst_operational_n)
     );
     wms_dac_dual u_member2(
+        .pps_pulse(sync_event_pulse),.pps_qualified(pps_qualified),.pps_tick(sync_event_tick),.pps_seq(sync_seq),
+        .dlia_trigger_ready(pps_trigger_ready),.dlia_scan_drained(pps_scan_drained),.pps_mode(pps_mode),.scan_aborted(scan_aborted),
         .sys_clk(sys_clk),
         .rst_sys_n(rst_wms_n),
         .cfg_valid(|slave_valid[6:3]),
@@ -398,6 +403,7 @@ module vapor_lidar_top #(parameter integer SIMULATION=0,GPIF_CLK_HZ=50000000,
         .dac_ldac_n(dac_ldac_n)
     );
     member1_adc_dila #(.SIMULATION(SIMULATION),.DUAL_AD4630(DUAL_AD4630)) u_member1(
+        .pps_mode(pps_mode),.scan_aborted(scan_aborted),.pps_trigger_ready(pps_trigger_ready),.pps_scan_drained(pps_scan_drained),
         .sys_clk(sys_clk),
         .rst_sys_n(rst_adc_n),
         .cfg_valid(|slave_valid[10:7]),

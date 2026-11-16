@@ -13,6 +13,8 @@ module dila_core #(
     input wire sample_valid,output wire sample_ready,input wire [31:0] sample_data,input wire [7:0] sample_flags,
     input wire wms_scan_start,input wire [31:0] wms_cycle_id,input wire [31:0] wms_sine_phase,input wire wms_phase_valid,
     input wire [63:0] timestamp_now,input wire time_sync_valid,
+    input tri0 pps_mode,input tri0 scan_aborted,input tri0 capture_stopped,
+    output wire trigger_ready,output wire scan_drained,
     input wire [193:0] capture_tag,input wire [31:0] input_sample_rate_hz,
     input wire [31:0] expected_per_cycle,input wire input_overflow_pulse,
     input wire cfg_valid,input wire cfg_write,input wire [31:0] cfg_addr,input wire [31:0] cfg_wdata,input wire [3:0] cfg_wstrb,
@@ -24,6 +26,9 @@ module dila_core #(
     output reg [3:0] cfg_error_code
 );
     reg enable,pending,prepared,div_start,phase_start;
+    reg burst_open,burst_end_seen,burst_close,burst_partial;
+    reg [63:0] burst_end_tick;
+    wire burst_reset=pps_mode && wms_scan_start;
     reg [31:0] cutoff_shadow,cutoff_commit,cutoff_active;
     reg [31:0] order_shadow,order_commit,order_active;
     reg [31:0] design_rate_shadow,design_rate_commit,design_rate_active;
@@ -119,7 +124,7 @@ module dila_core #(
             8'h00:begin cfg_rdata={SOURCE_ID,16'h0101};cfg_error=cfg_write;end
             8'h04:begin
                 cfg_rdata={31'd0,enable};
-                if(cfg_write && ((wd[2] && pending) || |wd[31:4]))cfg_error=1;
+                if(cfg_write && ((wd[2] && (pending || (pps_mode && burst_open))) || |wd[31:4]))cfg_error=1;
                 if(cfg_write && wd[2] && custom_upload_requested && order_shadow!=0 &&
                    (!order_write_seen || order_shadow<2 || order_shadow>8 || !coeff_bank_complete || !coefficients_stable(coeff_shadow) ||
                     !coefficients_shape_valid(coeff_shadow,order_shadow) ||
@@ -171,13 +176,21 @@ module dila_core #(
         {time_sync_valid,wms_phase_valid,wms_scan_start?timestamp_now:cycle_timestamp,
          timestamp_now,wms_sine_phase,wms_scan_start?wms_cycle_id:live_cycle};
     wire input_new_cycle=!have_input_cycle || sample_tag[31:0]!=last_input_cycle;
-    wire config_boundary_request=pending && prepared && (!enable || (sample_valid && input_new_cycle));
+    wire config_boundary_request=pending && prepared && (!enable || (pps_mode?!burst_open:(sample_valid && input_new_cycle)));
     wire config_pipeline_idle;
     wire commit_rate_valid=!coeff_commit_custom || input_rate==design_rate_commit;
     wire active_rate_valid=!coeff_active_custom || input_rate==design_rate_active;
+    wire burst_boundary=pps_mode && burst_close && config_pipeline_idle;
+    wire burst_input=pps_mode && burst_open && !burst_close;
+    // Readiness includes the previous frame's output handshake, so USB backpressure
+    // can reject a later trigger but can never stretch the active analog scan.
+    assign scan_drained=!burst_open && !burst_close && config_pipeline_idle && frame_level==0 && !m_valid;
+    assign trigger_ready=enable && !pending && scan_drained && active_rate_valid && mode_active[0];
     wire apply_config=config_boundary_request && config_pipeline_idle && commit_rate_valid;
-    assign sample_ready=(enable || drain_pending) && cooldown==0 && !config_boundary_request && active_rate_valid;
-    wire sample_fire=sample_valid && sample_ready;
+    assign sample_ready=(pps_mode && (!sample_tag[192] || !enable || !burst_open || !active_rate_valid)) ||
+        ((enable || drain_pending) && cooldown==0 && !config_boundary_request && active_rate_valid &&
+         (!pps_mode || (burst_input && !burst_reset)));
+    wire sample_fire=sample_valid && sample_ready && (!pps_mode || (enable && active_rate_valid && sample_tag[192] && burst_input));
     reg ref_valid;
     reg [193:0] ref_tag;
     reg signed [31:0] ref_sample;
@@ -237,7 +250,7 @@ module dila_core #(
             assign coeff_a2[section]=coeff_active_custom?$signed(coeff_active[section*240+192 +:48]):48'sd0;
         end
         dila_lpf #(.CONFIGURABLE(1)) filter_section(
-            .clk(sys_clk),.rst_n(local_rst_n),.clear(apply_config && filter_changed),.in_valid(section_valid[section]),
+            .clk(sys_clk),.rst_n(local_rst_n),.clear((apply_config && filter_changed) || burst_reset),.in_valid(section_valid[section]),
             .coefficient_b0(coeff_b0[section]),.coefficient_b1(coeff_b1[section]),.coefficient_b2(coeff_b2[section]),
             .coefficient_a1(coeff_a1[section]),.coefficient_a2(coeff_a2[section]),
             .in_iq(section_iq[section]),.in_tag(section_tag[section]),.bypass(mode_active[2] || order_active<=section*2),
@@ -260,7 +273,7 @@ module dila_core #(
         cfg_error_code=0;
         if(hit && cfg_error)case(ofs)
             8'h00,8'h08,8'h24,8'h28,8'h38,8'h3c,8'h44,8'h48,8'h4c,8'h50,8'h54,8'h5c,8'h64,8'hE8,8'hEC,8'hF0,8'hF4,8'hF8,8'hFC:cfg_error_code=6;
-            8'h04:cfg_error_code=(pending && wd[2])?8:7;
+            8'h04:cfg_error_code=((pending || (pps_mode && burst_open)) && wd[2])?8:7;
             8'h10,8'h1c,8'h20,8'h40,8'h60,8'hE0,8'hE4:cfg_error_code=7;
             default:cfg_error_code=5;
         endcase
@@ -273,7 +286,7 @@ module dila_core #(
     assign config_pipeline_idle=!ref_valid && !mix_valid && !filter_busy && !(|section_valid[4:1]) &&
         !magnitude_busy && !mag_valid && !direct_valid;
     assign output_queue_level=frame_level;
-    assign datapath_idle=!enable && !sample_valid && config_pipeline_idle && frame_level==0 && !m_valid && !flush_pending && !drain_pending;
+    assign datapath_idle=!enable && !sample_valid && config_pipeline_idle && frame_level==0 && !m_valid && !flush_pending && !drain_pending && (!pps_mode || (!burst_open && !burst_close));
     dila_magnitude u_magnitude(.clk(sys_clk),.rst_n(local_rst_n),.start(point_due && mode_active[1] && !magnitude_busy),
         .iq(filtered_iq),.tag(filtered_tag),.valid(mag_valid),.busy(magnitude_busy),.point(mag_data),.point_tag(mag_tag));
     wire boundary_fire=flush_pending && flush_timer==0 && !sample_valid && !ref_valid && !mix_valid &&
@@ -281,12 +294,13 @@ module dila_core #(
     dila_block_framer #(.MAX_POINTS(MAX_POINTS),.OUTPUT_FORMAT(OUTPUT_FORMAT),.SOURCE_ID(SOURCE_ID)) u_frame(
         .clk(sys_clk),.rst_n(local_rst_n),.clear(clear_fifo),.point_valid(point_valid),.point_data(point_data),.point_tag(point_tag),
         .point_flags((|error_status?32'h10:0)|(cycle_partial?32'h20:0)),.output_rate(rate_actual),.fragment_points(frag_active),
-        .boundary_valid(boundary_fire),.boundary_cycle(flush_cycle),.boundary_partial(drain_pending),.drop_count(frame_drops),.last_fragment_count(frame_fragments),.level(frame_level),
+        .boundary_valid(pps_mode?burst_boundary:boundary_fire),.boundary_cycle(pps_mode?(live_cycle+1'b1):flush_cycle),.boundary_partial(pps_mode?(burst_partial || (expected_per_cycle!=0 && input_count!=expected_per_cycle)):drain_pending),.drop_count(frame_drops),.last_fragment_count(frame_fragments),.level(frame_level),
         .m_valid(m_valid),.m_ready(m_ready),.m_data(m_data),.m_keep(m_keep),.m_sof(m_sof),.m_last(m_last),
         .m_source_id(m_source_id),.m_msg_id(m_msg_id),.m_timestamp(m_timestamp),.m_cycle_id(m_cycle_id),.m_flags(m_flags));
     always @(posedge sys_clk or negedge rst_sys_n)begin
         if(!rst_sys_n)begin
             enable<=0;pending<=0;prepared<=0;calc_state<=0;div_start<=0;phase_start<=0;
+            burst_open<=0;burst_end_seen<=0;burst_close<=0;burst_partial<=0;burst_end_tick<=0;
             cutoff_shadow<=1000;cutoff_commit<=1000;cutoff_active<=1000;
             order_shadow<=0;order_commit<=4;order_active<=4;coeff_words_written<=0;filter_generation<=0;
             design_rate_shadow<=INPUT_RATE_HZ;design_rate_commit<=INPUT_RATE_HZ;design_rate_active<=INPUT_RATE_HZ;
@@ -307,9 +321,28 @@ module dila_core #(
             wms_valid_prev<=wms_phase_valid;
             if(cooldown!=0)cooldown<=cooldown-1'b1;
             if(flush_timer!=0)flush_timer<=flush_timer-1'b1;
-            if(wms_scan_start)begin cycle_timestamp<=timestamp_now;live_cycle<=wms_cycle_id;flush_pending<=1;flush_timer<=512;flush_cycle<=wms_cycle_id;end
+            if(wms_scan_start)begin
+                cycle_timestamp<=timestamp_now;live_cycle<=wms_cycle_id;
+                if(!pps_mode)begin flush_pending<=1;flush_timer<=512;flush_cycle<=wms_cycle_id;end
+            end
+            if(burst_reset)begin
+                burst_open<=1;burst_close<=0;burst_end_seen<=0;burst_partial<=0;
+                cycle_partial<=0;have_input_cycle<=0;have_filter_cycle<=0;input_count<=0;decim_count<=0;
+            end
+            if(pps_mode && burst_open)begin
+                if(wms_valid_prev && !wms_phase_valid)begin
+                    burst_end_seen<=1;burst_end_tick<=timestamp_now;burst_partial<=scan_aborted;
+                end
+                // The first out-of-window conversion after END is an ordered
+                // fence behind all in-window ADC/FIFO data. No fixed drain timer.
+                if(burst_end_seen && sample_valid && !sample_tag[192] && sample_tag[127:64]>=burst_end_tick)
+                    burst_close<=1;
+                if(burst_end_seen && capture_stopped)begin burst_close<=1;burst_partial<=1;end
+                if(scan_aborted || !enable || !active_rate_valid)burst_partial<=1;
+                if(burst_boundary)begin burst_open<=0;burst_close<=0;burst_end_seen<=0;end
+            end
             if(boundary_fire)begin flush_pending<=0;drain_pending<=0;end
-            if((wms_valid_prev && !wms_phase_valid) || (wr && ofs==4 && mask[0] && !wd[0] && enable))begin
+            if(!pps_mode && ((wms_valid_prev && !wms_phase_valid) || (wr && ofs==4 && mask[0] && !wd[0] && enable)))begin
                 drain_pending<=1;flush_pending<=1;flush_timer<=512;flush_cycle<=live_cycle+1'b1;cycle_partial<=1;
             end
             if(wr)case(ofs)
@@ -399,10 +432,12 @@ module dila_core #(
             if(soft_reset)begin
                 error_status<=0;in_sat_count<=0;mix_sat_count<=0;lpf_sat_count<=0;out_count<=0;
                 have_input_cycle<=0;have_filter_cycle<=0;cycle_partial<=0;ref_valid<=0;cooldown<=0;
+                burst_open<=0;burst_close<=0;burst_end_seen<=0;burst_partial<=0;
                 pending<=0;prepared<=0;calc_state<=0;flush_pending<=0;drain_pending<=0;
             end
             if(clear_fifo)begin
                 have_input_cycle<=0;have_filter_cycle<=0;cycle_partial<=0;ref_valid<=0;cooldown<=0;
+                burst_open<=0;burst_close<=0;burst_end_seen<=0;burst_partial<=0;
                 pending<=0;prepared<=0;calc_state<=0;flush_pending<=0;drain_pending<=0;decim_count<=0;
                 coeff_words_written<=0;order_write_seen<=0;coeff_upload_pending<=0;
             end

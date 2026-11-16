@@ -14,6 +14,7 @@ module dac_ad5791_if #(
     output wire cfg_ready,output reg [31:0] cfg_rdata,output reg cfg_error,
     input wire [31:0] dac_sample,input wire dac_sample_valid,output wire dac_sample_ready,
     output wire operational,output wire [31:0] max_update_hz,
+    output wire sample_applied,
     output reg dac_sclk,output reg dac_sync_n,output reg dac_sdin,input wire dac_sdo,
     output reg dac_rst_n,output reg dac_clr_n,output wire dac_ldac_n,
     output reg [3:0] cfg_error_code
@@ -65,6 +66,8 @@ module dac_ad5791_if #(
     assign dac_sample_ready=operational && state==ST_IDLE && !commit_req && !clear_req && !soft_reset;
     assign max_update_hz=a_cap;
     assign dac_ldac_n=1'b0;
+    // Same clock edge as SYNC rising; only waveform writes, never initialization.
+    assign sample_applied=rst_sys_n && !soft_reset && state==ST_END && is_sample;
     wms_unsigned_divider divider(.clk(sys_clk),.rst_n(rst_sys_n && !soft_reset && !cancel_calc),.start(div_start),
         .numerator(div_num),.denominator(div_den),.busy(div_busy),.done(div_done),.quotient(div_q),.remainder(div_rem));
     always @* begin

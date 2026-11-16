@@ -1,5 +1,7 @@
 # Register map
 
+> 2026-11-16: WMS adds optional PPS single-scan mode, default disabled. Full host sequences, time semantics and errors: [PPS WMS DLIA handoff](../PPS_WMS_DLIA_HOST_HANDOFF_20261116.md). Existing waveform/DAC offsets and IDs remain unchanged.
+
 Frozen public offsets and widths come directly from the read-only public `register_map.vh`; none are changed. All values are 32 bits. WMS0/1 base=0x2000/0x2100; DAC0/1 base=0x3000/0x3100.
 
 ## Common
@@ -15,7 +17,7 @@ WMS IDs use frozen SRC_WMS0=0x0010/SRC_WMS1=0x0011. DAC default diagnostic modul
 
 ## WMS
 
-All RW waveform registers are shadow and apply together on commit.
+All RW waveform registers through +40 are shadow and apply together on commit. The new +4C/+50 controls are immediate, disabled-and-drained-only writes; they do not use commit.
 
 |Offset|Name|Access|Reset|
 |---|---|---|---|
@@ -34,8 +36,25 @@ All RW waveform registers are shadow and apply together on commit.
 |40|PHASE_MODE|RW shadow|1; bits0–1 only|
 |44|UPDATE_OVERRUN_COUNT (local extension)|W1C|0|
 |48|PERIOD_TICKS (local extension)|RO|1000|
+|4C|TRIGGER_MODE|RW disabled/drained only|0 continuous; 1 qualified-PPS single scan|
+|50|IDLE_LEVEL|RW disabled/drained only|0; signed Q1.31 through existing DAC mapping|
+|54|TRIGGER_STATUS|RO|bits0..7: armed, burst_busy, burst_active, end_seen, idle_written, ADC/DLIA ready, PPS qualified, aborted|
+|58|TRIGGER_COUNT|RO|0; accepted PPS count|
+|5C|MISSED_COUNT|RO|0; qualified PPS missed while WMS enabled|
+|60|LAST_PPS_SEQ|RO|0; last accepted TIME PPS sequence|
+|64/68|LAST_PPS_TICK_LO/HI|RO|0; accepted PPS tick|
+|6C/70|ACTUAL_START_TICK_LO/HI|RO|0; first waveform DAC write completion|
+|74/78|ACTUAL_END_TICK_LO/HI|RO|0; idle DAC write completion, or transport-abort detection tick|
+|7C|COMPLETED_COUNT|RO|0; normal WMS completion and DLIA drained|
+|80|ABORTED_COUNT|RO|0; WMS abort and drain completion|
+|84|TRIGGER_API|RO|0x50505301|
+|88|REJECTED_COUNT|RO|0; unqualified PPS while WMS enabled|
 
 LAST_SCAN_TICK is captured from timestamp_now on scan_start. Read high/low/high and retry on high change if coherent access across a scan is required. Requested rate zero, rate above transport capacity, zero saw frequency, saw increment rounding to zero, or saw/sine above actual Nyquist cause commit error. Zero sine frequency is valid. Signed amplitudes/offset accept the full Q1.31 range; clipping is counted, not rejected.
+
+In PPS mode the legacy LAST_SCAN_TICK above remains the DDS scheduling tick; use ACTUAL_START/END for the DAC window. New multiword registers are not latched: read only after busy clears, bracket the entire record with unchanged trigger/completion/abort counts and status. During busy, start/end may still belong to the previous scan. Counts wrap modulo 2^32 and clear on allowed WMS soft reset/global reset, not W1C. Soft reset restores mode=0 and clears waveform configuration.
+
+PPS mode accepts one qualified PPS only when armed, resets saw/sine initial phase, emits one complete saw cycle, writes IDLE_LEVEL, then waits for ADC/DLIA drain. No queued retriggers. WMS commit while PPS mode is enabled returns BUSY=8, including the armed waiting state; disable and drain before configuration. Mode/idle writes while enabled/pending/busy also return BUSY. The analog window follows actual DAC SPI write completion; digital completion does not measure analog settling. Normal stop should disable WMS first while DAC/ADC/DLIA remain operational, drain, then stop the channel. Direct whole-channel STOP can abort before the idle level is physically applied.
 
 ## DAC
 

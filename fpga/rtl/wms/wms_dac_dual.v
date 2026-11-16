@@ -4,6 +4,9 @@
 module wms_dac_dual(
     input wire sys_clk,input wire rst_sys_n,input wire [1:0] enable,
     input wire [63:0] timestamp_now,input wire time_sync_valid,
+    input tri0 pps_pulse,input tri0 pps_qualified,
+    input tri0 [63:0] pps_tick,input tri0 [31:0] pps_seq,
+    input tri1 [1:0] dlia_trigger_ready,input tri1 [1:0] dlia_scan_drained,output wire [1:0] pps_mode,output wire [1:0] scan_aborted,
     input wire cfg_valid,input wire cfg_write,input wire [31:0] cfg_addr,
     input wire [31:0] cfg_wdata,input wire [3:0] cfg_wstrb,
     output wire cfg_ready,output wire [31:0] cfg_rdata,output wire cfg_error,
@@ -25,6 +28,8 @@ module wms_dac_dual(
         wms_dac_channel #(.WMS_BASE(`REG_BASE_WMS0+c*256),.DAC_BASE(`REG_BASE_DAC0+c*256),
             .WMS_ID(`SRC_WMS0+c),.DAC_ID(16'h0012+c)) channel(
             .sys_clk(sys_clk),.rst_sys_n(rst_sys_n),.enable(enable[c]),.timestamp_now(timestamp_now),.time_sync_valid(time_sync_valid),
+            .pps_pulse(pps_pulse),.pps_qualified(pps_qualified),.pps_tick(pps_tick),.pps_seq(pps_seq),
+            .dlia_trigger_ready(dlia_trigger_ready[c]),.dlia_scan_drained(dlia_scan_drained[c]),.pps_mode(pps_mode[c]),.scan_aborted(scan_aborted[c]),
             .cfg_valid(cfg_valid),.cfg_write(cfg_write),.cfg_addr(cfg_addr),.cfg_wdata(cfg_wdata),.cfg_wstrb(cfg_wstrb),
             .cfg_ready(ready[c]),.cfg_rdata(rdata[c*32+:32]),.cfg_error(err[c]),.cfg_error_code(err_code[c*4+:4]),
             .scan_start(scan_start[c]),.cycle_id(cycle_id[c*32+:32]),.sine_phase(sine_phase[c*32+:32]),
