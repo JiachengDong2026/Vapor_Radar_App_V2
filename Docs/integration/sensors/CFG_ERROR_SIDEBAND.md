@@ -26,7 +26,7 @@ Priority is address, read-only, range, busy. If an enabled device receives an in
 | 11:8 | EPSILON |
 | 15:12 | BMP390 |
 | 19:16 | SHT45 |
-| 23:20 | TFA1500 |
+| 23:20 | SDFM300 |
 | 27:24 | RD105 |
 
 `tb_sensor_cfg_error_codes` passes 150 directed transactions across all seven lanes: valid and inactive access, unknown/misaligned read/write, read-only writes, each device's range restrictions, busy versus range priority, pending Modbus commit, WSTRB masking, and rejected-write register retention. Run `scripts/run_cfg_error_codes.tcl`; evidence is `reports/cfg_error_codes.log`.

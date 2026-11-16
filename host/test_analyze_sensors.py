@@ -2,6 +2,9 @@
 import struct
 import unittest
 import zlib
+import json
+import hashlib
+from pathlib import Path
 
 from analyze_sensors import analyze, crc8, crc16
 
@@ -45,12 +48,36 @@ class SensorAnalysisTests(unittest.TestCase):
             self.assertEqual(invalid['sources']['0x0046']['invalid_records'], 1)
 
     def test_independent_rd105(self):
-        result = analyze(frame(0x48, record((0x14, 7, 25000000), (0x15, 7, 24000000), (2, 3, 0))))
-        rd = result['sources']['0x0048']
+        result = analyze(frame(0x4A, record((0x14, 7, 25000000), (0x15, 7, 24000000), (2, 3, 0))))
+        rd = result['sources']['0x004A']
         self.assertEqual(rd['name'], 'RD105')
         self.assertEqual(rd['valid_samples'], 1)
         self.assertEqual(rd['latest_valid_values']['actual_temperature_C'], 24)
         self.assertEqual(result['sources']['0x0046']['valid_samples'], 0)
+
+    def test_rd105_dual_channel_schema2(self):
+        raw = b''.join(frame(0x4A, record((0x14, 7, 25000000), (0x15, 7, -10000000),
+                         (2, 3, 0), (0x480, 3, channel), (0x481, 7, -40000), (0x482, 3, 0), schema=2),
+                         sequence=channel) for channel in (1, 2))
+        rd = analyze(raw)['sources']['0x004A']
+        self.assertEqual(rd['valid_samples'], 2)
+        self.assertEqual(set(rd['channels']), {'1', '2'})
+        self.assertEqual(rd['channels']['2']['values']['output_duty_percent'], -2)
+        invalid = analyze(frame(0x4A, record((0x480, 3, 3), schema=2)))
+        self.assertEqual(invalid['sources']['0x004A']['invalid_records'], 1)
+
+    def test_rd105_golden_vectors(self):
+        vectors=json.loads((Path(__file__).resolve().parents[1]/'Docs/protocol/examples/rd105_golden_20261115.json').read_text())
+        for channel in (1,2):
+            payload=bytes.fromhex(vectors['schema2_channel%d'%channel]['hex'])
+            rd=analyze(frame(0x4A,payload))['sources']['0x004A']
+            self.assertEqual(rd['valid_samples'],1)
+            self.assertEqual(rd['latest_valid_values']['channel'],channel)
+        for name,value in vectors.items():
+            if name.startswith('station2_'):
+                data=bytes.fromhex(value['hex'])
+                self.assertEqual(len(data),value['bytes'])
+                self.assertEqual(hashlib.sha256(data).hexdigest(),value['sha256'])
 
     def test_six_sensors_and_units(self):
         raw = b''.join([
@@ -83,6 +110,13 @@ class SensorAnalysisTests(unittest.TestCase):
         self.assertEqual(result['sources']['0x0046']['flagged_samples'], 1)
         self.assertEqual(result['sources']['0x0046']['valid_samples'], 0)
         self.assertEqual(result['sources']['0x0046']['values'], {})
+
+    def test_sdfm300_manual_distance_keeps_mm_contract(self):
+        result = analyze(frame(0x45, record((0x13, 3, 43540))))
+        sensor = result['sources']['0x0045']
+        self.assertEqual(sensor['name'], 'SDFM300')
+        self.assertEqual(sensor['valid_samples'], 1)
+        self.assertEqual(sensor['values']['distance_mm']['last'], 43540)
 
     def test_outer_crc_and_inner_crc_failures(self):
         raw = bytearray(frame(0x45, record((0x13, 3, 1234))))

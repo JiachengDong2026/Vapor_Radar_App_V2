@@ -86,3 +86,14 @@ python -B fpga/scripts/run_regression.py --output E:/Documents/Vapor_Lc_App_Test
 临时图像、PDF中间文件、日志、缓存和测试输出归入外部Test目录。本次将原V2根目录的 `output/`、`tmp/`、`.pytest_cache/`、`.Xil/` 、两处Python `__pycache__/` 和Vivado/webtalk日志原样迁入 `formal_sync_20261113/existing_generated/`；未删除原始内容。同步前工作树修改已备份到同目录 `backup/`，另有 `changes_before.patch` 与 `status_before.txt`。个人资料和与本次发布无关的未跟踪文件不纳入提交。
 
 2026-10-28候选/诊断文档保留为历史过程记录；本说明与HC2A正式接口规范为当前入口。旧HMP、自动扫描/RD105、早期接线和旧BIT说明不得覆盖本版身份及能力边界。
+
+
+2026-11-14 源码修订：AI8 扫描/schema3 已按 `Docs/protocol/AI8_SCAN_CONTRACT_20261114.md` 实现；通用参数事务和 RD105 仍不支持。此修订不改变本文旧镜像的验收结论，新 BIT 尚受目标器件包缺失阻塞。
+
+2026-11-14 构建续验：Enterprise Vivado 2025.1 已识别 KU11P，但源 a40f2ed 的整机与公共综合均因 Synthesis/xcku11p 许可证 checkout 失败（Common 17-345）停止。未生成新 BIT，WNS/TNS、DRC、CDC 无新结果。详细证据及目录见 `Docs/protocol/AI8_SCAN_CONTRACT_20261114.md` 的 Enterprise 构建续验节。
+
+2026-11-14 最终续验：AI8扫描新镜像已在独立同轮重新签核后生成；接口能力0x2B，默认schema2，扫描schema3。BIT不入库。许可证路径与checker预算问题已解决，原失败证据保留。
+
+2026-11-14 后续实板加载：北京时间16:52:16，SHA256为 `b3de7ad484a442db20bc86e7e0425a6c912b5fc6a8d961e5c7103460c353adab` 的新BIT已通过JTAG加载到唯一XCKU11P的易失SRAM，DONE/EOS及配置错误检查通过；未写Flash/FX3 EEPROM。随后WinUSB只读身份检查通过：`04B4:00F1`、GP01/0x10AC、capability扩展0x2B、AI8 feature0x0B，AI8禁用且扫描为0；151帧CRC错误0。USB已释放，八路实物采集尚未启用或验收，旧镜像的历史板测结论不自动延续。证据见 [AI8构建与加载记录](protocol/AI8_BUILD_QUALIFICATION_20261114.md)，原始日志及生成物仅留本机Test目录。
+
+2026-11-14 DM422范围修订：有限相对目标扩到±1..5000，默认40及20..400Hz/2秒真实心跳等保持。新生产BIT、独立CDC审阅和验证记录见 `Docs/integration/DM422_5000_20261114.md`，未加载/未实板验收，不覆盖本文件旧镜像验收。

@@ -10,8 +10,9 @@
 `define TIMESTAMP_WIDTH              64
 `define CYCLE_ID_WIDTH               32
 `define CFG_ADDR_WIDTH               32
-// RAW schema 2, EPSILON downlink/RTCM and DLIA cutoff profiles.
-`define HOST_EXTENSION_FLAGS         32'h00000029
+// RAW schema 2, AI8 scan/schema 3, EPSILON downlink/RTCM and DLIA cutoff profiles.
+`define TLV_TAG_AI8_CHANNEL          16'h0468
+`define HOST_EXTENSION_FLAGS         32'h0000003B
 `define CFG_DATA_WIDTH               32
 `define SAMPLE_DATA_WIDTH            32
 `define SAMPLE_FLAGS_WIDTH           8
@@ -45,10 +46,10 @@
 `define SRC_EPSILON2            16'h0042
 `define SRC_BMP390              16'h0043
 `define SRC_SHT45               16'h0044
-`define SRC_TFA1500             16'h0045
-// AI8 replaces RD105 in integration revision 20260916. Legacy alias is reserved.
+`define SRC_SDFM300             16'h0045
+// Independent AI8 and RD105 sources.
 `define SRC_AI8                 16'h0046
-`define SRC_RD105               16'h0046
+`define SRC_RD105               16'h004A
 `define SRC_LC0                 16'h0048
 `define SRC_LC1                 16'h0049
 `define SRC_STEPPER             16'h0047
@@ -110,6 +111,10 @@
 `define TLV_TAG_AI8_CONTROL        16'h0465
 `define TLV_TAG_AI8_HOST           16'h0466
 `define TLV_TAG_AI8_SET_RESULT     16'h0467
+
+`define TLV_TAG_RD105_CHANNEL      16'h0480
+`define TLV_TAG_RD105_DUTY         16'h0481
+`define TLV_TAG_RD105_ENABLE       16'h0482
 
 // Arbitration classes.
 `define ARB_PRIO_P0             2'd0

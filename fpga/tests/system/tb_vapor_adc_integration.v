@@ -10,7 +10,6 @@ module tb_vapor_adc_integration #(parameter integer GPIF_TEST_HZ=50000000);
     reg FPGA_RS485_RXD_L=1;
     reg FPGA_RS422_RXD_L=1;
     reg FPGA_UART_RXD_L=1;
-    reg TFA_LF_RXD=1;
     reg FPGA_RS232B_RXD=1;
     wire FPGA_RS232A_TXD;
     wire FPGA_RS485_TXD_L;
@@ -67,7 +66,7 @@ module tb_vapor_adc_integration #(parameter integer GPIF_TEST_HZ=50000000);
         .FPGA_RS485_RXD_L(FPGA_RS485_RXD_L),
         .FPGA_RS422_RXD_L(FPGA_RS422_RXD_L),
         .FPGA_UART_RXD_L(FPGA_UART_RXD_L),
-        .TFA_LF_RXD(TFA_LF_RXD),
+
         .LC_UART_RXD(2'b11),.LC_UART_TXD(),
         .FPGA_RS232B_RXD(FPGA_RS232B_RXD),
         .FPGA_RS232A_TXD(FPGA_RS232A_TXD),

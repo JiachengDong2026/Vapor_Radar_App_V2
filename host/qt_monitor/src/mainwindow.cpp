@@ -144,7 +144,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
 
     auto *sensorPage = new QWidget;
     auto *sensorGrid = new QGridLayout(sensorPage); sensorGrid->setContentsMargins(0, 10, 0, 0); sensorGrid->setSpacing(12);
-    const QStringList names = {"PTB210", "EPSILON", "BMP390", "SHT45", "TFA1500-L", "AI8"};
+    const QStringList names = {"PTB210", "EPSILON", "BMP390", "SHT45", "SDFM300", "AI8"};
     for (int i = 0; i < 6; ++i) {
         auto &s = m_sensors[i]; auto *panel = card(); auto *v = new QVBoxLayout(panel); v->setContentsMargins(14, 11, 14, 10); v->setSpacing(5);
         s.name = label(names[i], "font-size:15px;font-weight:600;"); s.name->setObjectName(QString("sensor%1Name").arg(i)); v->addWidget(s.name);

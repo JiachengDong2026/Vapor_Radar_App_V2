@@ -40,7 +40,7 @@ rtl/
 - ADC；
 - DILA；
 - UART；
-- PTB/HMP/EPSILON/BMP/SHT/TFA/RD105；
+- PTB/HMP/EPSILON/BMP/SHT/SDFM300/RD105；
 - time sync；
 - USB；
 - project packetizer；

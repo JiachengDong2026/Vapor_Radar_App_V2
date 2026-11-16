@@ -1,3 +1,5 @@
+> **2026-11-15 SDFM300迁移**：当前距离设备为300米SDFM300，默认460800/8N1、单UART、4字节主动输出；旧模式/命令与LF管脚已撤回。寄存器、有效性、电气接线及上行兼容语义以[SDFM300接口](../../integration/sensors/SDFM300.md)为准。历史板测和旧BIT仅覆盖当时设备。
+
 > 2026-09-23正式集成补充：本文保留原版本需求与设计背景。当前EPSILON使用CON14 MAIN RS232，0046/6600为AI8，GPIF运行50 MHz；BMP实物地址须禁用时配置0x77。请先阅读[正式集成修订](../INTEGRATION_REVISION_20260923.md)及[上位机协议1.0](../protocol/FPGA_HOST_PROTOCOL_V1.0.md)，其中接口变化、六路既有实测与本轮离线验证边界优先于本文历史描述。
 
 # 成员3 FPGA 开发任务书——公共 UART + 全部非ADC传感器接口与协议
@@ -6,7 +8,7 @@
 > 开发环境：Xilinx Vivado  
 > RTL：Verilog-2001  
 > FPGA：Xilinx XCKU11P-2FFVA1156I  
-> 任务定位：统一负责公共串口基础模块，以及 PTB210、HMP、EPSILON2、BMP390、SHT45、TFA1500-L、RD105 全部非ADC传感器的 FPGA 接口、协议解析和标准消息输出。
+> 任务定位：统一负责公共串口基础模块，以及 PTB210、HMP、EPSILON2、BMP390、SHT45、SDFM300、RD105 全部非ADC传感器的 FPGA 接口、协议解析和标准消息输出。
 
 ---
 
@@ -30,7 +32,7 @@
 9. `epsilon_rs422.v`；
 10. `bmp390_driver.v`；
 11. `sht45_driver.v`；
-12. `tfa1500_uart.v`；
+12. `sdfm300_uart.v`；
 13. `rd105_uart.v`。
 
 你还负责这些模块的：
@@ -79,7 +81,7 @@ EPSILON2 的 `SYNC/1PPS` 外部脉冲最终进入项目负责人的 `time_sync_c
 8. EPSILON/EPSILON2 使用手册与 FDILink 文档；
 9. Bosch BMP390 datasheet；
 10. Sensirion SHT45 datasheet；
-11. TFA1500-L 通信协议资料；
+11. SDFM300 通信协议资料；
 12. RD105 通信协议 V1.3.0。
 
 若设备手册与实际线束/设备默认配置冲突，应在 `KNOWN_ISSUES.md` 明确，并向负责人提交需要实机确认的最小问题列表，不允许默默假设。
@@ -205,7 +207,7 @@ source_id 固定：
 | EPSILON2 | `0x0042` |
 | BMP390 | `0x0043` |
 | SHT45 | `0x0044` |
-| TFA1500-L | `0x0045` |
+| SDFM300 | `0x0045` |
 | RD105 | `0x0046` |
 
 低速统一 `msg_id=0x1100 SENSOR_TLV_RECORD`；EPSILON raw FDILink 如主指南另有固定 msg_id，应严格使用主指南值。
@@ -220,7 +222,7 @@ HMP -> FIFO_HMP -> msg_stream_HMP
 EPS -> FIFO_EPS -> msg_stream_EPS
 BMP -> FIFO_BMP -> msg_stream_BMP
 SHT -> FIFO_SHT -> msg_stream_SHT
-TFA -> FIFO_TFA -> msg_stream_TFA
+SDFM300 -> FIFO_SDFM300 -> msg_stream_SDFM300
 RD  -> FIFO_RD  -> msg_stream_RD
 ```
 
@@ -265,7 +267,7 @@ output wire        cfg_error;
 - EPSILON `0x6200`；
 - BMP390 `0x6300`；
 - SHT45 `0x6400`；
-- TFA `0x6500`；
+- SDFM300 `0x6500`；
 - RD105 `0x6600`。
 
 ---
@@ -520,40 +522,9 @@ base `0x6400`。
 
 ---
 
-# 16. TFA1500-L `tfa1500_uart.v`
+# 16. SDFM300 `sdfm300_uart.v`
 
-## 物理
-
-- CON21 TTL UART；
-- FPGA control TX AP14；
-- HF RX AN14；
-- LF RX 可用 CON11 pin4 / AP13。
-
-## 高频模式
-
-- 500000 8N1；
-- start `55 AA CB CC CC CC CC FB`；
-- stop `55 AA CC CC CC CC CC FC`；
-- data：`0x5C + 3-byte little-endian distance(cm) + checksum`；
-- `0x3FFFFF` invalid。
-
-## 低频模式
-
-- >=115200；
-- header 0x55；
-- cmd/len/data/XOR checksum；
-- continuous command `55 02 02 20 00 75`。
-
-要求：
-
-- high/low 两种 parser；
-- 模式切换前停止旧模式并等待 silence；
-- 统一输出 `distance_mm`；
-- checksum/error counters。
-
-base `0x6500`。
-
----
+实现单UART被动4字节接收，默认460800/8N1、u16厘米LE、反码和校验，FFFF无回波；合法5..30000cm乘10发布毫米。无HF/LF双模式、无启停/固定频率设置。寄存器和电气线束以[SDFM300接口](../../integration/sensors/SDFM300.md)为准。
 
 # 17. RD105 `rd105_uart.v`
 
@@ -603,7 +574,7 @@ input wire [31:0] time_sync_seq;
 
 - PTB/HMP/RD105：响应首字节时间；
 - EPSILON：frame 首字节；
-- TFA：有效 frame 首字节；
+- SDFM300：有效 frame 首字节；
 - SHT45：trigger command 时间；
 - BMP390：data-ready（若用 INT），否则读取开始时间。
 
@@ -620,7 +591,7 @@ input wire [31:0] time_sync_seq;
 - EPSILON `0x6200`；
 - BMP `0x6300`；
 - SHT `0x6400`；
-- TFA `0x6500`；
+- SDFM300 `0x6500`；
 - RD105 `0x6600`。
 
 设备协议参数（baud/address/mode/poll interval）不得硬编码到只有改 RTL 才能调整；除明确只读的器件固有值外，应通过寄存器配置。
@@ -680,7 +651,7 @@ input wire [31:0] time_sync_seq;
 - RS232A pins；
 - RS422 logic pins；
 - RS485 TX/RX/DE；
-- TFA TTL UART；
+- SDFM300 UART；
 - BMP/SHT I²C；
 - RD105 GPIO UART；
 - EPSILON serial pins。
@@ -706,7 +677,7 @@ member3_uart_sensors/
 │   ├── epsilon_rs422.v
 │   ├── bmp390_driver.v
 │   ├── sht45_driver.v
-│   ├── tfa1500_uart.v
+│   ├── sdfm300_uart.v
 │   └── rd105_uart.v
 ├── sim/
 │   ├── tb/
@@ -750,7 +721,7 @@ member3_uart_sensors/
 - [ ] EPSILON FDILink framing/check PASS；
 - [ ] BMP390 driver PASS；
 - [ ] SHT45 CRC PASS；
-- [ ] TFA high/low mode PASS；
+- [ ] SDFM300 4-byte/range/no-echo/passive RX PASS；
 - [ ] RD105 read/write PASS；
 - [ ] 七个设备独立 `msg_stream` + FIFO 背压/并发 PASS；
 - [ ] 所有设备 timeout/offline 可观测；

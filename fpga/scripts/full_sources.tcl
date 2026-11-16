@@ -97,8 +97,8 @@ set sources [list \
     "$root/rtl/sensors/rs485_transaction_arbiter.v" \
     "$root/rtl/sensors/sensor_record_fifo.v" \
     "$root/rtl/sensors/sht45_driver.v" \
-    "$root/rtl/sensors/tfa1500_parser.v" \
-    "$root/rtl/sensors/tfa1500_uart.v" \
+    "$root/rtl/sensors/sdfm300_parser.v" \
+    "$root/rtl/sensors/sdfm300_uart.v" \
     "$root/rtl/sensors/lc_uart_bridge.v" \
     "$root/rtl/sensors/uart_rx.v" \
     "$root/rtl/sensors/uart_tx.v"]

@@ -1,15 +1,15 @@
 `timescale 1ns/1ps
-module tb_hc2a_ai8_independent #(parameter integer INCLUDE_TFA=0);
-    localparam integer SYS_CLK_HZ=INCLUDE_TFA ? 8000000 : 1000000;
+module tb_hc2a_ai8_independent #(parameter integer INCLUDE_SDFM300=0);
+    localparam integer SYS_CLK_HZ=INCLUDE_SDFM300 ? 8000000 : 1000000;
     reg clk=0;always #(500000000.0/SYS_CLK_HZ) clk=~clk;
     reg rst_n=0,cv=0,cw=0;
     reg [31:0] ca=0,cd=0;
     wire cr,ce;
     wire [31:0] rd;
     wire txd,rxd,de,hc_txd,hc_rxd;
-    integer concurrent_cycles=0,tfa_packets=0;
-    reg tfa_rxd=1;
-    wire tfa_txd;
+    integer concurrent_cycles=0,sdfm300_packets=0;
+    reg sdfm300_rxd=1;
+    wire sdfm300_txd;
     reg [63:0] ticks=0;
     always @(posedge clk)ticks<=ticks+1'b1;
     reg [3:0] fault=0;
@@ -34,7 +34,7 @@ module tb_hc2a_ai8_independent #(parameter integer INCLUDE_TFA=0);
         .sys_clk(clk),.rst_sys_n(rst_n),.timestamp_now(ticks),.time_sync_valid(1'b1),.time_sync_seq(32'd3),.sync_event_pulse(1'b0),
         .cfg_valid(cv),.cfg_write(cw),.cfg_addr(ca),.cfg_wdata(cd),.cfg_wstrb(4'hf),.cfg_ready(cr),.cfg_error(ce),.cfg_rdata(rd),
         .ptb_rxd(1'b1),.rs485_rxd(rxd),.rs485_txd(txd),.rs485_de(de),.epsilon_rxd(1'b1),
-        .hc2a_rxd(hc_rxd),.hc2a_txd(hc_txd),.tfa_hf_rxd(tfa_rxd),.tfa_txd(tfa_txd),.tfa_lf_rxd(1'b1),.scl_i(1'b1),.sda_i(1'b1),.bmp_int(1'b0),
+        .hc2a_rxd(hc_rxd),.hc2a_txd(hc_txd),.sdfm300_rxd(sdfm300_rxd),.sdfm300_txd(sdfm300_txd),.scl_i(1'b1),.sda_i(1'b1),.bmp_int(1'b0),
         .m_valid(mv),.m_ready(ready),.m_data(data),.m_keep(keep),.m_sof(ms),.m_last(ml),
         .m_source_id(source_id),.m_msg_id(msg_id),.m_timestamp(stamp),.m_flags(flags),
         .device_online(online),.device_error(errors),.device_drop_count(drops),.device_fifo_level(levels));
@@ -90,8 +90,8 @@ module tb_hc2a_ai8_independent #(parameter integer INCLUDE_TFA=0);
             $fatal(1,"HC2A_MUST_NOT_CLAIM_CON19");
         if(dut.gen_hc2a.u_1.state==6 && de)concurrent_cycles=concurrent_cycles+1;
         if(mv[5] && ready[5] && ml[5])begin
-            if(source_id[80+:16]!=16'h45 || data[160+:32]!=123450)$fatal(1,"TFA_DATA_OR_PORT_CROSSTALK");
-            tfa_packets=tfa_packets+1;
+            if(source_id[80+:16]!=16'h45 || data[160+:32]!=123450)$fatal(1,"SDFM300_DATA_OR_PORT_CROSSTALK");
+            sdfm300_packets=sdfm300_packets+1;
         end
         if(stalled && (!mv[1] || hc_bundle!==held))$fatal(1,"HC_AI_STALL_STABILITY");
         stalled=mv[1]&&!ready[1];held=hc_bundle;
@@ -110,20 +110,20 @@ module tb_hc2a_ai8_independent #(parameter integer INCLUDE_TFA=0);
     initial begin
         repeat(10)@(negedge clk);rst_n=1;
         #5000000;if(de||hc_txd!==1||hc_requests||ai_requests)$fatal(1,"DISABLED_STARTUP_TRAFFIC");
-        if(INCLUDE_TFA)wr('h6504,1);
+        if(INCLUDE_SDFM300)wr('h6504,1);
         wr('h611c,100);wr('h662c,100);wr('h6104,1);wr('h6604,1);
         wait(hc_packets>=2 && ai_packets>=2);stage=1;
         if(hc_record[95:64]!==32'h42480000||hc_record[159:128]!==32'h41cc0000||ai_writes)
             $fatal(1,"HC_AI_NORMAL_DATA_OR_UNSOLICITED_WRITE");
         read32('h6114,value);if(value!=4)$fatal(1,"HC_AI_LEARNED_ADDRESS");
-        if(INCLUDE_TFA)begin
-            wait(tfa_packets>=10);
+        if(INCLUDE_SDFM300)begin
+            wait(sdfm300_packets>=10);
             // Force a long HC2A response wait so independent AI8 traffic must overlap it.
             fault=1;prior_requests=hc_requests;prior_ai=ai_packets;
             wait(hc_requests>prior_requests);
             wait(concurrent_cycles>0 && ai_packets>prior_ai);
-            if(!online[5] || concurrent_cycles==0)$fatal(1,"TRIPLE_PORT_PROGRESS online=%b overlap_cycles=%d packets=%d/%d/%d TFA_state=%d errors=%h",online,concurrent_cycles,hc_packets,ai_packets,tfa_packets,dut.u_5.state,errors[160+:32]);
-            $display("HC2A_AI8_TFA_PASS HC=%0d AI=%0d TFA=%0d independent_GPIO_CON19_CON21",hc_packets,ai_packets,tfa_packets);
+            if(!online[5] || concurrent_cycles==0)$fatal(1,"TRIPLE_PORT_PROGRESS online=%b overlap_cycles=%d packets=%d/%d/%d errors=%h",online,concurrent_cycles,hc_packets,ai_packets,sdfm300_packets,errors[160+:32]);
+            $display("HC2A_AI8_SDFM300_PASS HC=%0d AI=%0d SDFM300=%0d independent_GPIO_CON19_CON21",hc_packets,ai_packets,sdfm300_packets);
             $finish;
         end
         prior_requests=hc_requests;reject_format(4);stage=2;
@@ -166,20 +166,20 @@ module tb_hc2a_ai8_independent #(parameter integer INCLUDE_TFA=0);
         $display("HC2A_AI8_INDEPENDENT_PASS HC_packets=%0d AI_packets=%0d requests=%0d/%0d set=333 faults/units/overflow/delayed-response/backpressure",hc_packets,ai_packets,hc_requests,ai_requests);
         $finish;
     end
-    task tfa_byte;
+    task sdfm300_byte;
         input [7:0] v;
         integer k;
         begin
-            tfa_rxd=0;#2000;
-            for(k=0;k<8;k=k+1)begin tfa_rxd=v[k];#2000;end
-            tfa_rxd=1;#2000;
+            sdfm300_rxd=0;#2170;
+            for(k=0;k<8;k=k+1)begin sdfm300_rxd=v[k];#2170;end
+            sdfm300_rxd=1;#2170;
         end
     endtask
     initial begin
-        wait(INCLUDE_TFA && rst_n);wait(dut.u_5.active_mode==2 && dut.u_5.state==0);
+        wait(INCLUDE_SDFM300 && rst_n);wait(dut.u_5.enabled);
         forever begin
-            // TFA HF raw 12345 -> 123450 mm, with inverted byte sum.
-            tfa_byte('h5c);tfa_byte('h39);tfa_byte('h30);tfa_byte(0);tfa_byte('h96);
+            // SDFM300 raw 12345 -> 123450 mm, with inverted byte sum.
+            sdfm300_byte('h5c);sdfm300_byte('h39);sdfm300_byte('h30);sdfm300_byte('h96);
             #20000000;
         end
     end

@@ -1,0 +1,32 @@
+{
+  "station2_ch1_target_read": {
+    "bytes": 8,
+    "hex": "02 03 10 00 00 02 c0 f8",
+    "sha256": "9991ed996f798f2aec1501ee8abe0f7a1ec921ae556cf6f60e6c4e43820753c4"
+  },
+  "station2_ch2_target_write_25C": {
+    "bytes": 13,
+    "hex": "02 10 20 00 00 02 04 00 26 25 a0 9e 09",
+    "sha256": "b064c547f8a4dd7e800643caaed9d31ca901fda9f01329aa3037e38a794b844f"
+  },
+  "station2_ch2_target_ACK": {
+    "bytes": 8,
+    "hex": "02 10 20 00 00 02 4a 3b",
+    "sha256": "fc25e6dfe215077e07ce68ee4c0b2197950b4f823cd0c064670c3bc3cb70d025"
+  },
+  "station2_target_readback_25C": {
+    "bytes": 9,
+    "hex": "02 03 04 00 26 25 a0 32 10",
+    "sha256": "2fcfd7a0bae8a29e89c9e673f54ba56d691bddd6130d0be4cca581286d51b184"
+  },
+  "schema2_channel1": {
+    "bytes": 52,
+    "hex": "02 00 06 00 14 00 07 04 40 78 7d 01 15 00 07 04 40 78 7d 01 02 00 03 04 00 00 00 00 80 04 03 04 01 00 00 00 81 04 07 04 c0 63 ff ff 82 04 03 04 00 00 00 00",
+    "sha256": "eff8d780d7687223e7325357a3849aea7401c0f7bae4088ee030d7dce3e3b91a"
+  },
+  "schema2_channel2": {
+    "bytes": 52,
+    "hex": "02 00 06 00 14 00 07 04 e0 43 41 ff 15 00 07 04 80 69 67 ff 02 00 03 04 00 00 00 00 80 04 03 04 02 00 00 00 81 04 07 04 20 4e 00 00 82 04 03 04 00 00 00 00",
+    "sha256": "5dc47c76910fdc108f1918e759afaa2d315704e5ddd7985019ad046424a21b5b"
+  }
+}

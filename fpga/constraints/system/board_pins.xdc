@@ -62,7 +62,6 @@ set_property -dict {PACKAGE_PIN AP19 IOSTANDARD LVCMOS18} [get_ports {FPGA_RS232
 set_property -dict {PACKAGE_PIN AM17 IOSTANDARD LVCMOS18} [get_ports {FPGA_RS485_RXD_L}]
 set_property -dict {PACKAGE_PIN AM15 IOSTANDARD LVCMOS18} [get_ports {FPGA_RS422_RXD_L}]
 set_property -dict {PACKAGE_PIN AN14 IOSTANDARD LVCMOS18} [get_ports {FPGA_UART_RXD_L}]
-set_property -dict {PACKAGE_PIN AP13 IOSTANDARD LVCMOS33} [get_ports {TFA_LF_RXD}]
 set_property -dict {PACKAGE_PIN AM14 IOSTANDARD LVCMOS18} [get_ports {FPGA_RS232A_TXD}]
 set_property -dict {PACKAGE_PIN AN16 IOSTANDARD LVCMOS18} [get_ports {FPGA_RS485_TXD_L}]
 set_property -dict {PACKAGE_PIN AN19 IOSTANDARD LVCMOS18} [get_ports {FPGA_RS485_DERE_L}]

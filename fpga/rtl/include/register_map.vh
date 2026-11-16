@@ -22,9 +22,9 @@
 `define REG_BASE_EPSILON2        32'h0000_6200
 `define REG_BASE_BMP390          32'h0000_6300
 `define REG_BASE_SHT45           32'h0000_6400
-`define REG_BASE_TFA1500         32'h0000_6500
+`define REG_BASE_SDFM300         32'h0000_6500
 `define REG_BASE_AI8             32'h0000_6600
-`define REG_BASE_RD105           32'h0000_6600 // Legacy alias; ID/version identifies AI8.
+`define REG_BASE_RD105           32'h0000_6A00 // Independent RD105 page; LC0 remains 6800.
 // Independent raw TTL UART pages for the two LC laser controllers.
 `define REG_BASE_LC0             32'h0000_6800
 `define REG_BASE_LC1             32'h0000_6900
@@ -175,7 +175,7 @@
 `define REG_HMP_DROP_COUNT          8'h3C
 
 `define HC2A_ID_VERSION             32'h00410106
-// CON11 GPIO TTL HC2A RO-ASCII candidate (TFA1500 retained); HMP pressure commit is unsupported.
+// CON11 GPIO TTL HC2A RO-ASCII candidate (SDFM300 retained); HMP pressure commit is unsupported.
 `define REG_HC2A_BAUD               8'h10
 `define REG_HC2A_ADDRESS            8'h14
 `define REG_HC2A_SERIAL_FORMAT      8'h18
@@ -243,18 +243,15 @@
 `define REG_SHT_FIFO_LEVEL          8'h38
 `define REG_SHT_DROP_COUNT          8'h3C
 
-// TFA1500-L offsets.
-`define REG_TFA_BAUD                8'h10
-`define REG_TFA_RANGE_MODE          8'h14
-`define REG_TFA_COMMAND             8'h18
-`define REG_TFA_LAST_DISTANCE_MM    8'h1C
-`define REG_TFA_DISTANCE_VALID      8'h20
-`define REG_TFA_APD_TEMP_RAW        8'h24
-`define REG_TFA_RX_FRAME_COUNT      8'h28
-`define REG_TFA_CHECKSUM_ERR_COUNT  8'h2C
-`define REG_TFA_HF_INVALID_COUNT    8'h30
-`define REG_TFA_FIFO_LEVEL          8'h34
-`define REG_TFA_DROP_COUNT          8'h38
+// SDFM300 offsets.
+`define REG_SDFM300_BAUD                8'h10
+`define REG_SDFM300_LAST_DISTANCE_MM    8'h1C
+`define REG_SDFM300_DISTANCE_VALID      8'h20
+`define REG_SDFM300_RX_FRAME_COUNT      8'h28
+`define REG_SDFM300_CHECKSUM_ERR_COUNT  8'h2C
+`define REG_SDFM300_INVALID_COUNT    8'h30
+`define REG_SDFM300_FIFO_LEVEL          8'h34
+`define REG_SDFM300_DROP_COUNT          8'h38
 
 // RD105 offsets.
 `define REG_RD105_BAUD              8'h10
@@ -269,6 +266,17 @@
 `define REG_RD105_TIMEOUT_COUNT     8'h34
 `define REG_RD105_FIFO_LEVEL        8'h38
 `define REG_RD105_DROP_COUNT        8'h3C
+`define REG_RD105_CONFIRMED_TARGET  8'h40
+`define REG_RD105_FRAME_COUNT       8'h44
+`define REG_RD105_CONFIRMED_COUNT   8'h48
+`define REG_RD105_SAMPLE_CHANNEL    8'h4C
+`define REG_RD105_PARAM_COMMAND     8'h80
+`define REG_RD105_PARAM_ADDRESS     8'h84
+`define REG_RD105_PARAM_QUANTITY    8'h88
+`define REG_RD105_PARAM_STATUS      8'h8C
+`define REG_RD105_PARAM_COUNT       8'h90
+`define REG_RD105_PARAM_WRITE_DATA  8'hC0
+`define REG_RD105_PARAM_READ_DATA   8'hE0
 
 // STREAM/BUFFER offsets.
 `define REG_STREAM_ARB_MODE             8'h10

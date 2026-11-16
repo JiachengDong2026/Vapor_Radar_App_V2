@@ -46,6 +46,13 @@ require(proj, r'`define\s+SAMPLE_FLAGS_WIDTH\s+8\b', 'SAMPLE_FLAGS_WIDTH must be
 require(proj, r'`define\s+SRC_HMP\s+16\'h0041', 'SRC_HMP must be 0x0041')
 require(proj, r'`define\s+SRC_EPSILON2\s+16\'h0042', 'SRC_EPSILON2 must be 0x0042')
 require(proj, r'`define\s+SRC_DILA0\s+16\'h0030', 'SRC_DILA0 must be 0x0030')
+require(proj, r'`define\s+SRC_RD105\s+16\'h004A', 'SRC_RD105 must be 0x004A')
+require(proj, r'`define\s+SRC_LC0\s+16\'h0048', 'LC0 must retain 0x0048')
+require(proj, r'`define\s+SRC_AI8\s+16\'h0046', 'AI8 must retain 0x0046')
+require(proj, r'`define\s+HOST_EXTENSION_FLAGS\s+32\'h0000003B', 'RD105 capability bit4 must be present')
+registers=(ROOT/'fpga/rtl/include/register_map.vh').read_text(encoding='utf-8')
+require(registers, r'`define\s+REG_BASE_RD105\s+32\'h0000_6A00', 'RD105 page must be 6A00')
+require(registers, r'`define\s+REG_BASE_LC0\s+32\'h0000_6800', 'LC0 page must retain 6800')
 require(proj, r'`define\s+MSG_DILA_BLOCK\s+16\'h1001', 'MSG_DILA_BLOCK must be 0x1001')
 require(stream, r'`include\s+"project_defs\.vh"', 'stream_defs must include project_defs')
 if re.search(r'BULK_STREAM_DATA_W\s+64', stream):
@@ -61,6 +68,8 @@ for p in list((ROOT/'fpga').rglob('*.v')) + list((ROOT/'fpga').rglob('*.vh')):
     stripped = re.sub(r'//.*', '', text)
     stripped = re.sub(r'/\*.*?\*/', '', stripped, flags=re.S)
     stripped = re.sub(r'"(?:\\.|[^"\\])*"', '""', stripped)
+    if '$clog2' in stripped:
+        errors.append(f'{p.relative_to(ROOT)}: use a Verilog-2001 constant function for widths')
     mods = len(re.findall(r'\bmodule\b', stripped))
     endmods = len(re.findall(r'\bendmodule\b', stripped))
     if mods != endmods:

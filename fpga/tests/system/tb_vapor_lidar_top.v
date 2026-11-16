@@ -11,7 +11,6 @@ module tb_vapor_lidar_top #(parameter integer HC2A_ENABLE=0);
     reg FPGA_RS485_RXD_L=1;
     reg FPGA_RS422_RXD_L=1;
     reg FPGA_UART_RXD_L=1;
-    reg TFA_LF_RXD=1;
     wire FPGA_RS232A_TXD;
     wire FPGA_RS485_TXD_L;
     wire FPGA_RS485_DERE_L;
@@ -55,7 +54,7 @@ module tb_vapor_lidar_top #(parameter integer HC2A_ENABLE=0);
     wire ADC_ADC3660_RST;
     wire ADC_ADC3660_SYNC;
     wire ADC_ADC3660_SDIO;
-    localparam COMMAND_WORDS=987,RESPONSES=73;
+    localparam COMMAND_WORDS=1183,RESPONSES=88;
     vapor_lidar_top #(.SIMULATION(1),.GPIF_CLK_HZ(50000000),.HC2A_ENABLE(HC2A_ENABLE),.RAW0_MAX_SAMPLES(64),.RAW1_MAX_SAMPLES(64)) dut(
         .HC2A_UART_RXD(1'b1),.CLK_FPGA_25MHZ(CLK_FPGA_25MHZ),
         .FPGA_GPIF_DQ(FPGA_GPIF_DQ),
@@ -68,7 +67,7 @@ module tb_vapor_lidar_top #(parameter integer HC2A_ENABLE=0);
         .FPGA_RS485_RXD_L(FPGA_RS485_RXD_L),
         .FPGA_RS422_RXD_L(FPGA_RS422_RXD_L),
         .FPGA_UART_RXD_L(FPGA_UART_RXD_L),
-        .TFA_LF_RXD(TFA_LF_RXD),
+
         .LC_UART_RXD(2'b11),.LC_UART_TXD(),
         .FPGA_RS232A_TXD(FPGA_RS232A_TXD),
         .FPGA_RS485_TXD_L(FPGA_RS485_TXD_L),
@@ -189,7 +188,7 @@ module tb_vapor_lidar_top #(parameter integer HC2A_ENABLE=0);
         end
         wait(got==RESPONSES);before_reset=dut.timestamp_now;
         if(HC2A_ENABLE && (!dut.module_present[16] || dut.u_member3.bus_request[0]))
-            $fatal(1,"TFA_MUST_REMAIN_PRESENT_OR_HC2A_BUS_ISOLATION");
+            $fatal(1,"SDFM300_MUST_REMAIN_PRESENT_OR_HC2A_BUS_ISOLATION");
         wait(!dut.rst_control_n);
         if(!dut.rst_adc_n || !dut.rst_wms_n || !dut.rst_sensors_n || !CYUSB_RSTN)$fatal(1,"masked stream reset disturbed devices");
         wait(dut.rst_control_n);repeat(20)@(negedge CLK_FPGA_25MHZ);

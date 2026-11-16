@@ -53,7 +53,7 @@ module tb_action_controller;
                         end
                         pending_timer[ba[15:8]]=11;
                         memory[(ba+4)>>2]=(memory[(ba+4)>>2]&32'hfffffffd)|4;
-                        if(ba==32'h6104 || ba==32'h6604)ack_pending[ba[15:8]]=1;
+                        if(ba==32'h6104 || ba==32'h6604 || ba==32'h6a04)ack_pending[ba[15:8]]=1;
                     end
                 end else if(ba==32'h672c)begin
                     if(bd==1)begin memory[32'h6708>>2]=9;pending_timer[8'h67]=30;end
@@ -129,8 +129,8 @@ module tb_action_controller;
         if(memory[32'h610c>>2]!=0)$fatal(1,"CLEAR_ERROR");
         base=writes;action(10,1,{64'h0000000100000000,64'h0001000000000000},0);
         if(writes-base!=6)$fatal(1,"MASK writes");expect_write(base+4,32'h403c,1);expect_write(base+5,32'h413c,0);
-        base=writes;action(11,16'h45,{64'd0,32'd1,32'd32},0);expect_write(base,32'h6514,1);
-        base=writes;action(11,16'h45,{64'd0,32'd2,32'd33},0);expect_write(base,32'h6518,2);
+        base=writes;action(11,16'h45,{64'd0,32'd1,32'd32},13);if(writes!=base)$fatal(1,"retired mode wrote bus");
+        base=writes;action(11,16'h45,{64'd0,32'd2,32'd33},13);if(writes!=base)$fatal(1,"retired command wrote bus");
         base=writes;action(12,16'h47,{64'd0,32'hffffffef,32'd1},0);
         expect_write(base,32'h6710,32'hffffffef);expect_write(base+3,32'h672c,1);
         if(!memory[32'h6708>>2][3])$fatal(1,"MOVE should acknowledge accepted motion");
@@ -140,9 +140,14 @@ module tb_action_controller;
         action(13,2,128'd2,0);if(memory[32'h1004>>2]!=1)$fatal(1,"time rearm enable");
         action(13,2,{64'd0,32'd1,32'd3},0);if(memory[32'h1024>>2]!=1)$fatal(1,"time edge");
         action(13,2,{64'd0,32'd1000,32'd4},0);if(memory[32'h1028>>2]!=1000)$fatal(1,"time timeout");
+        action(11,16'h4a,{64'd0,32'd1,32'd1},0);
+        action(11,16'h4a,{64'd0,32'd27000000,32'd17},0);
+        if(memory[32'h6a40>>2]!=27000000 || memory[32'h6a48>>2]!=1)$fatal(1,"RD105 action17");
+        action(11,16'h4a,{64'd0,32'd1,32'd18},13);
+        action(8,16'h4a,128'h400,0);
         // Validation, downstream error, stall timeout and cancellation have no new writes.
         oldwrites=writes;action(5,16'h50,128'h10000,4);action(6,1,{32'd0,32'd1,64'h10000},13);
-        action(10,1,{64'd1,64'd0},7);action(11,16'h45,{64'd0,32'd5,32'd33},7);action(16'h99,1,0,1);
+        action(10,1,{64'd1,64'd0},7);action(11,16'h45,{64'd0,32'd5,32'd33},13);action(16'h99,1,0,1);
         if(writes!=oldwrites)$fatal(1,"invalid action side effects");
         inject_error=1;
         for(reason_index=5;reason_index<=15;reason_index=reason_index+1)begin

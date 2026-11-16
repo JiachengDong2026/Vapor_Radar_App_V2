@@ -14,7 +14,7 @@ import struct
 from analyze_capture import analyze as analyze_vlp
 
 SOURCES = {0x40: 'PTB210', 0x41: 'HMP', 0x42: 'EPSILON', 0x43: 'BMP390',
-           0x44: 'SHT45', 0x45: 'TFA1500', 0x46: 'AI8', 0x48: 'RD105'}
+           0x44: 'SHT45', 0x45: 'SDFM300', 0x46: 'AI8', 0x4A: 'RD105'}
 EXPECTED = [0x40, 0x42, 0x43, 0x44, 0x45, 0x46]
 ERRORS = ['timeout', 'protocol_or_crc', 'fifo_overflow', 'device_not_ready',
           'config_range', 'cdc_or_internal', 'device_reported_error', 'data_format']
@@ -23,7 +23,8 @@ TAGS = {1: 'device_status', 2: 'device_error', 3: 'raw_frame', 4: 'sample_counte
         0x12: 'pressure_mPa', 0x13: 'distance_mm', 0x14: 'target_temperature_uC',
         0x15: 'actual_temperature_uC', 0x460: 'pv_raw', 0x461: 'sp_raw',
         0x462: 'sv_raw', 0x463: 'op_raw', 0x464: 'alarm', 0x465: 'control',
-        0x466: 'host_status', 0x467: 'set_result', 0x468: 'channel'}
+        0x466: 'host_status', 0x467: 'set_result', 0x468: 'channel',
+        0x480: 'channel', 0x481: 'output_duty_raw', 0x482: 'output_enable'}
 FORMATS = {1: 'B', 2: 'H', 3: 'I', 4: 'Q', 5: 'b', 6: 'h', 7: 'i', 8: 'q',
            9: 'f', 10: 'd', 13: 'B'}
 
@@ -69,7 +70,7 @@ def tlv_decode(payload, source):
     if len(payload) < 4:
         raise ValueError('missing TLV record header')
     schema, count = struct.unpack_from('<HH', payload)
-    if schema not in ((2, 3) if source == 0x46 else (1,)):
+    if schema not in ((2, 3) if source == 0x46 else (1, 2) if source == 0x4A else (1,)):
         raise ValueError('unexpected sensor schema %d' % schema)
     cursor, entries, values = 4, [], {}
     for _ in range(count):
@@ -84,6 +85,8 @@ def tlv_decode(payload, source):
                 raise ValueError('BMP390 calibration must contain 21 bytes')
         if source == 0x46 and 0x460 <= tag <= 0x468:
             expected_type = 7 if tag <= 0x462 else 3
+        if source == 0x4A and tag in (0x480, 0x481, 0x482):
+            expected_type = 7 if tag == 0x481 else 3
         if expected_type is not None and kind != expected_type:
             raise ValueError('unexpected type for known TLV tag %04X' % tag)
         cursor += 4
@@ -123,6 +126,15 @@ def tlv_decode(payload, source):
             raise ValueError('AI8 scan record requires channel 1..8')
         if schema == 2 and 'channel' in values:
             raise ValueError('channel tag requires AI8 schema 3')
+    if source == 0x4A:
+        if schema == 2 and not 1 <= values.get('channel', 0) <= 2:
+            raise ValueError('RD105 schema2 requires channel 1..2')
+        if 'output_duty_raw' in values:
+            if not -2000000 <= values['output_duty_raw'] <= 2000000:
+                raise ValueError('RD105 duty out of range')
+            values['output_duty_percent'] = values['output_duty_raw']/20000
+        if values.get('output_enable', 0) not in (0, 1):
+            raise ValueError('RD105 output enable out of range')
     scales = {'temperature_mC': ('temperature_C', 1000),
               'humidity_milli_pct': ('humidity_pct', 1000),
               'pressure_mPa': ('pressure_Pa', 1000),
@@ -251,7 +263,7 @@ def analyze(data):
                         reasons.append('AI8 offline/transport failure; numeric values may be stale')
                     if values.get('alarm', 0) or values.get('host_status', 0) & 0x300:
                         reasons.append('AI8 alarm/host error')
-                if source == 0x48:
+                if source == 0x4A:
                     if 'target_temperature_uC' not in values or 'device_error' not in values:
                         raise ValueError('required RD105 fields missing')
                     if 'actual_temperature_uC' not in values or values['device_error']:
@@ -264,7 +276,7 @@ def analyze(data):
                 frame['classification'] = 'metadata' if metadata else ('flagged_sample' if reasons else 'valid_sample')
                 frame['health_reasons'] = reasons
                 stat['metadata_records' if metadata else ('flagged_samples' if reasons else 'valid_samples')] += 1
-                if source == 0x46 and decoded['schema'] == 3:
+                if (source == 0x46 and decoded['schema'] == 3) or (source == 0x4A and decoded['schema'] == 2):
                     stat.setdefault('channels', {})[str(values['channel'])] = dict(
                         timestamp_ticks=frame['timestamp_ticks'], valid=not reasons,
                         values=values, health_reasons=reasons)

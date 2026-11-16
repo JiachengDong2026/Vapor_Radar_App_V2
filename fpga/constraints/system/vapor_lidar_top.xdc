@@ -106,8 +106,7 @@ if {[llength [get_pins -quiet $hc2a_capture]]} {
     lappend uart_captures FPGA_RS485_RXD_L u_member3/gen_hmp.u_1/core/transport/rx/rxd_meta_reg/D
 }
 set async_captures [concat $uart_captures [list \
-    FPGA_UART_RXD_L u_member3/u_5/u_hf_rx/rxd_meta_reg/D \
-    TFA_LF_RXD u_member3/u_5/u_lf_rx/rxd_meta_reg/D \
+    FPGA_UART_RXD_L u_member3/u_5/u_rx/rxd_meta_reg/D \
     FPGA_RS232A_RXD u_member3/u_0/u_uart_rx/rxd_meta_reg/D \
     FPGA_RS232B_RXD u_member3/u_2/u_rx/rxd_meta_reg/D \
     {LC_UART_RXD[0]} u_lc0/u_rx/rxd_meta_reg/D \

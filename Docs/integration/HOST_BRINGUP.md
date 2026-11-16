@@ -12,7 +12,7 @@
 
 1. 检查BIT哈希、供电/接线，HMP与电机暂不启用。按firmware/vapor_fx3文档加载FX3固件并验证枚举。
 2. 用VLP PING与GET_CAPABILITIES确认双向bulk。READ 6600应返回00460200，区分新AI8与旧RD105。查看clock/link/error状态。link_ready仅表示本次FX3复位后观察到过DMA标志，不代表持续在线。
-3. source SYSTEM0001，START module_mask使用低32位0000007D、高32位00000000（bits0,2,3,4,5,6对应PTB/EPS/BMP/SHT/TFA/AI8），options=0；HMP bit1不选，电机不在传感器START集合。具体payload顺序按ACTION_CONTROLLER/协议定义发送。
+3. source SYSTEM0001，START module_mask使用低32位0000007D、高32位00000000（bits0,2,3,4,5,6对应PTB/EPS/BMP/SHT/SDFM300/AI8），options=0；HMP bit1不选，电机不在传感器START集合。具体payload顺序按ACTION_CONTROLLER/协议定义发送。
 4. 接收source0040/42/43/44/45/46的数据和状态，核对CRC、序号、时间戳、错误/丢包计数。EPS无天线时通信正常不等于GNSS定位/UTC有效。
 5. 单独验证AI8设温：SENSOR_ACTION对source0046，action=17、value=40000000表示40℃。仅最终动作返回0且6648确认计数增长、6654低/高16位requested/readback均400时认定成功。664C非零结果、返回14或9均需检查设备状态；停止状态不会由设温自动解除。
 

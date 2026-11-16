@@ -11,7 +11,6 @@ module tb_gnss_motor_top;
     reg FPGA_RS485_RXD_L=1;
     reg FPGA_RS422_RXD_L=1;
     reg FPGA_UART_RXD_L=1;
-    reg TFA_LF_RXD=1;
     wire FPGA_RS232A_TXD;
     wire FPGA_RS485_TXD_L;
     wire FPGA_RS485_DERE_L;
@@ -70,7 +69,7 @@ module tb_gnss_motor_top;
         .FPGA_RS485_RXD_L(FPGA_RS485_RXD_L),
         .FPGA_RS422_RXD_L(FPGA_RS422_RXD_L),
         .FPGA_UART_RXD_L(FPGA_UART_RXD_L),
-        .TFA_LF_RXD(TFA_LF_RXD),
+
         .LC_UART_RXD(lc_lines),.LC_UART_TXD(lc_lines),
         .FPGA_RS232A_TXD(FPGA_RS232A_TXD),
         .FPGA_RS485_TXD_L(FPGA_RS485_TXD_L),

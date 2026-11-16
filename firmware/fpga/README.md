@@ -1,3 +1,5 @@
+> 2026-11-15：当前测距设备为[SDFM300](../../Docs/integration/sensors/SDFM300.md)，0x0045距离毫米TLV兼容；0x6500 ID=0x00450200，旧模式/命令地址已撤回。历史BIT/板测名称仅代表当时设备。
+
 # FPGA 正式发布文件
 
 当前版本：[2026-11-13 HC2A RH 修正版](releases/20261113_hc2a_rhfix/README.md)。

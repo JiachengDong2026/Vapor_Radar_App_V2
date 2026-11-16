@@ -193,7 +193,7 @@ struct DataDecoder::Impl {
     quint64 decodeErrors=0;
     Impl() {
         timer.start();
-        const char *names[]={"PTB210","EPSILON","BMP390","SHT45","TFA1500-L","AI8"};
+        const char *names[]={"PTB210","EPSILON","BMP390","SHT45","SDFM300","AI8"};
         const int sources[]={0x40,0x42,0x43,0x44,0x45,0x46};
         for(int i=0;i<6;++i){sensors[i].name=QString::fromLatin1(names[i]);sensors[i].source=quint16(sources[i]);}
     }

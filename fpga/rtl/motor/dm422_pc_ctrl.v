@@ -25,7 +25,7 @@ module dm422_pc_ctrl #(
     wire move_edge = control[1] != move_d;
     wire stop_edge = control[2] != stop_d;
     wire heartbeat_edge = control[4] != heartbeat_d;
-    wire valid_config = control[31:16] >= 1 && control[31:16] <= 400 &&
+    wire valid_config = control[31:16] >= 1 && control[31:16] <= 5000 &&
                         control[63:32] >= MIN_HALF && control[63:32] <= MAX_HALF;
     // Status is not an encoder position. sent counts completed output pulses.
     assign status = {5'b0,state,sent,stopped,motor_dir,alive,range_error,

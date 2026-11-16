@@ -1,14 +1,22 @@
+> **2026-11-15 现场温控接入更正**：两台实体温控均在现有GPIO UART应答型号103、版本4370。原位使用LC0桥/source0048/page6800、CON11-5/7；遥测使用LC1桥/source0049/page6900、CON11-6/8，各访问本机内部通道1。主机在桥禁用且空闲时配置38400/8N1，负责仪表协议与在线状态；桥ID不是实体型号。接线、原始应答、诊断边界及现用BIT见[两路TEC103接入](Docs/integration/sensors/TEC103_GPIO_20261115.md)。无需改线、改RTL或新建BIT，复用已实现签核、后续已JTAG加载SRAM并完成只读身份验证的`rd105_full_20261115_c`。AI8八路扫描、HC2A、SDFM300保持原接口。
+
+> **4370旧固件兼容与只读测量**：两口`INQUIRE=1@`、`DATADEMAND=1@`完整应答已核对，均为本机TC1有效数据、TC2全零占位；上位机使用ASCII原生兼容，包括DATADEMAND无OK前缀的批量帧。此次实读原位53.40894°C、遥测22.65118°C；占空比采用另读PWMDUTY/20000得到18%/0%，不能直接套批量PWM字段缩放。另有`BOUNDTABLEONE/TWO`标签互换及FC03请求1000/quantity4只返回4个数据字节。原始证据与限制见上方接入契约；未设置温度、启停仪表输出或验收控制写入。
+
+> **旧6A路径为legacy实验接口**：现用BIT仍含source004A/page6A00/ID004A0103、CON19共享RS485的旧实现，extensions仍为0x3B。此路径不对应上述两台TTL模块，现场上位机不呈现、不自动启用或发送仪表事务；不要要求两台GPIO温控改成19200/站2。[旧接口](Docs/protocol/RD105_INTEGRATION_20261115.md)和[构建记录](Docs/integration/sensors/RD105_BUILD_20261115.md)保留历史事实，现有BIT并未硬禁用6A00。
+
+> **2026-11-15 SDFM300迁移**：当前距离设备为300米SDFM300，默认460800/8N1、单UART、4字节主动输出；旧模式/命令与LF管脚已撤回。寄存器、有效性、电气接线及上行兼容语义以[SDFM300接口](Docs/integration/sensors/SDFM300.md)为准。历史板测和旧BIT仅覆盖当时设备。
+
 # Vapor_Radar_App_V2
 
 ## 当前源码修订：2026-11-16 DLIA SOS
 
-在2026-11-13最新正式基线上增加DLIA 2～8阶可编程滤波器：上位机按实际采样率/截止频率设计SOS并下发，FPGA完成稳定性检查和边界原子提交。入口：[上位机对接规范](Docs/protocol/DLIA_SOS_HOST_HANDOFF_20261116.md)、[修改与验证记录](Docs/INTEGRATION_REVISION_20261116_DLIA_SOS.md)、[Python系数生成器](host/dlia_filter_coefficients.py)。本次源代码修订尚未产生新的整机发布BIT；Qt界面接入与实板联调另行进行。
+DLIA 2～8阶可编程滤波器已与GitHub `80f8319` 的AI8扫描、SDFM300、DM422及TEC103接入更新合并：上位机按实际采样率/截止频率设计SOS并下发，FPGA完成稳定性检查和边界原子提交。入口：[上位机对接规范](Docs/protocol/DLIA_SOS_HOST_HANDOFF_20261116.md)、[修改与验证记录](Docs/INTEGRATION_REVISION_20261116_DLIA_SOS.md)、[Python系数生成器](host/dlia_filter_coefficients.py)。本次源代码修订尚未产生新的整机发布BIT；Qt界面接入与实板联调另行进行。
 
-## 当前归档BIT：2026-11-13
+## 历史正式归档：2026-11-13
 
-已同步最近实板使用的 **HC2A GPIO RH 修正版（HCD2）**：HC2A独立CON11 UART，保留AI8、TFA、EPSILON、双LC UART、GNSS PPS/UTC、DM422、双AD4630/DLIA和WMS/DAC。原2026-10-28构建BIT与配套128项源码输入已核对，归档日期不代表重新综合或重新上板。
+历史归档保留 **HC2A GPIO RH 修正版（HCD2）**：HC2A独立CON11 UART，保留AI8、TFA、EPSILON、双LC UART、GNSS PPS/UTC、DM422、双AD4630/DLIA和WMS/DAC。原2026-10-28构建BIT与配套128项源码输入已核对，归档日期不代表重新综合或重新上板。
 
-- [最新下位机说明、接线、能力和验证边界](Docs/LOWER_COMPUTER_RELEASE_20261113.md)
+- [2026-11-13归档下位机说明、接线、能力和验证边界](Docs/LOWER_COMPUTER_RELEASE_20261113.md)
 - [正式BIT、SHA256与来源清单](firmware/fpga/releases/20261113_hc2a_rhfix/README.md)
 - [HC2A正式寄存器与接线规范](Docs/integration/sensors/HC2A_ROASCII.md)
 - [VLP1协议](Docs/protocol/FPGA_HOST_PROTOCOL_V1.0.md)、[PPS与电机接口](Docs/integration/GNSS_PPS_DM422_20261027.md)、[双LC UART](Docs/integration/LC_DUAL_UART_20261027.md)
@@ -20,7 +28,7 @@ BIT：`firmware/fpga/releases/20261113_hc2a_rhfix/vapor_lidar_hc2a_gpio_rhfix_20
 
 ## 历史同步与构建说明
 
-以下保留历次说明，含当时的“当前”及验收状态；设备选择、BIT路径、归档规则和最新验证结论以上方2026-11-13说明为准。通用构建/CDC复核命令仍可参考，输出须放外部Test目录。
+以下保留历次说明，含当时的“当前”及验收状态；现场温控接入、现用BIT和最新边界以上方2026-11-15说明为准，2026-11-13段落仅描述历史归档。通用构建/CDC复核命令仍可参考，输出须放外部Test目录。
 
 
 ## 2026-10-27 HMP / AI8 实测通信基线恢复
@@ -44,7 +52,7 @@ HMP、AI8 与 CON19 双设备仲裁恢复至同步前 `d2e2f8f` 的实现，保�
 
 ## 当前交付范围
 
-已合入 PTB210、EPSILON MAIN RS232、BMP390、SHT45、TFA1500-L、AI-8 温控的驱动，配套时钟复位、统一时间、消息仲裁/缓存、VLP 封包、命令/寄存器及动作控制、USB GPIF 和 FX3 GP01 固件构建。
+已合入 PTB210、EPSILON MAIN RS232、BMP390、SHT45、SDFM300、AI-8 温控的驱动，配套时钟复位、统一时间、消息仲裁/缓存、VLP 封包、命令/寄存器及动作控制、USB GPIF 和 FX3 GP01 固件构建。
 
 完整顶层仍包含 ADC/DILA、WMS/DAC、HMP和电机依赖，但这些链路尚未全部实板验收。不能把实现存在、仿真通过或比特流生成当成实物通过。当前设备默认禁用，由主机显式配置和启用。
 
@@ -125,7 +133,7 @@ try {
 - PC主接口：CON23 USB，应用04B4:00F1，OUT 0x02、IN 0x86。
 - EPSILON MAIN：CON14，921600/8N1；PTB210：CON25。
 - AI8：CON19 RS485，19200/8N1，地址1、通道1。HMP暂未接，保持禁用。
-- TFA1500-L：CON21及LF输入；BMP390/SHT45：共享I2C。
+- SDFM300：CON21单UART；BMP390/SHT45：共享I2C。
 - BMP390复位默认0x76，实物为0x77：禁用时写0x6310=0x77并读回，再启用。主机六路计划包含此步骤。
 - AI8使用schema2、原始温度0.1摄氏度/LSB；ACTION17的value单位为微摄氏度。独立测试串口的ASCII SET指令不适用于完整USB系统。
 

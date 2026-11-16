@@ -17,7 +17,7 @@ MAGIC = b'VLP1'
 MAX_COMMAND_BYTES = 4096  # vlp_cmd_rx default BUFFER_BYTES in integrated top.
 MAX_IN_FRAME_BYTES = 8236  # 40-byte header + 8192-byte payload + 4-byte CRC.
 SOURCES = {0x40: 'PTB210', 0x41: 'HMP', 0x42: 'EPSILON', 0x43: 'BMP390',
-           0x44: 'SHT45', 0x45: 'TFA1500', 0x46: 'AI8'}
+           0x44: 'SHT45', 0x45: 'SDFM300', 0x46: 'AI8'}
 
 
 def crc32(data):

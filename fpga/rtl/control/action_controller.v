@@ -29,7 +29,7 @@ module action_controller #(
                FINISH=7,SAVE_ENABLE=8,ASSERT_NONZERO=9,SAVE_ACK=10,CHECK_ACK=11,FLUSH=12;
     localparam [63:0] CHANNEL_MASK=64'h0003000300030000;
     localparam [63:0] ACQ_MASK=CHANNEL_MASK|64'h7f;
-    localparam [63:0] MODULE_MASK=CHANNEL_MASK|64'hff;
+    localparam [63:0] MODULE_MASK=CHANNEL_MASK|64'h4ff;
     reg [1:0] state;
     reg [15:0] code,source;
     reg [127:0] args;
@@ -64,7 +64,7 @@ module action_controller #(
         input [15:0] s;
         begin case(s)
             16'h10,16'h11,16'h20,16'h21,16'h30,16'h31,
-            16'h40,16'h41,16'h42,16'h43,16'h44,16'h45,16'h46,16'h47:source_in_modules=1;
+            16'h40,16'h41,16'h42,16'h43,16'h44,16'h45,16'h46,16'h47,16'h4a:source_in_modules=1;
             default:source_in_modules=0;
         endcase end
     endfunction
@@ -91,7 +91,7 @@ module action_controller #(
     // Unspecified action values and reserved bits fail before any cfg access.
     always @*begin
         validation_error=0;normalized_mask=args[63:0];legal_mask=MODULE_MASK;
-        if(code==5)legal_mask=ACQ_MASK;
+        if(code==5)legal_mask=ACQ_MASK|64'h400;
         if(code==6 || code==7)legal_mask=ACQ_MASK;
         case(code)
             5,6,7,8,9:begin
@@ -112,15 +112,14 @@ module action_controller #(
                 if(|(args[127:64]&~64'h0000000300000000))validation_error=7;
             end
             11:begin
-                if(source<16'h40 || source>16'h46)validation_error=4;
+                if(source<16'h40 || (source>16'h46 && source!=16'h4a))validation_error=4;
                 case(args[31:0])
                     1:if(args[63:32]>1)validation_error=7;
                     2,3,4:if(args[63:32]!=0)validation_error=7;
                     5:begin end
                     16:if(source!=16'h41)validation_error=4;
-                    17:if(source!=16'h46)validation_error=4;
-                    32:begin if(source!=16'h45)validation_error=4;if(args[63:32]>2)validation_error=7;end
-                    33:begin if(source!=16'h45)validation_error=4;if(args[63:32]<1 || args[63:32]>4)validation_error=7;end
+                    17:if(source!=16'h46 && source!=16'h4a)validation_error=4;
+                    32,33:validation_error=13; // SDFM300 has no legacy mode/single-shot commands.
                     default:validation_error=13;
                 endcase
             end
@@ -197,7 +196,7 @@ module action_controller #(
                         address=page_at(item)+(step==0?4:8);
                         op=step==0?RMW:POLL;mask=4;value=step==0?4:0;
                     end
-                end else if(pc<63)begin
+                end else if(pc<68)begin
                     case(pc)
                         8'd28:begin item=4'd0;step=4'd0;end
                         8'd29:begin item=4'd0;step=4'd1;end
@@ -234,16 +233,21 @@ module action_controller #(
                         8'd60:begin item=4'd6;step=4'd2;end
                         8'd61:begin item=4'd6;step=4'd3;end
                         8'd62:begin item=4'd6;step=4'd4;end
+                        8'd63:begin item=4'd10;step=4'd0;end
+                        8'd64:begin item=4'd10;step=4'd1;end
+                        8'd65:begin item=4'd10;step=4'd2;end
+                        8'd66:begin item=4'd10;step=4'd3;end
+                        8'd67:begin item=4'd10;step=4'd4;end
                         default:begin item=0;step=0;end
                     endcase
                     if(selected[item])begin
                         address=32'h6000+item*256;
                         case(step)
                             0:begin op=POLL;address=address+8;mask=4;value=0;end
-                            1:if(item==1 || item==6)begin op=SAVE_ACK;address=address+32'h48;end
+                            1:if(item==1 || item==6 || item==10)begin op=SAVE_ACK;address=address+32'h48;end
                             2:begin op=RMW;address=address+4;mask=4;value=4;end
                             3:begin op=POLL;address=address+8;mask=4;value=0;end
-                            4:if(item==1 || item==6)begin op=CHECK_ACK;address=address+32'h48;end
+                            4:if(item==1 || item==6 || item==10)begin op=CHECK_ACK;address=address+32'h48;end
                         endcase
                     end
                 end else op=FINISH;
@@ -294,7 +298,9 @@ module action_controller #(
                     if(selected[item_source[5:0]])begin
                         op=code==8?RMW:WRITE;address=page_at(item)+(code==8?4:12);mask=3;value=code==8?2:32'hffffffff;
                     end
-                end else if(pc==16 && code==9 && broad_source)begin op=WRITE;address=12;value=32'hffffffff;end
+                end else if(pc==16 && selected[10])begin
+                    op=code==8?RMW:WRITE;address=code==8?32'h6a04:32'h6a0c;mask=3;value=code==8?2:32'hffffffff;
+                end else if(pc==17 && code==9 && broad_source)begin op=WRITE;address=12;value=32'hffffffff;end
                 else op=FINISH;
             end
             10:begin
@@ -328,10 +334,10 @@ module action_controller #(
                         case(pc)
                             0:begin op=POLL;address=address+8;mask=4;value=0;end
                             1:if(args[31:0]!=2)begin op=WRITE;address=address+(source==16'h41 ? 32'h34 : 32'h20);value=args[63:32];end
-                            2:if(source==16'h41 || source==16'h46)begin op=SAVE_ACK;address=address+32'h48;end
+                            2:if(source==16'h41 || source==16'h46 || source==16'h4a)begin op=SAVE_ACK;address=address+32'h48;end
                             3:begin op=RMW;address=address+4;mask=4;value=4;end
                             4:begin op=POLL;address=address+8;mask=4;value=0;end
-                            5:if(source==16'h41 || source==16'h46)begin op=CHECK_ACK;address=address+32'h48;end
+                            5:if(source==16'h41 || source==16'h46 || source==16'h4a)begin op=CHECK_ACK;address=address+32'h48;end
                             default:op=FINISH;
                         endcase
                     end

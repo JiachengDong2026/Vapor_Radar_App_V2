@@ -1,5 +1,7 @@
 # VLP1 下位机能力扩展与上位机交接（2026-10-17）
 
+> 2026-11-15现场契约：AI8扫描已恢复，现用BIT能力仍为0x3B；004A/6A00为legacy CON19实验接口，现场上位机不呈现、不自动启用或发送其仪表事务。两台实体温控分别通过0048/6800、0049/6900原始GPIO UART使用38400/8N1，自报型号103、版本4370，每台内部通道1；桥ID不表示实体型号。见[两路TEC103接入](../integration/sensors/TEC103_GPIO_20261115.md)和[AI8扫描契约](AI8_SCAN_CONTRACT_20261114.md)。不能按下文历史6800温控寄存器布局写入原始UART桥。
+
 > 2026-10-27 当前修订：HMP/AI8 与 CON19 恢复硬件实测的双设备实现。下文 AI8 扫描、参数事务和独立 RD105 章节保留为历史设计，当前源码不提供这些接口。EPSILON 下行/RTCM 与 DLIA 截止频率扩展继续有效。完整范围见 [恢复记录](../INTEGRATION_REVISION_20261027_HMP_AI8.md)。
 
 需求依据是同级 VaporView 的 `docs/fpga_ui_capabilities.md` 中“当前 VLP1 功能缺失”、AI8 八通道自动轮询与可变 DLIA 低通清单。基线为 `0f12988`。本次只改下位机仓库；VaporView/SkyCore 尚需按本契约适配，不能直接解除旧 UI 的禁用状态。
@@ -122,3 +124,6 @@ RTCM staging 可通过多条 VLP WRITE_REG 装载，但在整帧完成前不会�
 
 
 2026-10-27：PPS/DM422补充见 [GNSS_PPS_DM422_20261027](../integration/GNSS_PPS_DM422_20261027.md)。EPSILON MAIN及RTCM路径保留，新增PPS标定和主机确认历元；MOTOR_CTRL子操作5为主机heartbeat，不自动使能或重放运动。
+
+
+2026-11-14 源码修订：AI8 扫描/schema3 已按 `Docs/protocol/AI8_SCAN_CONTRACT_20261114.md` 实现；通用参数事务和 RD105 仍不支持。此修订不改变本文旧镜像的验收结论，新 BIT 尚受目标器件包缺失阻塞。
