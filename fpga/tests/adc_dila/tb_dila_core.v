@@ -13,6 +13,9 @@ module tb_dila_core;
     integer head[0:1],pt[0:1],wn[0:1],frag[0:1],cyc[0:1],seen[0:1];
     reg [197:0] held[0:1];reg stalled[0:1];
     integer j,n,c,words,fraglen,total;reg [31:0] exp,rv;
+    reg recovery_score=0;
+    integer recovery_frames[0:1],recovery_word[0:1];
+    integer channel,recovery_cycle,recovery_points,recovery_words;
     reg [31:0] rnd=32'h12345678;
     always @(posedge clk)if(rst_n)begin tick<=tick+1;live_phase<=live_phase+32'h234567;end
     always @(negedge clk)begin rnd={rnd[30:0],rnd[31]^rnd[21]^rnd[1]^rnd[0]};mr=run_ready?rnd[1:0]:0;end
@@ -52,6 +55,38 @@ module tb_dila_core;
             repeat(6)@(negedge clk);
         end
     endtask
+    task start_scan;
+        input [31:0] scan_id;
+        begin
+            @(negedge clk);cycle=scan_id;scan=1;
+            @(negedge clk);scan=0;
+        end
+    endtask
+    task sample_scan;
+        input integer scan_id;
+        integer index;
+        begin
+            start_scan(scan_id);
+            for(index=0;index<30;index=index+1)sample(scan_id,index);
+        end
+    endtask
+    always @(posedge clk)if(rst_n && recovery_score)begin
+        for(channel=0;channel<2;channel=channel+1)if(mv[channel] && mr[channel])begin
+            // Cycle 3 is lost entirely. Cycle 7 loses just its first point.
+            recovery_cycle=recovery_frames[channel]+(recovery_frames[channel]<2?1:2);
+            recovery_points=recovery_cycle==7?2:3;
+            recovery_words=8+recovery_points*(channel==0?2:4);
+            if(mc[channel]!==recovery_cycle || (mf[channel]&32'h28)!==(recovery_cycle==7?32'h28:32'd0))
+                $fatal(1,"DLIA%0d recovery expected cycle=%0d, got cycle=%0d flags=%h",channel,recovery_cycle,mc[channel],mf[channel]);
+            if(ms[channel]!=(recovery_word[channel]==0) || ml[channel]!=(recovery_word[channel]==recovery_words-1) ||
+               (recovery_word[channel]==2 && md[channel]!==recovery_points))
+                $fatal(1,"DLIA%0d recovery fragment length cycle=%0d word=%0d",channel,recovery_cycle,recovery_word[channel]);
+            if(ml[channel])begin
+                recovery_frames[channel]=recovery_frames[channel]+1;
+                recovery_word[channel]=0;
+            end else recovery_word[channel]=recovery_word[channel]+1;
+        end
+    end
     always @(posedge clk)if(rst_n && score)begin
         for(j=0;j<2;j=j+1)begin
             if(stalled[j] && (!mv[j] || held[j]!=={md[j],mk[j],ms[j],ml[j],sid[j],mid[j],mt[j],mc[j],mf[j]}))$fatal(1,"Core output stability");
@@ -108,6 +143,38 @@ module tb_dila_core;
         write_reg(32'h5004,0,0);write_reg(32'h5104,0,0);
         wait(seen[0]==1210 && seen[1]==1210);
         score=0;write_reg(32'h5004,2,0);repeat(5)@(negedge clk);read_reg(32'h5038,rv);if(rv!=0)$fatal(1,"Core soft reset counter");
-        $display("DILA_CORE_PASS dual_independent shadow_commit tagged_phase fragments stop_partial=PASS points=2420");$finish;
+
+        @(negedge clk);rst_n=0;phase_valid=1;run_ready=0;
+        for(c=0;c<2;c=c+1)begin recovery_frames[c]=0;recovery_word[c]=0;end
+        repeat(5)@(negedge clk);rst_n=1;recovery_score=1;
+        for(c=0;c<2;c=c+1)begin
+            write_reg(32'h5020+c*256,3,0);write_reg(32'h501c+c*256,100000,0);write_reg(32'h5004+c*256,4,0);
+        end
+        repeat(100)@(negedge clk);
+        write_reg(32'h5004,1,0);write_reg(32'h5104,1,0);
+        for(c=1;c<=3;c=c+1)sample_scan(c);
+        repeat(550)@(negedge clk);
+        for(c=0;c<2;c=c+1)begin
+            read_reg(32'h5048+c*256,rv);if(rv!==32'd3)$fatal(1,"DLIA%0d expected three dropped points, got %0d",c,rv);
+        end
+        run_ready=1;
+        wait(recovery_frames[0]==2 && recovery_frames[1]==2);
+        sample_scan(4);start_scan(5);
+        wait(recovery_frames[0]==3 && recovery_frames[1]==3);
+
+        @(negedge clk);run_ready=0;
+        for(n=0;n<30;n=n+1)sample(5,n);
+        sample_scan(6);start_scan(7);
+        for(n=0;n<10;n=n+1)sample(7,n);
+        repeat(550)@(negedge clk);run_ready=1;
+        wait(recovery_frames[0]==5 && recovery_frames[1]==5);
+        for(n=10;n<30;n=n+1)sample(7,n);
+        sample_scan(8);start_scan(9);
+        wait(recovery_frames[0]==7 && recovery_frames[1]==7);
+        for(c=0;c<2;c=c+1)begin
+            read_reg(32'h5048+c*256,rv);if(rv!==32'd4)$fatal(1,"DLIA%0d missed cumulative drops: %0d",c,rv);
+            read_reg(32'h500c+c*256,rv);if(rv[2]!==1'b1)$fatal(1,"DLIA%0d missed history error bit",c);
+        end
+        $display("DILA_CORE_PASS dual_independent shadow_commit tagged_phase fragments stop_partial=PASS backpressure_recovery=PASS");$finish;
     end
 endmodule

@@ -427,7 +427,8 @@ module dila_core #(
             end
             if(point_due && magnitude_busy)begin error_status[5]<=1;cycle_partial<=1;end
             if(point_valid)out_count<=out_count+1'b1;
-            if(frame_drops!=0)begin error_status[2]<=1;cycle_partial<=1;end
+            // The framer tracks dropped points by cycle. Keep the cumulative error for diagnostics.
+            if(frame_drops!=0)error_status[2]<=1;
             if(hit && cfg_write && cfg_error)error_status[4]<=1;
             if(soft_reset)begin
                 error_status<=0;in_sat_count<=0;mix_sat_count<=0;lpf_sat_count<=0;out_count<=0;

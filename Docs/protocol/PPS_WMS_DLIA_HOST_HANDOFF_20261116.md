@@ -160,6 +160,8 @@ wait_bit(0x2054, bit=0, value=1)
 
 DLIA 保留 source `0030/0031`、msg `1001` 和现有 schema/分片结构，不额外插入 PPS seq 字段。正常完整扫描不会仅因进入等待态而标 partial；中止、样本错误、丢点/溢出或指定 expected count 不匹配时，应结合帧 partial（原 flags bit5）及模块 ERROR 识别异常。已经上传的分片不能在事后回写异常标志，应按整个 cycle 汇总判定。零点扫描可能无帧。
 
+DLIA 组帧缓存积满时，`+0x48` 累计丢点，`ERROR.bit2` 保留组帧丢点诊断。同一 `cycle_id` 若只保留部分点，该周期帧的 overflow（bit3）和 partial（bit5）均置位。整周期丢失表现为该 `cycle_id` 的帧缺失。后续点数和分片齐全且未发生其他质量错误的周期可直接恢复完整，主机可用累计计数诊断历史丢点，并按各周期的帧标志和分片独立判定波形质量。
+
 busy清零和COMPLETED_COUNT递增表示DLIA已将该次输出交给下游，不保证USB缓冲已经排空或主机已经收到全部VLP分片。主机须另外核对分片数量、序号、总点数与CRC，再把一次扫描标记为“接收完整”。
 
 帧 cycle_id 仍是 WMS 周期号，不等于 PPS seq；漏接 PPS 不生成虚假的 WMS 周期。用新寄存器建立 `通道、PPS seq/tick、WMS cycle_id、START/END tick` 关联。PPS 模式旧 WMS LAST_SCAN_TICK 仍是 DDS 调度时刻；物理窗口使用新增 ACTUAL_START/END，数据帧周期时间戳使用实际起点。

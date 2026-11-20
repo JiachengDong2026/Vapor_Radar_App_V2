@@ -31,7 +31,10 @@ module dila_block_framer #(
     reg mem_write;
     reg [31:0] mem_write_address;
     reg dropped_since;
+    reg [31:0] dropped_cycle;
     wire [31:0] incoming_cycle=point_tag[31:0];
+    // A bank allocated after losing a prefix is incomplete only for that same cycle.
+    wire dropped_prefix=dropped_since && dropped_cycle==incoming_cycle;
     wire [63:0] incoming_tick=point_tag[191:128];
     wire incoming_sync=point_tag[193];
     wire same_cycle=active && incoming_cycle==bank_cycle[write_bank];
@@ -88,7 +91,7 @@ module dila_block_framer #(
             sealed<=0;active<=0;write_bank<=0;state<=0;read_bank<=0;
             frag_index<=0;frag_count<=0;point_index<=0;frag_size<=0;frag_first<=0;
             header_index<=0;word_index<=0;count_left<=0;
-            drop_count<=0;last_fragment_count<=0;dropped_since<=0;
+            drop_count<=0;last_fragment_count<=0;dropped_since<=0;dropped_cycle<=0;
             for(b=0;b<2;b=b+1)begin bank_count[b]<=0;bank_cycle[b]<=0;bank_flags[b]<=0;bank_rate[b]<=0;bank_frag[b]<=256;bank_tick[b]<=0;end
         end else if(clear)begin
             sealed<=0;active<=0;state<=0;bank_count[0]<=0;bank_count[1]<=0;dropped_since<=0;
@@ -113,16 +116,16 @@ module dila_block_framer #(
                         write_bank<=next_bank;active<=1;
                         bank_count[next_bank]<=1;
                         bank_cycle[next_bank]<=incoming_cycle;bank_tick[next_bank]<=incoming_tick;
-                        bank_flags[next_bank]<=point_flags|32'h3|(incoming_sync?32'h4:0)|(dropped_since?32'h28:0);
+                        bank_flags[next_bank]<=point_flags|32'h3|(incoming_sync?32'h4:0)|(dropped_prefix?32'h28:0);
                         bank_rate[next_bank]<=output_rate;bank_frag[next_bank]<=fragment_points;dropped_since<=0;
-                    end else begin active<=0;drop_count<=drop_count+1'b1;dropped_since<=1;end
+                    end else begin active<=0;drop_count<=drop_count+1'b1;dropped_since<=1;dropped_cycle<=incoming_cycle;end
                 end else if(free_exists)begin
                     write_bank<=free_bank;active<=1;
                     bank_count[free_bank]<=1;
                     bank_cycle[free_bank]<=incoming_cycle;bank_tick[free_bank]<=incoming_tick;
-                    bank_flags[free_bank]<=point_flags|32'h3|(incoming_sync?32'h4:0)|(dropped_since?32'h28:0);
+                    bank_flags[free_bank]<=point_flags|32'h3|(incoming_sync?32'h4:0)|(dropped_prefix?32'h28:0);
                     bank_rate[free_bank]<=output_rate;bank_frag[free_bank]<=fragment_points;dropped_since<=0;
-                end else begin drop_count<=drop_count+1'b1;dropped_since<=1;end
+                end else begin drop_count<=drop_count+1'b1;dropped_since<=1;dropped_cycle<=incoming_cycle;end
             end
             case(state)
                 0:if(|sealed)begin
