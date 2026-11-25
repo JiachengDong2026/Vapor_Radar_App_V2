@@ -26,7 +26,9 @@ module adc_ad4630_dual_if #(
     input wire [7:0] adc_sdo, input wire adc_busy,
     output wire adc_sdi, output reg adc_rst_n, output reg adc_cnv,
     output wire adc_cs_n, output wire adc_sck,
-    output wire [7:0] cfg_error_code
+    output wire [7:0] cfg_error_code,
+    input tri0 [1:0] pps_mode,
+    output wire capture_start_event
 );
     localparam integer BOOT_TICKS=SIMULATION?20:SYS_CLK_HZ/250;
     localparam integer RESET_TICKS=SIMULATION?4:SYS_CLK_HZ/1000000;
@@ -71,6 +73,35 @@ module adc_ad4630_dual_if #(
     assign pps_capture_ready0=initialized && enable0 && !timing_pending0 && !cancel0;
     assign pps_capture_ready1=initialized && enable1 && !timing_pending0 && !cancel1;
     wire local_rst_n=rst_sys_n && !soft_reset0;
+    reg [1:0] have_window_sample;
+    reg [31:0] sampled_cycle0,sampled_cycle1;
+    wire [31:0] cnv_cycle0=wms0_scan_start?wms0_cycle_id:tag_cycle0;
+    wire [31:0] cnv_cycle1=wms1_scan_start?wms1_cycle_id:tag_cycle1;
+    wire cnv_launch=initialized && state==6 && (accept0 || accept1) &&
+        !timing_pending0 && period_count==0 && quiet_count==0;
+    wire first_window_sample0=pps_mode[0] && accept0 && wms0_phase_valid &&
+        (!have_window_sample[0] || sampled_cycle0!=cnv_cycle0);
+    wire first_window_sample1=pps_mode[1] && accept1 && wms1_phase_valid &&
+        (!have_window_sample[1] || sampled_cycle1!=cnv_cycle1);
+    // One shared test point represents both channels only when their first
+    // in-window conversions are the SAME physical CNV. Misaligned/one-sided
+    // windows deliberately produce no common ADC_START pulse.
+    assign capture_start_event=local_rst_n && !soft_reset1 && !clear_fifo0 && !clear_fifo1 &&
+        cnv_launch && first_window_sample0 && first_window_sample1;
+    always @(posedge sys_clk or negedge rst_sys_n)begin
+        if(!rst_sys_n)begin
+            have_window_sample<=0;sampled_cycle0<=0;sampled_cycle1<=0;
+        end else begin
+            if(soft_reset0 || clear_fifo0 || !enable0 || !pps_mode[0])have_window_sample[0]<=0;
+            else if(cnv_launch && first_window_sample0)begin
+                have_window_sample[0]<=1;sampled_cycle0<=cnv_cycle0;
+            end
+            if(soft_reset0 || soft_reset1 || clear_fifo1 || !enable1 || !pps_mode[1])have_window_sample[1]<=0;
+            else if(cnv_launch && first_window_sample1)begin
+                have_window_sample[1]<=1;sampled_cycle1<=cnv_cycle1;
+            end
+        end
+    end
     reg spi_start;
     reg [2:0] init_index;
     reg [23:0] spi_word;

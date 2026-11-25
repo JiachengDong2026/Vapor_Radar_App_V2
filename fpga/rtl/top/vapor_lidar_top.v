@@ -18,6 +18,7 @@ module vapor_lidar_top #(parameter integer SIMULATION=0,GPIF_CLK_HZ=50000000,
     input wire SYNC_IN,BMP390_INT,
     inout wire I2C_SCL,I2C_SDA,
     output wire MOTOR_PUL,MOTOR_DIR,MOTOR_ENA,
+    output wire ADC_START,DLIA1_START,DLIA2_START,
     output wire [1:0] dac_sclk,dac_sync_n,dac_sdin,dac_rst_n,dac_clr_n,dac_ldac_n,
     input wire [1:0] dac_sdo,
     output wire  ADC_AD4630_SDI,
@@ -403,6 +404,7 @@ module vapor_lidar_top #(parameter integer SIMULATION=0,GPIF_CLK_HZ=50000000,
         .dac_ldac_n(dac_ldac_n)
     );
     member1_adc_dila #(.SIMULATION(SIMULATION),.DUAL_AD4630(DUAL_AD4630)) u_member1(
+        .adc_start(ADC_START),.dlia1_start(DLIA1_START),.dlia2_start(DLIA2_START),
         .pps_mode(pps_mode),.scan_aborted(scan_aborted),.pps_trigger_ready(pps_trigger_ready),.pps_scan_drained(pps_scan_drained),
         .sys_clk(sys_clk),
         .rst_sys_n(rst_adc_n),

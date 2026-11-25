@@ -33,6 +33,7 @@ set sources [list \
     "$root/rtl/clock/system_reset_controller.v" \
     "$root/rtl/time/timestamp_capture.v" \
     "$root/rtl/time/time_sync_core.v" \
+    "$root/rtl/time/measurement_start_outputs.v" \
     "$root/rtl/usb/transport_async_fifo.v" \
     "$root/rtl/usb/usb_fx3_gpif_if.v" \
     "$root/rtl/top/vapor_lidar_top.v" \

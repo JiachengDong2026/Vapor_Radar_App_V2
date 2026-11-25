@@ -23,7 +23,8 @@ module dila_core #(
     output wire m_sof,output wire m_last,output wire [15:0] m_source_id,output wire [15:0] m_msg_id,
     output wire [63:0] m_timestamp,output wire [31:0] m_cycle_id,output wire [31:0] m_flags,
     output wire [31:0] output_queue_level,output wire datapath_idle,
-    output reg [3:0] cfg_error_code
+    output reg [3:0] cfg_error_code,
+    output wire processing_start_event
 );
     reg enable,pending,prepared,div_start,phase_start;
     reg burst_open,burst_end_seen,burst_close,burst_partial;
@@ -191,6 +192,9 @@ module dila_core #(
         ((enable || drain_pending) && cooldown==0 && !config_boundary_request && active_rate_valid &&
          (!pps_mode || (burst_input && !burst_reset)));
     wire sample_fire=sample_valid && sample_ready && (!pps_mode || (enable && active_rate_valid && sample_tag[192] && burst_input));
+    // Pre-edge event: the observation output rises on the first real acceptance,
+    // not on reset, reference enable, filter output or USB delivery.
+    assign processing_start_event=local_rst_n && pps_mode && sample_fire && input_new_cycle;
     reg ref_valid;
     reg [193:0] ref_tag;
     reg signed [31:0] ref_sample;
@@ -198,11 +202,31 @@ module dila_core #(
     wire signed [17:0] sin1,cos1,sin2,cos2;
     dila_ref_gen u_ref(.phase(ref_phase),.phase_1f(phase1_active),.phase_2f_correction(phase2_active),
         .sin_1f(sin1),.cos_1f(cos1),.sin_2f(sin2),.cos_2f(cos2));
+    // Separate reference interpolation from the sample multiplication. Keep the
+    // sample and its capture tag aligned, including pipeline drain boundaries.
+    reg [1:0] ref_pipeline_valid;
+    reg signed [17:0] mix_sin1,mix_cos1,mix_sin2,mix_cos2;
+    reg signed [31:0] mix_sample;
+    reg [193:0] mix_input_tag;
+    always @(posedge sys_clk or negedge local_rst_n)begin
+        if(!local_rst_n)begin
+            ref_pipeline_valid<=0;mix_sin1<=0;mix_cos1<=0;mix_sin2<=0;mix_cos2<=0;
+            mix_sample<=0;mix_input_tag<=0;
+        end else if(burst_reset)begin
+            ref_pipeline_valid<=0;
+        end else begin
+            ref_pipeline_valid<={ref_pipeline_valid[0],ref_valid};
+            if(ref_valid)begin
+                mix_sin1<=sin1;mix_cos1<=cos1;mix_sin2<=sin2;mix_cos2<=cos2;
+                mix_sample<=ref_sample;mix_input_tag<=ref_tag;
+            end
+        end
+    end
     wire mix_valid,mix_sat;
     wire [127:0] mix_iq;
     wire [193:0] mix_tag;
-    dila_mixer u_mix(.clk(sys_clk),.rst_n(local_rst_n),.in_valid(ref_valid),.sample(ref_sample),
-        .cos_1f(cos1),.sin_1f(sin1),.cos_2f(cos2),.sin_2f(sin2),.in_tag(ref_tag),
+    dila_mixer u_mix(.clk(sys_clk),.rst_n(local_rst_n),.in_valid(ref_pipeline_valid[0] && !burst_reset),.sample(mix_sample),
+        .cos_1f(mix_cos1),.sin_1f(mix_sin1),.cos_2f(mix_cos2),.sin_2f(mix_sin2),.in_tag(mix_input_tag),
         .out_valid(mix_valid),.out_iq(mix_iq),.out_tag(mix_tag),.saturation(mix_sat));
     wire [4:0] section_valid;
     wire [127:0] section_iq[0:4];
@@ -283,13 +307,13 @@ module dila_core #(
     wire [191:0] point_data=mode_active[1]?mag_data:{64'd0,direct_iq};
     wire [193:0] point_tag=mode_active[1]?mag_tag:direct_tag;
     assign point_valid=mode_active[1]?mag_valid:direct_valid;
-    assign config_pipeline_idle=!ref_valid && !mix_valid && !filter_busy && !(|section_valid[4:1]) &&
+    assign config_pipeline_idle=!ref_valid && !(|ref_pipeline_valid) && !mix_valid && !filter_busy && !(|section_valid[4:1]) &&
         !magnitude_busy && !mag_valid && !direct_valid;
     assign output_queue_level=frame_level;
     assign datapath_idle=!enable && !sample_valid && config_pipeline_idle && frame_level==0 && !m_valid && !flush_pending && !drain_pending && (!pps_mode || (!burst_open && !burst_close));
     dila_magnitude u_magnitude(.clk(sys_clk),.rst_n(local_rst_n),.start(point_due && mode_active[1] && !magnitude_busy),
         .iq(filtered_iq),.tag(filtered_tag),.valid(mag_valid),.busy(magnitude_busy),.point(mag_data),.point_tag(mag_tag));
-    wire boundary_fire=flush_pending && flush_timer==0 && !sample_valid && !ref_valid && !mix_valid &&
+    wire boundary_fire=flush_pending && flush_timer==0 && !sample_valid && !ref_valid && !(|ref_pipeline_valid) && !mix_valid &&
         !filter_busy && !(|section_valid[4:1]) && !magnitude_busy && !point_valid;
     dila_block_framer #(.MAX_POINTS(MAX_POINTS),.OUTPUT_FORMAT(OUTPUT_FORMAT),.SOURCE_ID(SOURCE_ID)) u_frame(
         .clk(sys_clk),.rst_n(local_rst_n),.clear(clear_fifo),.point_valid(point_valid),.point_data(point_data),.point_tag(point_tag),

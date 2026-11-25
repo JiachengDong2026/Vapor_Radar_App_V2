@@ -24,6 +24,7 @@
     "rtl/clock/system_reset_controller.v",
     "rtl/time/timestamp_capture.v",
     "rtl/time/time_sync_core.v",
+    "rtl/time/measurement_start_outputs.v",
     "rtl/usb/transport_async_fifo.v",
     "rtl/usb/usb_fx3_gpif_if.v",
     "rtl/top/vapor_lidar_top.v",

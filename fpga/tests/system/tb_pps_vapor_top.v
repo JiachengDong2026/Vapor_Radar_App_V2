@@ -20,6 +20,7 @@ module tb_pps_vapor_top #(parameter integer GPIF_TEST_HZ=50000000);
     wire FPGA_UART_EN_L;
     wire RS232_PHY_FORCEON;
     wire FPGA_RS232B_TXD;
+    wire ADC_START,DLIA1_START,DLIA2_START;
     reg SYNC_IN=0;
     reg BMP390_INT=0;
     tri1 I2C_SCL;
@@ -78,6 +79,7 @@ module tb_pps_vapor_top #(parameter integer GPIF_TEST_HZ=50000000);
         .FPGA_UART_EN_L(FPGA_UART_EN_L),
         .RS232_PHY_FORCEON(RS232_PHY_FORCEON),
         .FPGA_RS232B_TXD(FPGA_RS232B_TXD),
+        .ADC_START(ADC_START),.DLIA1_START(DLIA1_START),.DLIA2_START(DLIA2_START),
         .SYNC_IN(SYNC_IN),
         .BMP390_INT(BMP390_INT),
         .I2C_SCL(I2C_SCL),
@@ -114,6 +116,13 @@ module tb_pps_vapor_top #(parameter integer GPIF_TEST_HZ=50000000);
         .ADC_ADC3660_SYNC(ADC_ADC3660_SYNC),
         .ADC_ADC3660_SDIO(ADC_ADC3660_SDIO)
     );
+    integer adc_marker_count=0,dlia0_marker_count=0,dlia1_marker_count=0;
+    always @(posedge ADC_START)begin
+        if(!ADC_AD4630_CNV || dut.pps_mode!=3)$fatal(1,"Physical ADC_START without PPS-window CNV");
+        adc_marker_count=adc_marker_count+1;
+    end
+    always @(posedge DLIA1_START)dlia0_marker_count=dlia0_marker_count+1;
+    always @(posedge DLIA2_START)dlia1_marker_count=dlia1_marker_count+1;
     defparam dut.u_time.SYS_CLK_HZ=100000;
     // SIMULATION uses the input clock directly: 100 MHz is intentional.
     always #5 CLK_FPGA_25MHZ=~CLK_FPGA_25MHZ;
@@ -371,6 +380,7 @@ module tb_pps_vapor_top #(parameter integer GPIF_TEST_HZ=50000000);
         next_pps=dut.timestamp_now+1000;
         pps_edge;pps_edge;pps_edge;
         if(dut.wms_cycle_id!=0)$fatal(1,"unqualified edges started WMS");
+        if(adc_marker_count || dlia0_marker_count || dlia1_marker_count)$fatal(1,"Unqualified PPS generated observation");
         pps_edge;
         wait(counts[2]>=3 && counts[3]>=3);
         read_reg('h2058);if(read_value!=1)$fatal(1,"qualified accepted count");
@@ -378,12 +388,15 @@ module tb_pps_vapor_top #(parameter integer GPIF_TEST_HZ=50000000);
         read_reg('h2088);if(read_value!=3)$fatal(1,"qualification rejection count");
         read_reg('h207c);if(read_value!=1)$fatal(1,"single-cycle completion");
         if(cycle_tick[1]!=cycle_tick[65])$fatal(1,"dual start alignment");
+        if(adc_marker_count!=1 || dlia0_marker_count!=1 || dlia1_marker_count!=1)$fatal(1,"First physical start outputs");
         pps_edge;wait(dut.wms_cycle_id[31:0]==2);#30000;
         stop_sequence=command_sequence+1;acquisition(7);wait(stop_completed);
         repeat(1000)@(negedge CLK_FPGA_25MHZ);
         for(n=2;n<4;n=n+1)if(frame_read[n]!=frame_write[n] || beat_read[n]!=beat_write[n])$fatal(1,"STOP tail mismatch");
         write_reg('h204c,0,0);write_reg('h214c,0,0);
         if(dut.protocol_errors || dut.crc_errors || dut.packet_errors)$fatal(1,"VLP errors");
+        if(adc_marker_count!=2 || dlia0_marker_count!=2 || dlia1_marker_count!=2)$fatal(1,"Repeated physical start outputs");
+        if(ADC_START || DLIA1_START || DLIA2_START)$fatal(1,"Observation did not return low");
         $display("PPS_VAPOR_TOP_PASS physical_PPS_qualification VLP_MODE START STOP ADC_DAC_DLIA fragments_CRC metadata");$finish;
     end
     initial begin #10000000;$fatal(1,"PPS top timeout count=%d/%d action=%d busy=%b open=%b",counts[2],counts[3],dut.u_actions.state,dut.u_member2.channels[0].channel.wms.burst_busy,dut.u_member1.u_dila0.burst_open);end

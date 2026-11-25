@@ -1,4 +1,6 @@
-> **2026-11-15 现场温控接入更正**：两台实体温控均在现有GPIO UART应答型号103、版本4370。原位使用LC0桥/source0048/page6800、CON11-5/7；遥测使用LC1桥/source0049/page6900、CON11-6/8，各访问本机内部通道1。主机在桥禁用且空闲时配置38400/8N1，负责仪表协议与在线状态；桥ID不是实体型号。接线、原始应答、诊断边界及现用BIT见[两路TEC103接入](Docs/integration/sensors/TEC103_GPIO_20261115.md)。无需改线、改RTL或新建BIT，复用已实现签核、后续已JTAG加载SRAM并完成只读身份验证的`rd105_full_20261115_c`。AI8八路扫描、HC2A、SDFM300保持原接口。
+> **最新离线发布**：[2026-11-23 PPS / SOS / 启动观测版](Docs/LOWER_COMPUTER_RELEASE_20261123.md)已完成整机实现及116项回归，BIT已归档，尚未下载板卡。下面11月15日说明描述此前现场镜像和接线记录。
+
+> **2026-11-15 现场温控接入更正**：两台实体温控均在现有GPIO UART应答型号103、版本4370。原位使用LC0桥/source0048/page6800、CON11-5/7；遥测使用LC1桥/source0049/page6900、CON11-6/8，各访问本机内部通道1。主机在桥禁用且空闲时配置38400/8N1，负责仪表协议与在线状态；桥ID不是实体型号。接线、原始应答、诊断边界及当时使用的BIT见[两路TEC103接入](Docs/integration/sensors/TEC103_GPIO_20261115.md)。该轮复用已实现签核、后续已JTAG加载SRAM并完成只读身份验证的`rd105_full_20261115_c`，未重新构建BIT。AI8八路扫描、HC2A、SDFM300保持原接口。
 
 > **4370旧固件兼容与只读测量**：两口`INQUIRE=1@`、`DATADEMAND=1@`完整应答已核对，均为本机TC1有效数据、TC2全零占位；上位机使用ASCII原生兼容，包括DATADEMAND无OK前缀的批量帧。此次实读原位53.40894°C、遥测22.65118°C；占空比采用另读PWMDUTY/20000得到18%/0%，不能直接套批量PWM字段缩放。另有`BOUNDTABLEONE/TWO`标签互换及FC03请求1000/quantity4只返回4个数据字节。原始证据与限制见上方接入契约；未设置温度、启停仪表输出或验收控制写入。
 
@@ -8,13 +10,23 @@
 
 # Vapor_Radar_App_V2
 
+## 当前发布：2026-11-23 PPS / SOS / 启动观测输出
+
+2026-11-25归档并同步11月23日构建的BIT及对应源码，版本标签`fpga-20261123-start-outputs`，分支`codex/release-20261123-start-outputs`。包含两路独立2～8阶SOS滤波、截止频率配置、PPS单次WMS/DLIA扫描及三路启动观测输出；默认滤波仍为四阶1kHz。已完成116项RTL全量仿真、公共Vivado检查及整机实现，WNS=+0.009ns、WHS报告值0.000ns、setup/hold失败端点均0；余量很小。未下载板卡或进行4.11实测。
+
+入口：[本版说明](Docs/LOWER_COMPUTER_RELEASE_20261123.md)、[BIT及SHA256](firmware/fpga/releases/20261123_start_outputs/README.md)、[实现与验证详情](Docs/integration/MEASUREMENT_START_OUTPUTS_20261119.md)。独立版本分支保留已验证的精确源码；GitHub main后续的`0bfb750`丢帧周期恢复修复不在本BIT内，不能据main当前源码推断本镜像行为。
+
+## 2026-11-19 启动观测输出
+
+为4.11时间同步测试增加ADC_START（CON11-12）、DLIA1_START（CON11-14）、DLIA2_START（CON11-16），均为3.3V、10us真实事件脉冲。ADC_START仅在两路PPS窗口首采样共用同一次CNV时产生，两路DLIA分别标记实际接收首个有效样本；连续模式无这些PPS脉冲。接线、测试条件及验证边界见[启动观测规范](Docs/integration/MEASUREMENT_START_OUTPUTS_20261119.md)。新增输出已包含在上方11月23日BIT中，旧归档BIT不包含。
+
 ## 当前源码修订：2026-11-16 PPS—WMS—DLIA
 
-新增可切换的PPS单次同步扫描：默认保留连续模式，合格PPS触发一次WMS扫描，DLIA按实际DAC窗口解调并独立收尾。上位机通过WMS `+4C`切换，`+84=50505301`识别能力。入口：[详细上位机对接](Docs/protocol/PPS_WMS_DLIA_HOST_HANDOFF_20261116.md)、[修改与验证记录](Docs/INTEGRATION_REVISION_20261116_PPS_WMS_DLIA.md)。本次源码功能尚未生成新的发布BIT、未做实板验收，Qt控件需上位机开发方接入。
+新增可切换的PPS单次同步扫描：默认保留连续模式，合格PPS触发一次WMS扫描，DLIA按实际DAC窗口解调并独立收尾。上位机通过WMS `+4C`切换，`+84=50505301`识别能力。入口：[详细上位机对接](Docs/protocol/PPS_WMS_DLIA_HOST_HANDOFF_20261116.md)、[修改与验证记录](Docs/INTEGRATION_REVISION_20261116_PPS_WMS_DLIA.md)。现已包含在11月23日BIT中；未做实板验收，Qt控件需上位机开发方接入。
 
 ## 当前源码修订：2026-11-16 DLIA SOS
 
-DLIA 2～8阶可编程滤波器已与GitHub `80f8319` 的AI8扫描、SDFM300、DM422及TEC103接入更新合并：上位机按实际采样率/截止频率设计SOS并下发，FPGA完成稳定性检查和边界原子提交。入口：[上位机对接规范](Docs/protocol/DLIA_SOS_HOST_HANDOFF_20261116.md)、[修改与验证记录](Docs/INTEGRATION_REVISION_20261116_DLIA_SOS.md)、[Python系数生成器](host/dlia_filter_coefficients.py)。本次源代码修订尚未产生新的整机发布BIT；Qt界面接入与实板联调另行进行。
+DLIA 2～8阶可编程滤波器已与GitHub `80f8319` 的AI8扫描、SDFM300、DM422及TEC103接入更新合并：上位机按实际采样率/截止频率设计SOS并下发，FPGA完成稳定性检查和边界原子提交。入口：[上位机对接规范](Docs/protocol/DLIA_SOS_HOST_HANDOFF_20261116.md)、[修改与验证记录](Docs/INTEGRATION_REVISION_20261116_DLIA_SOS.md)、[Python系数生成器](host/dlia_filter_coefficients.py)。现已包含在11月23日BIT中；Qt界面接入与实板联调另行进行。
 
 ## 历史正式归档：2026-11-13
 

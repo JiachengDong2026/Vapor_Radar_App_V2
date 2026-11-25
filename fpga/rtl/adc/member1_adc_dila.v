@@ -98,9 +98,16 @@ module member1_adc_dila #(
     output wire raw1_idle,
     output wire dila0_idle,
     output wire dila1_idle,
-    output wire [15:0] cfg_error_code
+    output wire [15:0] cfg_error_code,
+    output wire adc_start,output wire dlia1_start,output wire dlia2_start
 );
     wire [1:0] core_trigger_ready,capture_trigger_ready;
+    wire capture_start_event;
+    wire [1:0] processing_start_event;
+    measurement_start_outputs #(.SYS_CLK_HZ(SYS_CLK_HZ)) u_start_outputs(
+        .clk(sys_clk),.rst_n(rst_sys_n),
+        .start_event({processing_start_event,capture_start_event}),
+        .start_pulse({dlia2_start,dlia1_start,adc_start}));
     assign pps_trigger_ready=core_trigger_ready & capture_trigger_ready;
     wire [3:0] ready_bus,error_bus;
     wire [31:0] rdata0,rdata1,rdata2,rdata3;
@@ -134,6 +141,7 @@ module member1_adc_dila #(
         raw0_capture_phase,raw0_capture_cycle_id,raw0_flags,raw0_data}=raw0_pack;
     dila_core #(.SYS_CLK_HZ(SYS_CLK_HZ),.INPUT_RATE_HZ(1000000),.USE_CAPTURE_TAGS(1),
         .SOURCE_ID(16'h0030),.BASE_ADDR(32'h5000)) u_dila0(
+        .processing_start_event(processing_start_event[0]),
         .sys_clk(sys_clk),.rst_sys_n(rst_sys_n),.sample_valid(din0_valid),.sample_ready(din0_ready),
         .pps_mode(pps_mode[0]),.scan_aborted(scan_aborted[0]),.capture_stopped(adc0_idle && din0_level==0),
         .trigger_ready(core_trigger_ready[0]),.scan_drained(pps_scan_drained[0]),.sample_data(din0_pack[31:0]),.sample_flags(din0_pack[39:32]),.capture_tag(din0_pack[233:40]),
@@ -168,6 +176,7 @@ module member1_adc_dila #(
         raw1_capture_phase,raw1_capture_cycle_id,raw1_flags,raw1_data}=raw1_pack;
     dila_core #(.SYS_CLK_HZ(SYS_CLK_HZ),.INPUT_RATE_HZ(DUAL_AD4630?1000000:12500000),.USE_CAPTURE_TAGS(1),
         .SOURCE_ID(16'h0031),.BASE_ADDR(32'h5100)) u_dila1(
+        .processing_start_event(processing_start_event[1]),
         .sys_clk(sys_clk),.rst_sys_n(rst_sys_n),.sample_valid(din1_valid),.sample_ready(din1_ready),
         .pps_mode(pps_mode[1]),.scan_aborted(scan_aborted[1]),.capture_stopped(adc1_idle && din1_level==0),
         .trigger_ready(core_trigger_ready[1]),.scan_drained(pps_scan_drained[1]),.sample_data(din1_pack[31:0]),.sample_flags(din1_pack[39:32]),.capture_tag(din1_pack[233:40]),
@@ -181,6 +190,7 @@ module member1_adc_dila #(
         .output_queue_level(frame1_level),.datapath_idle(core1_idle));
     generate if(DUAL_AD4630)begin:g_dual
         adc_ad4630_dual_if #(.SYS_CLK_HZ(SYS_CLK_HZ),.SIMULATION(SIMULATION)) u_adc_dual(
+            .pps_mode(pps_mode),.capture_start_event(capture_start_event),
             .pps_capture_ready0(capture_trigger_ready[0]),.pps_capture_ready1(capture_trigger_ready[1]),
             .sys_clk(sys_clk),.rst_sys_n(rst_sys_n),
             .wms0_scan_start(wms0_scan_start),.wms0_cycle_id(wms0_cycle_id),
@@ -218,6 +228,7 @@ module member1_adc_dila #(
         assign ADC_ADC3660_SYNC=1'b0;
         assign ADC_ADC3660_SDIO=1'bz;
     end else begin:g_legacy_adc
+    assign capture_start_event=1'b0;
     assign capture_trigger_ready=2'b00; // PPS requires the production dual-AD4630 path.
     adc_ad4630_if #(.SYS_CLK_HZ(SYS_CLK_HZ),.SIMULATION(SIMULATION)) u_adc0(
         .sys_clk(sys_clk),.rst_sys_n(rst_sys_n),.wms_scan_start(wms0_scan_start),.wms_cycle_id(wms0_cycle_id),

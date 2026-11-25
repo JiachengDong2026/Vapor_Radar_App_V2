@@ -4,6 +4,12 @@ if {![llength [get_clocks -quiet board25]]} {create_clock -name board25 -period 
 set_property PHASESHIFT_MODE WAVEFORM [get_cells -hier -filter {REF_NAME =~ MMCME*}]
 set sysclock [get_clocks -of_objects [get_pins u_clock/g_hw.u_mmcm/CLKOUT0]]
 set gpifclock [get_clocks -of_objects [get_pins u_clock/g_hw.u_mmcm/CLKOUT1]]
+# Registered scope observations, no external synchronous receiver. Budget one
+# SYS period from launch to pad; the routed pad delay is part of scope latency.
+set start_observation_pads [get_ports {ADC_START DLIA1_START DLIA2_START}]
+set_output_delay -clock $sysclock -max 0.000 $start_observation_pads
+set_output_delay -clock $sysclock -min 0.000 $start_observation_pads
+set_load 10.000 $start_observation_pads
 set_clock_uncertainty -setup 0.200 [get_clocks {board25}]
 set_clock_uncertainty -hold 0.050 [get_clocks {board25}]
 
