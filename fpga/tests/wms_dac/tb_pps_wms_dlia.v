@@ -10,11 +10,11 @@ module tb_pps_wms_dlia;
     wire [2:0] ready,error;wire [31:0] rdata[0:2];
     assign cr=|ready;assign ce=|error;assign rd=rdata[0]|rdata[1]|rdata[2];
     cfg_test_bfm bus(.clk(clk),.rst_n(rst),.cfg_valid(cv),.cfg_write(cw),.cfg_addr(ca),.cfg_wdata(cd),.cfg_wstrb(cs),.cfg_ready(cr),.cfg_rdata(rd),.cfg_error(ce));
-    wire [1:0] scan,pv,pm,aborted,tr,drained,ds,ss,sd,dr,dc,dl,mv,ml,ms,sr;
+    wire [1:0] disc,scan,pv,pm,aborted,tr,drained,ds,ss,sd,dr,dc,dl,mv,ml,ms,sr;
     wire [63:0] cycle,phase;wire [31:0] md[0:1],mc[0:1],mf[0:1];wire [63:0] mt[0:1];
     wire [19:0] code[0:1];
     wms_dac_dual wms(.sys_clk(clk),.rst_sys_n(rst),.enable(2'b11),.timestamp_now(tick),.time_sync_valid(1'b1),
-        .pps_pulse(pps),.pps_qualified(qualified),.pps_tick(pps_tick),.pps_seq(pps_seq),.dlia_trigger_ready(tr),.dlia_scan_drained(drained),.pps_mode(pm),.scan_aborted(aborted),
+        .pps_pulse(pps),.pps_qualified(qualified),.pps_tick(pps_tick),.pps_seq(pps_seq),.dlia_trigger_ready(tr),.dlia_scan_drained(drained),.disciplined(disc),.pps_mode(pm),.scan_aborted(aborted),
         .cfg_valid(cv),.cfg_write(cw),.cfg_addr(ca),.cfg_wdata(cd),.cfg_wstrb(cs),.cfg_ready(ready[0]),.cfg_rdata(rdata[0]),.cfg_error(error[0]),
         .scan_start(scan),.phase_valid(pv),.cycle_id(cycle),.sine_phase(phase),
         .dac_sclk(ds),.dac_sync_n(ss),.dac_sdin(sd),.dac_sdo(2'b00),.dac_rst_n(dr),.dac_clr_n(dc),.dac_ldac_n(dl));
@@ -22,6 +22,8 @@ module tb_pps_wms_dlia;
     reg [193:0] cap[0:1];reg [4:0] delay_count=0;reg sv=0;
     integer samples[0:1],frames[0:1],starts[0:1],idx[0:1],writes[0:1];
     reg [31:0] golden[0:127];reg [31:0] rv;
+    integer disc_frames[0:1];
+    reg check_disc_frames=0;
     reg compare_frames=1,expect_abort=0,expect_fault=0;
     reg [31:0] input_rate=1000000;
     reg [959:0] unity_bank;integer w;
@@ -32,7 +34,7 @@ module tb_pps_wms_dlia;
             .sys_clk(clk),.rst_sys_n(rst),.sample_valid(sv),.sample_ready(sr[g]),.sample_data(32'd131072),.sample_flags(8'd0),
             .capture_tag(cap[g]),.input_sample_rate_hz(input_rate),.expected_per_cycle(32'd0),.input_overflow_pulse(1'b0),
             .wms_scan_start(scan[g]),.wms_cycle_id(cycle[g*32+:32]),.wms_sine_phase(phase[g*32+:32]),.wms_phase_valid(pv[g]),
-            .timestamp_now(tick),.time_sync_valid(1'b1),.pps_mode(pm[g]),.scan_aborted(aborted[g]),.trigger_ready(tr[g]),.scan_drained(drained[g]),
+            .timestamp_now(tick),.time_sync_valid(1'b1),.disciplined(disc[g]),.pps_mode(pm[g]),.scan_aborted(aborted[g]),.trigger_ready(tr[g]),.scan_drained(drained[g]),
             .cfg_valid(cv),.cfg_write(cw),.cfg_addr(ca),.cfg_wdata(cd),.cfg_wstrb(cs),.cfg_ready(ready[g+1]),.cfg_rdata(rdata[g+1]),.cfg_error(error[g+1]),
             .m_valid(mv[g]),.m_ready(host_ready),.m_data(md[g]),.m_sof(ms[g]),.m_last(ml[g]),.m_cycle_id(mc[g]),.m_flags(mf[g]),.m_timestamp(mt[g]));
         always @(posedge clk)if(rst)begin
@@ -41,6 +43,16 @@ module tb_pps_wms_dlia;
             if(sv && pv[g] && cap[g][192] && !sr[g])$fatal(1,"ADC sample blocked");
             if(sv && sr[g] && cap[g][192])samples[g]=samples[g]+1;
             if(wms.channels[g].channel.sample_applied && wms.channels[g].channel.tx_window)writes[g]=writes[g]+1;
+            if(check_disc_frames && mv[g] && host_ready)begin
+                if((mf[g]&32'h28)!=0 || !mc[g])$fatal(1,"disciplined DLIA incomplete");
+                if(ms[g])idx[g]=0;
+                if(idx[g]==2 && (md[g]<99 || md[g]>101))$fatal(1,"disciplined DLIA point count %d",md[g]);
+                idx[g]=idx[g]+1;
+                if(ml[g])begin
+                    disc_frames[g]=disc_frames[g]+1;
+                    if(mc[g]!=disc_frames[g])$fatal(1,"disciplined cycle ID gap");
+                end
+            end
             if(mv[g] && host_ready && compare_frames)begin
                 if(mt[g]!=start_tick[g] || mc[g]!=starts[g])$fatal(1,"frame association");
                 if(mf[g][5]!==expect_abort || (mf[g][4] && !expect_fault))$fatal(1,"normal/abort flags %h",mf[g]);
@@ -76,7 +88,7 @@ module tb_pps_wms_dlia;
         for(k=0;k<2;k=k+1)begin
             bus.read32('h204c+k*256,rv);if(rv!=0)$fatal(1,"reset default mode");
             bus.read32('h2084+k*256,rv);if(rv!=32'h50505301)$fatal(1,"PPS API");
-            bus.expect_error(1,'h2084+k*256,1);bus.expect_error(1,'h204c+k*256,2);
+            bus.expect_error(1,'h2084+k*256,1);bus.expect_error(1,'h204c+k*256,3);
             bus.write32('h3004+k*256,1);
             bus.write32('h2010+k*256,k==0?6250000:12500000);
             bus.write32('h201c+k*256,20000000);bus.write32('h2024+k*256,32'h12345678);
@@ -132,7 +144,24 @@ module tb_pps_wms_dlia;
         bus.write32('h2004,1);bus.write32('h2104,1);
         wait(starts[0]>=6 && starts[1]>=6); // autonomous scan remains available
         bus.write32('h2004,0);bus.write32('h2104,0);
-        $display("PPS_WMS_DLIA_PASS default/arming/dual-start/one-scan/phase-reset/filter-reset/qualification/missed/drain/abort/rate-fault/legacy");$finish;
+        // Restart the real dual DAC and demodulation chain in disciplined mode.
+        @(negedge clk);rst=0;repeat(8)@(negedge clk);rst=1;
+        repeat(1000)@(negedge clk);
+        for(k=0;k<2;k=k+1)begin
+            disc_frames[k]=0;starts[k]=0;
+            bus.write32('h3004+k*256,1);
+            bus.write32('h2010+k*256,100000);bus.write32('h201c+k*256,20000000);
+            bus.write32('h2028+k*256,500000);bus.write32('h2004+k*256,4);
+            repeat(50)@(negedge clk);bus.write32('h204c+k*256,2);
+            bus.write32('h501c+k*256,10000);bus.write32('h5004+k*256,4);
+        end
+        repeat(200)@(negedge clk);check_disc_frames=1;
+        bus.write32('h5004,1);bus.write32('h5104,1);bus.write32('h2004,1);bus.write32('h2104,1);
+        wait(wms.channels[0].channel.wms.armed && wms.channels[1].channel.wms.armed);
+        repeat(1000)@(negedge clk);if(starts[0] || starts[1])$fatal(1,"pre-PPS scan");
+        pulse;wait(disc_frames[0]>=2 && disc_frames[1]>=2);
+        if(starts[0]!=starts[1] || start_tick[0]!=start_tick[1])$fatal(1,"disciplined pair skew");
+        $display("PPS_WMS_DLIA_PASS default/arming/dual-start/one-scan/phase-reset/filter-reset/qualification/missed/drain/abort/rate-fault/legacy/continuous-disciplined-DLIA");$finish;
     end
-    initial begin #5000000;$fatal(1,"PPS timeout frames=%d/%d starts=%d/%d busy=%b open=%b close=%b end=%b",frames[0],frames[1],starts[0],starts[1],wms.channels[0].channel.wms.burst_busy,ch[0].core.burst_open,ch[0].core.burst_close,ch[0].core.burst_end_seen);end
+    initial begin #50000000;$fatal(1,"PPS timeout frames=%d/%d starts=%d/%d busy=%b open=%b close=%b end=%b",frames[0],frames[1],starts[0],starts[1],wms.channels[0].channel.wms.burst_busy,ch[0].core.burst_open,ch[0].core.burst_close,ch[0].core.burst_end_seen);end
 endmodule

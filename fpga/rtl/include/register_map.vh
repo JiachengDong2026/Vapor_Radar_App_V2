@@ -385,5 +385,8 @@
 `define REG_WMS_ABORTED_COUNT          8'h80
 `define REG_WMS_TRIGGER_API            8'h84
 `define REG_WMS_REJECTED_COUNT         8'h88
+`define REG_WMS_DISC_API               8'h8c
+`define REG_WMS_DISC_STATUS            8'h90
+`define REG_WMS_DISC_STEP              8'h94
 
 `endif

@@ -36,7 +36,7 @@ All RW waveform registers through +40 are shadow and apply together on commit. T
 |40|PHASE_MODE|RW shadow|1; bits0–1 only|
 |44|UPDATE_OVERRUN_COUNT (local extension)|W1C|0|
 |48|PERIOD_TICKS (local extension)|RO|1000|
-|4C|TRIGGER_MODE|RW disabled/drained only|0 continuous; 1 qualified-PPS single scan|
+|4C|TRIGGER_MODE|RW disabled/drained only|0 continuous, 1 qualified-PPS single scan, 2 disciplined continuous 100 Hz when +8C is 0x50504301|
 |50|IDLE_LEVEL|RW disabled/drained only|0; signed Q1.31 through existing DAC mapping|
 |54|TRIGGER_STATUS|RO|bits0..7: armed, burst_busy, burst_active, end_seen, idle_written, ADC/DLIA ready, PPS qualified, aborted|
 |58|TRIGGER_COUNT|RO|0; accepted PPS count|
@@ -49,6 +49,9 @@ All RW waveform registers through +40 are shadow and apply together on commit. T
 |80|ABORTED_COUNT|RO|0; WMS abort and drain completion|
 |84|TRIGGER_API|RO|0x50505301|
 |88|REJECTED_COUNT|RO|0; unqualified PPS while WMS enabled|
+|8C|DISC_API|RO|0x50504301, disciplined continuous 100 Hz v1|
+|90|DISC_STATUS|RO|bit0 running after first PPS, bit1 current PPS qualification|
+|94|DISC_STEP|RO|active saw increment in Q0.32 turns per DAC sample|
 
 LAST_SCAN_TICK is captured from timestamp_now on scan_start. Read high/low/high and retry on high change if coherent access across a scan is required. Requested rate zero, rate above transport capacity, zero saw frequency, saw increment rounding to zero, or saw/sine above actual Nyquist cause commit error. Zero sine frequency is valid. Signed amplitudes/offset accept the full Q1.31 range; clipping is counted, not rejected.
 

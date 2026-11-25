@@ -76,6 +76,7 @@ set sources [list \
     "$root/rtl/wms/wms_dac_channel.v" \
     "$root/rtl/wms/wms_dac_dual.v" \
     "$root/rtl/wms/wms_unsigned_divider.v" \
+    "$root/rtl/wms/wms_pps_discipline.v" \
     "$root/rtl/wms/wms_wavegen.v" \
     "$root/rtl/sensors/ai8_modbus_rs485.v" \
     "$root/rtl/sensors/ai8_poll_core.v" \

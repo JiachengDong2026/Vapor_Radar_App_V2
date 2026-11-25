@@ -830,6 +830,8 @@ WMS0/1的页为0x2000/0x2100；DAC0/1为0x3000/0x3100。波形及DAC映射参数
 | +0x40 | phase_mode，bits1:0 |
 | +0x44 / +0x48 | 更新超限计数 / 实际周期ticks |
 
+WMS `+0x4C` 模式 2 及 `+0x8C/+0x90/+0x94` 扩展见 [PPS 校正连续扫描](PPS_DISCIPLINED_CONTINUOUS_20261125.md)。
+
 频率单位是millihertz，不是MHz。DAC模拟输出电压取决于参考电源、偏置/增益、滤波与接线，界面不能直接把Q1.31的1解释为1V。
 
 | ADC页offset（0x4000/0x4100） | 含义 |

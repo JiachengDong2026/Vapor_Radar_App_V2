@@ -14,7 +14,7 @@ module wms_wavegen #(
     input tri0 [63:0] pps_tick,input tri0 [31:0] pps_seq,
     input tri1 dlia_trigger_ready,input tri1 dlia_scan_drained,input tri0 sample_applied,
     input tri0 applied_window,input tri0 applied_first,
-    output reg pps_mode,output reg scan_aborted,
+    input tri1 peer_ready,output wire lane_ready,output reg disciplined,output reg pps_mode,output reg scan_aborted,
     output reg sample_window,output reg sample_first,
     input wire cfg_valid,input wire cfg_write,input wire [31:0] cfg_addr,
     input wire [31:0] cfg_wdata,input wire [3:0] cfg_wstrb,
@@ -45,9 +45,18 @@ module wms_wavegen #(
     wire [31:0] lut_phase=sin_acc+a_phase;
     sine_lut lut(.clk(sys_clk),.phase(lut_phase),.sin_value(sine_value));
     wire base_run=enable && ctl_enable && configured && !fault && transport_ready;
-    wire run=base_run && (!pps_mode || burst_active);
+    wire soft_reset;
+    reg tracking, active_100hz;
+    wire pps_controlled = pps_mode || disciplined;
+    wire run=base_run && (!pps_controlled || burst_active || tracking);
+    wire [31:0] disciplined_step;
+    wire discipline_accept;
+    wms_pps_discipline #(.SYS_CLK_HZ(SYS_CLK_HZ)) discipline(
+        .clk(sys_clk),.rst_n(rst_sys_n && !soft_reset),.tracking(tracking),
+        .accept(discipline_accept),.tick(pps_tick[31:0]),.seq(pps_seq),
+        .phase(saw_phase),.period(a_period),.nominal(a_saw_inc),.step(disciplined_step));
     assign wms_running=pps_mode?(base_run || burst_busy):run;
-    wire [32:0] saw_advance={1'b0,saw_phase}+{1'b0,a_saw_inc};
+    wire [32:0] saw_advance={1'b0,saw_phase}+{1'b0,(disciplined ? disciplined_step : a_saw_inc)};
     wire hit=cfg_addr[31:8]==BASE_ADDR[31:8];
     wire [7:0] ofs=cfg_addr[7:0];
     reg known,writable;
@@ -64,16 +73,18 @@ module wms_wavegen #(
     reg [63:0] freq_period;
     // An unacknowledged snapshot must not survive request withdrawal.
     wire cancel_calc=calc!=0 && (!cfg_valid || !commit_req);
-    wire soft_reset;
     wms_unsigned_divider divider(.clk(sys_clk),.rst_n(rst_sys_n && !soft_reset && !cancel_calc),.start(div_start),
         .numerator(div_num),.denominator(div_den),.busy(div_busy),.done(div_done),.quotient(div_q),.remainder(div_rem));
-    assign cfg_ready=cfg_valid && hit && (!commit_req || pending || calc==9 || (pps_mode && ctl_enable));
+    assign cfg_ready=cfg_valid && hit && (!commit_req || pending || calc==9 || (pps_controlled && ctl_enable));
     wire access=cfg_valid && cfg_ready;
     assign soft_reset=access && !cfg_error && control && cfg_wstrb[0] && cfg_wdata[`CTRL_BIT_SOFT_RESET];
-    wire armed=pps_mode && base_run && idle_written && !burst_busy && dlia_trigger_ready &&
+    wire local_armed=pps_controlled && !tracking && base_run && idle_written && !burst_busy && dlia_trigger_ready &&
         !pending && calc==0 && pipe==0 && !dac_sample_valid && dac_sample_ready;
+    assign lane_ready=local_armed || tracking;
+    wire armed=local_armed && (!disciplined || peer_ready);
     wire mode_busy=ctl_enable || burst_busy || pipe!=0 || dac_sample_valid || pending || calc!=0;
     wire disabling=access && !cfg_error && control && cfg_wstrb[0] && !cfg_wdata[0];
+    assign discipline_accept=disciplined && base_run && !disabling && pps_pulse && pps_qualified && (armed || tracking);
     always @* begin
         cfg_rdata=0; known=1; writable=0;
         case(ofs)
@@ -105,7 +116,7 @@ module wms_wavegen #(
             `REG_WMS_PHASE_MODE:begin cfg_rdata=sh_mode;writable=1;end
             REG_OVERRUN:begin cfg_rdata=overrun_count;writable=1;end
             REG_PERIOD:cfg_rdata=a_period;
-            `REG_WMS_TRIGGER_MODE:begin cfg_rdata={31'd0,pps_mode};writable=1;end
+            `REG_WMS_TRIGGER_MODE:begin cfg_rdata={30'd0,disciplined,pps_mode};writable=1;end
             `REG_WMS_IDLE_LEVEL:begin cfg_rdata=idle_level;writable=1;end
             `REG_WMS_TRIGGER_STATUS:cfg_rdata={24'd0,scan_aborted,pps_qualified,dlia_trigger_ready,idle_written,end_seen,burst_active,burst_busy,armed};
             `REG_WMS_TRIGGER_COUNT:cfg_rdata=trigger_count;
@@ -121,6 +132,9 @@ module wms_wavegen #(
             `REG_WMS_ABORTED_COUNT:cfg_rdata=aborted_count;
             `REG_WMS_TRIGGER_API:cfg_rdata=32'h50505301;
             `REG_WMS_REJECTED_COUNT:cfg_rdata=rejected_count;
+            `REG_WMS_DISC_API:cfg_rdata=32'h50504301;
+            `REG_WMS_DISC_STATUS:cfg_rdata={30'd0,pps_qualified,tracking};
+            `REG_WMS_DISC_STEP:cfg_rdata=disciplined_step;
             default:known=0;
         endcase
         cfg_error=0;cfg_error_code=0;
@@ -130,14 +144,14 @@ module wms_wavegen #(
             if(cfg_write && ofs==`REG_WMS_PHASE_MODE && |merged[31:2])cfg_error=1;
             if(commit_req && (pending || (calc==9 && calc_error)))cfg_error=1;
             if(cfg_write && (ofs==`REG_WMS_TRIGGER_MODE || ofs==`REG_WMS_IDLE_LEVEL) && mode_busy)cfg_error=1;
-            if(cfg_write && ofs==`REG_WMS_TRIGGER_MODE && |merged[31:1])cfg_error=1;
-            if(pps_mode && control && cfg_wstrb[0] && ((cfg_wdata[2] && ctl_enable) || (cfg_wdata[1] && mode_busy)))cfg_error=1;
+            if(cfg_write && ofs==`REG_WMS_TRIGGER_MODE && (merged>2 || (merged==2 && configured && !active_100hz)))cfg_error=1;
+            if(pps_controlled && control && cfg_wstrb[0] && ((cfg_wdata[2] && ctl_enable) || (cfg_wdata[1] && mode_busy)))cfg_error=1;
             if(cfg_error)begin
                 if(!known || |cfg_addr[1:0])cfg_error_code=5;
                 else if(cfg_write && !writable)cfg_error_code=6;
                 else if((commit_req && pending && !(|(cfg_wdata & mask & 32'hfffffff0))) ||
                     (cfg_write && (ofs==`REG_WMS_TRIGGER_MODE || ofs==`REG_WMS_IDLE_LEVEL) && mode_busy) ||
-                    (pps_mode && control && cfg_wstrb[0] && ((cfg_wdata[2] && ctl_enable) || (cfg_wdata[1] && mode_busy))))cfg_error_code=8;
+                    (pps_controlled && control && cfg_wstrb[0] && ((cfg_wdata[2] && ctl_enable) || (cfg_wdata[1] && mode_busy))))cfg_error_code=8;
                 else cfg_error_code=7;
             end
         end
@@ -150,7 +164,7 @@ module wms_wavegen #(
     always @(posedge sys_clk) begin
         if(!rst_sys_n || soft_reset) begin
             ctl_enable<=0;configured<=0;fault<=0;pending<=0;error_bits<=0;
-            pps_mode<=0;scan_aborted<=0;burst_active<=0;burst_busy<=0;end_seen<=0;
+            disciplined<=0;tracking<=0;active_100hz<=0;pps_mode<=0;scan_aborted<=0;burst_active<=0;burst_busy<=0;end_seen<=0;
             idle_written<=0;idle_queued<=0;idle_level<=0;pipe_idle<=0;sample_window<=0;sample_first<=0;
             trigger_count<=0;missed_count<=0;completed_count<=0;aborted_count<=0;rejected_count<=0;
             last_pps_seq<=0;last_pps_tick<=0;actual_start_tick<=0;actual_end_tick<=0;
@@ -168,6 +182,18 @@ module wms_wavegen #(
         end else begin
             scan_start<=0;config_changed<=0;div_start<=0;
             if(dac_sample_valid && dac_sample_ready)dac_sample_valid<=0;
+            if(disciplined)begin
+                if(!base_run || disabling)begin tracking<=0;idle_written<=0;end
+                if(sample_applied && !applied_window)begin idle_written<=1;idle_queued<=0;end
+                if(discipline_accept)begin
+                    if(!tracking)begin saw_phase<=0;sin_acc<=0;end
+                    tracking<=1;trigger_count<=trigger_count+1'b1;
+                    last_pps_seq<=pps_seq;last_pps_tick<=pps_tick;
+                end else if(pps_pulse && ctl_enable)begin
+                    if(pps_qualified)missed_count<=missed_count+1'b1;
+                    else rejected_count<=rejected_count+1'b1;
+                end
+            end
             if(pps_mode)begin
                 if(!base_run && !burst_busy)idle_written<=0;
                 if(pps_pulse && ctl_enable)begin
@@ -214,7 +240,7 @@ module wms_wavegen #(
                     `REG_WMS_SINE_PHASE_U32:sh_phase<=merged;
                     `REG_WMS_DAC_UPDATE_HZ_REQ:sh_rate<=merged;
                     `REG_WMS_PHASE_MODE:sh_mode<=merged;
-                    `REG_WMS_TRIGGER_MODE:begin pps_mode<=merged[0];idle_written<=0;end
+                    `REG_WMS_TRIGGER_MODE:begin pps_mode<=merged==1;disciplined<=merged==2;idle_written<=0;end
                     `REG_WMS_IDLE_LEVEL:begin idle_level<=merged;idle_written<=0;end
                     `REG_WMS_SAT_COUNT:sat_count<=sat_count & ~(cfg_wdata & mask);
                     REG_OVERRUN:overrun_count<=overrun_count & ~(cfg_wdata & mask);
@@ -222,10 +248,10 @@ module wms_wavegen #(
                 endcase
             end
             // The whole request is captured once; shadow writes cannot alter pending data.
-            if(calc==0 && cfg_valid && commit_req && !pending && !(pps_mode && ctl_enable))begin
+            if(calc==0 && cfg_valid && commit_req && !pending && !(pps_controlled && ctl_enable))begin
                 p_saw_freq<=sh_saw_freq;p_saw_ampl<=sh_saw_ampl;p_offset<=sh_offset;
                 p_sine_freq<=sh_sine_freq;p_sine_ampl<=sh_sine_ampl;p_phase<=sh_phase;p_rate<=sh_rate;p_mode<=sh_mode;
-                calc_error<=sh_rate==0 || sh_rate>max_update_hz || sh_saw_freq==0;
+                calc_error<=(disciplined && sh_saw_freq!=100000) || sh_rate==0 || sh_rate>max_update_hz || sh_saw_freq==0;
                 if(sh_rate==0 || sh_rate>max_update_hz || sh_saw_freq==0)calc<=9;
                 else begin div_num<=SYS_CLK_HZ;div_den<=sh_rate;div_start<=1;calc<=1;end
             end
@@ -255,14 +281,14 @@ module wms_wavegen #(
                (!run || (timer==0 && !first_sample && saw_advance[32])))begin
                 a_saw_ampl<=p_saw_ampl;a_offset<=p_offset;a_sine_ampl<=p_sine_ampl;
                 a_phase<=p_phase;a_mode<=p_mode;a_period<=p_period;a_actual<=p_actual;
-                a_saw_inc<=p_saw_inc;a_sine_inc<=p_sine_inc;
+                active_100hz<=p_saw_freq==100000;a_saw_inc<=p_saw_inc;a_sine_inc<=p_sine_inc;
                 saw_phase<=0;if(p_mode[1] || !p_mode[0])sin_acc<=0;
                 pending<=0;configured<=1;config_changed<=1;first_sample<=1;timer<=0;
-            end else if(pps_mode && !burst_active && !idle_written && !idle_queued &&
+            end else if(pps_controlled && !tracking && !burst_active && !idle_written && !idle_queued &&
                         (base_run || burst_busy) && transport_ready && pipe==0 && !dac_sample_valid && dac_sample_ready)begin
                 // Prime or restore the configured waiting level through the same latency.
                 pipe<=1;pipe_idle<=1;idle_queued<=1;sample_window<=0;sample_first<=0;
-            end else if(run && !(pps_mode && disabling))begin
+            end else if(run && !(pps_controlled && disabling))begin
                 if(timer!=0)timer<=timer-1'b1;
                 else begin
                     timer<=a_period-1'b1;
@@ -302,7 +328,7 @@ module wms_wavegen #(
                 else dac_sample<=sum[31:0];
             end
             // Highest priority: discard unsent waveform data after transport loss.
-            if(pps_mode && !transport_ready)begin pipe<=0;dac_sample_valid<=0;idle_queued<=0;end
+            if(pps_controlled && !transport_ready)begin pipe<=0;dac_sample_valid<=0;idle_queued<=0;end
         end
     end
 endmodule

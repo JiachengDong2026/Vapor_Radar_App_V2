@@ -13,7 +13,7 @@ module dila_core #(
     input wire sample_valid,output wire sample_ready,input wire [31:0] sample_data,input wire [7:0] sample_flags,
     input wire wms_scan_start,input wire [31:0] wms_cycle_id,input wire [31:0] wms_sine_phase,input wire wms_phase_valid,
     input wire [63:0] timestamp_now,input wire time_sync_valid,
-    input tri0 pps_mode,input tri0 scan_aborted,input tri0 capture_stopped,
+    input tri0 disciplined,input tri0 pps_mode,input tri0 scan_aborted,input tri0 capture_stopped,
     output wire trigger_ready,output wire scan_drained,
     input wire [193:0] capture_tag,input wire [31:0] input_sample_rate_hz,
     input wire [31:0] expected_per_cycle,input wire input_overflow_pulse,
@@ -188,10 +188,11 @@ module dila_core #(
     assign scan_drained=!burst_open && !burst_close && config_pipeline_idle && frame_level==0 && !m_valid;
     assign trigger_ready=enable && !pending && scan_drained && active_rate_valid && mode_active[0];
     wire apply_config=config_boundary_request && config_pipeline_idle && commit_rate_valid;
-    assign sample_ready=(pps_mode && (!sample_tag[192] || !enable || !burst_open || !active_rate_valid)) ||
+    wire waiting_for_phase=disciplined && !sample_tag[192];
+    assign sample_ready=waiting_for_phase || (pps_mode && (!sample_tag[192] || !enable || !burst_open || !active_rate_valid)) ||
         ((enable || drain_pending) && cooldown==0 && !config_boundary_request && active_rate_valid &&
          (!pps_mode || (burst_input && !burst_reset)));
-    wire sample_fire=sample_valid && sample_ready && (!pps_mode || (enable && active_rate_valid && sample_tag[192] && burst_input));
+    wire sample_fire=sample_valid && sample_ready && !waiting_for_phase && (!pps_mode || (enable && active_rate_valid && sample_tag[192] && burst_input));
     // Pre-edge event: the observation output rises on the first real acceptance,
     // not on reset, reference enable, filter output or USB delivery.
     assign processing_start_event=local_rst_n && pps_mode && sample_fire && input_new_cycle;

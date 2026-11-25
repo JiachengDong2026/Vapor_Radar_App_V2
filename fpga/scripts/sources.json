@@ -66,6 +66,7 @@
     "rtl/wms/wms_dac_channel.v",
     "rtl/wms/wms_dac_dual.v",
     "rtl/wms/wms_unsigned_divider.v",
+    "rtl/wms/wms_pps_discipline.v",
     "rtl/wms/wms_wavegen.v",
     "rtl/sensors/ai8_modbus_rs485.v",
     "rtl/sensors/ai8_poll_core.v",
