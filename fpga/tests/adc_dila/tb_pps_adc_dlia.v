@@ -206,6 +206,58 @@ module tb_pps_adc_dlia;
     ad4630_model model0(.rst_n(ADC_AD4630_RSTN),.cnv(ADC_AD4630_CNV),.cs_n(ADC_AD4630_CSN),.sck(ADC_AD4630_SCK),.sdi(ADC_AD4630_SDI),
         .stall_busy(1'b0),.busy(ADC_AD4630_BUSY),.sdo(ADC_AD4630_SDO),.conversions(conversions),.configured(configured0));
     assign {ADC_ADC3660_DA5,ADC_ADC3660_DA6,ADC_ADC3660_DB5,ADC_ADC3660_DB6,ADC_ADC3660_DCLK,ADC_ADC3660_FCLK}=6'd0;
+    wire adc_start,dlia1_start,dlia2_start;
+    assign adc_start=dut.adc_start;
+    assign dlia1_start=dut.dlia1_start;
+    assign dlia2_start=dut.dlia2_start;
+    integer monitor_tick=0,marker_index;
+    integer marker_rises[0:2],marker_falls[0:2],marker_tick[0:2];
+    reg [2:0] marker_previous=0;
+    reg [1:0] observed_input=0,observed_cnv=0;
+    reg [31:0] input_cycle0=0,input_cycle1=0,cnv_cycle0=0,cnv_cycle1=0;
+    reg expected_adc,expected_dlia0,expected_dlia1;
+    reg [2:0] expected_rises;
+    wire [2:0] marker_pulses={dlia2_start,dlia1_start,adc_start};
+    initial begin
+        for(marker_index=0;marker_index<3;marker_index=marker_index+1)begin
+            marker_rises[marker_index]=0;marker_falls[marker_index]=0;marker_tick[marker_index]=0;
+        end
+    end
+    // Independent first-sample oracle observes real CNV edges and input handshakes.
+    always @(posedge sys_clk)begin
+        monitor_tick=monitor_tick+1;
+        expected_dlia0=rst_sys_n && dut.pps_mode[0] && dut.din0_valid && dut.din0_ready &&
+            dut.din0_pack[232] && (!observed_input[0] || input_cycle0!=dut.din0_pack[71:40]);
+        expected_dlia1=rst_sys_n && dut.pps_mode[1] && dut.din1_valid && dut.din1_ready &&
+            dut.din1_pack[232] && (!observed_input[1] || input_cycle1!=dut.din1_pack[71:40]);
+        if(expected_dlia0)begin observed_input[0]=1;input_cycle0=dut.din0_pack[71:40];end
+        if(expected_dlia1)begin observed_input[1]=1;input_cycle1=dut.din1_pack[71:40];end
+        expected_adc=0;
+        #1;
+        if(rst_sys_n && ADC_AD4630_CNV)begin
+            // Capture tags change only on CNV launch; CNV is high for several clocks.
+            if(dut.g_dual.u_adc_dual.capture_tag0[192] && dut.g_dual.u_adc_dual.capture_tag1[192] &&
+               (!observed_cnv[0] || cnv_cycle0!=dut.g_dual.u_adc_dual.capture_tag0[31:0]) &&
+               (!observed_cnv[1] || cnv_cycle1!=dut.g_dual.u_adc_dual.capture_tag1[31:0]))begin
+                expected_adc=1;observed_cnv=3;
+                cnv_cycle0=dut.g_dual.u_adc_dual.capture_tag0[31:0];
+                cnv_cycle1=dut.g_dual.u_adc_dual.capture_tag1[31:0];
+            end
+        end
+        expected_rises={expected_dlia1,expected_dlia0,expected_adc};
+        if(({dlia2_start,dlia1_start,adc_start} & ~marker_previous)!=expected_rises)
+            $fatal(1,"Start observation does not match actual first CNV/input acceptance");
+        for(marker_index=0;marker_index<3;marker_index=marker_index+1)begin
+            if(expected_rises[marker_index])begin
+                marker_rises[marker_index]=marker_rises[marker_index]+1;marker_tick[marker_index]=monitor_tick;
+            end
+            if(marker_previous[marker_index] && !marker_pulses[marker_index])begin
+                marker_falls[marker_index]=marker_falls[marker_index]+1;
+                if(monitor_tick-marker_tick[marker_index]!=1000)$fatal(1,"Integrated pulse is not 10 us");
+            end
+        end
+        marker_previous={dlia2_start,dlia1_start,adc_start};
+    end
     integer frames0=0,frames1=0,n=0,captured0=0,captured1=0;
     reg [63:0] tstart0=0,tstart1=0,tend0=0,tend1=0;reg pv0=0,pv1=0;
     reg [31:0] value;
@@ -251,6 +303,8 @@ module tb_pps_adc_dlia;
         if(tstart0!=tstart1 || tend0-tstart0!=16000 || tend1-tstart1!=8000)$fatal(1,"DAC window timing");
         if(captured0!=160 || captured1!=80 || dut.u_dila0.input_count!=160 || dut.u_dila1.input_count!=80)$fatal(1,"actual ADC window counts %d/%d",captured0,captured1);
         if(dut.din0_drops || dut.din1_drops)$fatal(1,"ADC fanout loss");
+        for(marker_index=0;marker_index<3;marker_index=marker_index+1)
+            if(marker_rises[marker_index]!=1 || marker_falls[marker_index]!=1)$fatal(1,"First scan marker count");
         // Simultaneously stopping capture and DLIA must still allow WMS drain to finish.
         @(negedge sys_clk);seq=2;ptick=timestamp_now;pps=1;@(negedge sys_clk);pps=0;
         wait(wms0_scan_start);repeat(1500)@(negedge sys_clk);
@@ -258,6 +312,9 @@ module tb_pps_adc_dlia;
         bus.write32('h4004,0);bus.write32('h4104,0);bus.write32('h5004,0);bus.write32('h5104,0);
         wait(!wave.channels[0].channel.wms.burst_busy && !wave.channels[1].channel.wms.burst_busy);
         bus.write32('h204c,0);bus.write32('h214c,0);
+        repeat(1100)@(negedge sys_clk);
+        for(marker_index=0;marker_index<3;marker_index=marker_index+1)
+            if(marker_rises[marker_index]!=2 || marker_falls[marker_index]!=2)$fatal(1,"Second scan marker count");
         $display("PPS_ADC_DLIA_PASS actual_SPI_CNV_fifo_tags_two_channels_normal_tail_background_drain_stop");$finish;
     end
     initial begin #3000000;$fatal(1,"PPS ADC timeout");end

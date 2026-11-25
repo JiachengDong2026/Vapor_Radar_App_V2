@@ -1231,11 +1231,11 @@ time_sync_core 64-bit tick
 | 9 | `GPIO_BANK88_LP5` | AM11 | MOTOR_PUL |
 | 10 | `GPIO_BANK88_LP6` | AK12 | MOTOR_ENA |
 | 11 | `GPIO_BANK88_LN5` | AN11 | MOTOR_DIR |
-| 12 | `GPIO_BANK88_LN6` | AL12 | 预留 |
+| 12 | `GPIO_BANK88_LN6` | AL12 | ADC_START，PPS窗口共同首CNV观测 |
 | 13 | `GPIO_BANK88_LP7` | AK13 | HC2A UART TX -> probe RXD |
-| 14 | `GPIO_BANK88_LP8` | AE13 | 预留 |
+| 14 | `GPIO_BANK88_LP8` | AE13 | DLIA1_START，首有效样本接收观测 |
 | 15 | `GPIO_BANK88_LN7` | AL13 | HC2A UART RX <- probe TXD |
-| 16 | `GPIO_BANK88_LN8` | AF13 | 预留 |
+| 16 | `GPIO_BANK88_LN8` | AF13 | DLIA2_START，首有效样本接收观测 |
 | 17 | `GPIO_BANK88_LP9` | AG11 | 预留 |
 | 18 | `GPIO_BANK88_LP10` | AG12 | 预留 |
 | 19 | `GPIO_BANK88_LN9` | AH11 | 预留 |
@@ -1245,7 +1245,7 @@ time_sync_core 64-bit tick
 | 23 | `GPIO_BANK88_LN11` | AF12 | 预留 |
 | 24 | `GPIO_BANK88_LN12` | AE11 | 预留 |
 
-当前HC2A GPIO版占用 13 根 Bank88 GPIO，仍有大量余量。Bank89 可以完整保留给后续扩展，因此首版不会受 VADJ 选择影响。
+2026-11-19启动观测修订后，按上表占用15根Bank88 GPIO，剩余CON11-4及17～24共9根。新增三路为3.3V、10us脉冲；ADC_START仅表示两路窗口首采样在同一次CNV的情况，精确定义及接线见[启动观测输出](integration/MEASUREMENT_START_OUTPUTS_20261119.md)。Bank89继续保留供扩展。
 
 ---
 

@@ -31,3 +31,4 @@ xsim.dir/
 
 # Explicitly requested, versioned FPGA release; all other BIT files stay ignored.
 !/firmware/fpga/releases/20261113_hc2a_rhfix/vapor_lidar_hc2a_gpio_rhfix_20261028.bit
+!/firmware/fpga/releases/20261123_start_outputs/vapor_lidar_start_outputs_20261123.bit

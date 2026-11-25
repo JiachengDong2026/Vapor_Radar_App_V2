@@ -1,4 +1,8 @@
 # HC2A: CON11 pin13 TX -> probe RXD; pin15 RX <- probe TXD. Bank88 3.3V.
+# Measurement start observations: CON11 pins12/14/16; Bank88 3.3 V.
+set_property -dict {PACKAGE_PIN AL12 IOSTANDARD LVCMOS33 DRIVE 8 SLEW SLOW} [get_ports ADC_START]
+set_property -dict {PACKAGE_PIN AE13 IOSTANDARD LVCMOS33 DRIVE 8 SLEW SLOW} [get_ports DLIA1_START]
+set_property -dict {PACKAGE_PIN AF13 IOSTANDARD LVCMOS33 DRIVE 8 SLEW SLOW} [get_ports DLIA2_START]
 set_property -dict {PACKAGE_PIN AK13 IOSTANDARD LVCMOS33} [get_ports HC2A_UART_TXD]
 set_property -dict {PACKAGE_PIN AL13 IOSTANDARD LVCMOS33} [get_ports HC2A_UART_RXD]
 # LC0: CON11 pin5 TX / pin7 RX; LC1: pin6 TX / pin8 RX. 3.3V TTL only.

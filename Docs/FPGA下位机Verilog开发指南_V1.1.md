@@ -1,3 +1,7 @@
+> **2026-11-19启动观测输出**：新增CON11-12/14/16三路3.3V、10us真实事件观测，ADC_START要求双PPS窗口首采样共用CNV，双DLIA_START标记各自首样本接收。详细接口及版本记录见[启动观测规范](integration/MEASUREMENT_START_OUTPUTS_20261119.md)。
+
+> **2026-11-23构建归档**：已完成三路观测与DLIA参考流水时序修复的整机BIT，包含原有2～8阶SOS和截止频率可调功能；116项回归通过。源码、BIT、哈希及实板验证边界见[本版说明](LOWER_COMPUTER_RELEASE_20261123.md)。
+
 > **2026-11-15 SDFM300迁移**：当前距离设备为300米SDFM300，默认460800/8N1、单UART、4字节主动输出；旧模式/命令与LF管脚已撤回。寄存器、有效性、电气接线及上行兼容语义以[SDFM300接口](integration/sensors/SDFM300.md)为准。历史板测和旧BIT仅覆盖当时设备。
 
 > 2026-10-27 LC双路UART修订：CON11 pin5/7现用于LC0、pin6/8用于LC1，替代本文旧RD105预留；当前接口以 [LC_DUAL_UART_20261027.md](integration/LC_DUAL_UART_20261027.md) 为准。
