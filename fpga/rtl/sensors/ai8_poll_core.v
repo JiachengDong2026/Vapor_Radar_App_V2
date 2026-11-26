@@ -22,6 +22,7 @@ module ai8_poll_core #(
     output reg [31:0] good_count, output reg [31:0] error_count,
     output reg [63:0] sample_ticks, input wire [63:0] now_ticks,
     input wire time_sync_valid, output reg sample_time_sync,
+    input wire parameter_mode, parameter_write, input wire [15:0] parameter_address,
     input wire set_valid, output wire set_ready, input wire [15:0] set_raw,
     output reg set_rsp_valid, input wire set_rsp_ready,
     output reg [3:0] set_result, output reg [3:0] set_error,
@@ -37,6 +38,8 @@ module ai8_poll_core #(
     localparam START = 0, REQUEST = 1, RESPONSE = 2, HOLD = 3, GAP = 4,
         WRITE_REQ = 5, WRITE_RSP = 6, VERIFY_REQ = 7, VERIFY_RSP = 8;
     reg [3:0] state;
+    reg command_parameter, command_write;
+    reg [15:0] command_address;
     reg [7:0] scan_channel, command_channel;
     wire [7:0] poll_channel = scan_enable ? scan_channel : channel;
     reg [2:0] item;
@@ -51,7 +54,7 @@ module ai8_poll_core #(
     wire [15:0] value = {read_data[7:0], read_data[15:8]};
     wire command_active = state == WRITE_REQ || state == WRITE_RSP ||
                           state == VERIFY_REQ || state == VERIFY_RSP;
-    wire [15:0] selected_sp_address = command_channel - 1;
+    wire [15:0] selected_sp_address = command_parameter ? command_address : command_channel - 1;
     // Invalid builds still consume commands and report CONFIG_ERROR; the
     // master remains disabled, so the command frontend cannot deadlock.
     assign set_ready = rst_n && enable && !set_rsp_valid && (state == START || state == GAP);
@@ -73,7 +76,7 @@ module ai8_poll_core #(
         .req_slave(slave_addr[7:0]), .req_function(state == WRITE_REQ ? 8'h10 : 8'h03),
         .req_address(command_active ? selected_sp_address : address),
         .req_quantity(5'd1), .req_write_data({240'd0, set_requested[7:0], set_requested[15:8]}),
-        .timeout_ms(timeout_ms[15:0]), .retry_limit(retry_limit[1:0]),
+        .timeout_ms(timeout_ms[15:0]), .retry_limit(command_active && command_parameter ? 2'd0 : retry_limit[1:0]),
         .timestamp_now(now_ticks), .time_sync_valid(1'b0), .done(done),
         .error(master_error), .exception_code(master_exception), .read_data(read_data),
         .response_timestamp(), .response_time_sync(), .attempt_error_pulse(), .attempt_error(),
@@ -81,6 +84,7 @@ module ai8_poll_core #(
     );
     always @(posedge clk) begin
         if (!rst_n || !enable) begin
+            command_parameter <= 0; command_write <= 0; command_address <= 0;
             scan_channel <= 1; sample_channel <= 1; command_channel <= 1;
             state <= START; item <= 0; ms_div <= 0; gap_ms <= 0;
             sample_valid <= 0; pv_raw <= 0; sp_raw <= 0; sv_raw <= 0; op_raw <= 0;
@@ -101,10 +105,14 @@ module ai8_poll_core #(
             end
             if (set_valid && set_ready) begin
                 command_channel <= set_channel;
+                command_parameter <= parameter_mode === 1'b1;
+                command_write <= parameter_write; command_address <= parameter_address;
                 set_requested <= set_raw; set_readback <= 0;
                 set_error <= 0; set_exception <= 0;
                 if (!CONFIG_OK) begin
                     set_result <= 5; set_error <= 6; set_rsp_valid <= 1; state <= START;
+                end else if (parameter_mode === 1'b1) begin
+                    state <= parameter_write ? WRITE_REQ : VERIFY_REQ;
                 end else if ($signed(set_raw) < -9990 || $signed(set_raw) > 32000) begin
                     set_result <= 4; set_rsp_valid <= 1; state <= START;
                 end else state <= WRITE_REQ;
@@ -166,7 +174,7 @@ module ai8_poll_core #(
                     set_readback <= master_error == 0 ? value : 16'd0;
                     set_error <= master_error; set_exception <= master_exception;
                     if (master_error != 0) set_result <= 2;
-                    else if (value != set_requested) set_result <= 3;
+                    else if ((!command_parameter || command_write) && value != set_requested) set_result <= 3;
                     else set_result <= 0;
                     set_rsp_valid <= 1; state <= START;
                 end

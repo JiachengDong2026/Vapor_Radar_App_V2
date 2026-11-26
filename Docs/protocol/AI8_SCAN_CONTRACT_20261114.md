@@ -66,3 +66,5 @@ alarm.bit0 为本路输入错误/超量程；bits1..4 为本路 HA/LA/dHA/dLA。
 许可证搜索路径已通过仅进程环境修正解决；本轮实现完成，DAC/AD4630独立checker采用更保守0.350ns预算后，同轮重新签核生成BIT。原失败build_result保持不变。详细来源、BIT路径/SHA256、时序、DRC、CDC和限制见 [AI8_BUILD_QUALIFICATION_20261114.md](AI8_BUILD_QUALIFICATION_20261114.md)。此节取代前文“尚无BIT”的当前状态描述，前文失败记录保留追溯。
 
 后续 JTAG 加载及只读身份检查已通过：板上扩展 `0x2B`，AI8 ID `0x00460200`、feature `0x0B`、enable `0`、scan `0`。未写 Flash/FX3 EEPROM，未启用采集或输出；八路实物采集仍待验收。完整记录见上述构建与签核文档的“JTAG 加载与只读身份检查”节。
+
+2026-11-16 source revision: AI8 single-word parameter mailbox and Ai8Parameters capability added; scan/schema3 and directed-SP interfaces retained. See [AI8_PARAMETERS_20261116.md](AI8_PARAMETERS_20261116.md) for the new0x3F capability, mailbox semantics, whitelist and offline BIT qualification. Earlier0x3B descriptions above refer to the prior field image.

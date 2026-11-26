@@ -388,5 +388,12 @@
 `define REG_WMS_DISC_API               8'h8c
 `define REG_WMS_DISC_STATUS            8'h90
 `define REG_WMS_DISC_STEP              8'h94
+// AI8 single-register parameter mailbox, manual section 7.
+`define REG_AI8_PARAM_COMMAND    8'h80
+`define REG_AI8_PARAM_ADDRESS    8'h84
+`define REG_AI8_PARAM_VALUE      8'h88
+`define REG_AI8_PARAM_STATUS     8'h8C
+`define REG_AI8_PARAM_READBACK   8'h90
+`define REG_AI8_PARAM_COUNT      8'h94
 
 `endif

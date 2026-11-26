@@ -17,6 +17,26 @@ module ai8_modbus_rs485 #(
     output wire bus_request,bus_busy,input wire bus_grant
 );
     reg scan_enable;
+    reg param_pending,param_submitted,param_done,param_write;
+    reg [15:0] param_address,param_value,param_readback;
+    reg [31:0] param_count;
+    reg [3:0] param_result,param_error;
+    reg [7:0] param_exception;
+    // Manual section 7: documented page words only; eight installed channels.
+    wire channel_word = (param_address < 16'h04e0) &&
+        ((param_address % 16'h0060) < 8);
+    wire param_read_allowed = channel_word ||
+        (param_address>=16'h0600 && param_address<16'h0608) ||
+        (param_address>=16'h0660 && param_address<16'h0670) ||
+        (param_address>=16'h0680 && param_address<16'h0684) ||
+        (param_address>=16'h06c0 && param_address<16'h06c4) ||
+        (param_address>=16'h0800 && param_address<=16'h085f);
+    wire param_write_allowed = (channel_word && param_address<16'h0480) ||
+        (param_address>=16'h0800 && param_address<16'h0840) ||
+        param_address==16'h0844 || param_address==16'h0845 ||
+        param_address==16'h0846 || param_address==16'h084e ||
+        param_address==16'h0850 || param_address==16'h0852;
+
     reg [7:0] target_channel,pending_channel,cache_channel;
     wire [7:0] core_channel;
     reg [31:0] cache_quality[0:7],cache_pvsp[0:7],cache_svop[0:7],cache_status[0:7];
@@ -47,7 +67,7 @@ module ai8_modbus_rs485 #(
     // shadow write must not enter the high-fanout reset/enable cone.
     wire ctrl_range_error=|(cfg_wdata & mask & 32'hfffffff0) ||
         (cfg_wstrb[0] && cfg_wdata[2] && !cfg_wdata[0]);
-    wire ctrl_busy_error=cfg_wstrb[0] && cfg_wdata[2] && pending;
+    wire ctrl_busy_error=cfg_wstrb[0] && cfg_wdata[2] && (pending || param_pending);
     wire ctrl_write_fire=cfg_valid && hit && cfg_write && ofs==8'h04 &&
         !ctrl_range_error && !ctrl_busy_error;
     wire soft_reset=ctrl_write_fire && cfg_wstrb[0] && cfg_wdata[1];
@@ -90,7 +110,7 @@ module ai8_modbus_rs485 #(
             4:begin cfg_rdata={31'd0,enabled};writable=1;end
             8:begin
                 cfg_rdata[0]=enabled;cfg_rdata[1]=online;cfg_rdata[2]=pending;
-                cfg_rdata[3]=bus_busy || pending;cfg_rdata[4]=core_sample_valid;cfg_rdata[5]=afull;
+                cfg_rdata[3]=bus_busy || pending || param_pending;cfg_rdata[4]=core_sample_valid;cfg_rdata[5]=afull;
                 cfg_rdata[6]=errors[2];cfg_rdata[7]=|errors;cfg_rdata[8]=time_sync_valid;
                 cfg_rdata[9]=result_valid;cfg_rdata[10]=pv_uc_valid;cfg_rdata[11]=sp_uc_valid;
             end
@@ -128,7 +148,13 @@ module ai8_modbus_rs485 #(
             180:cfg_rdata=cache_ticks[cache_channel-1][63:32];
             184:cfg_rdata=cache_good[cache_channel-1];
             188:cfg_rdata=cache_bad[cache_channel-1];
-            252:cfg_rdata=11;
+            128:begin writable=1;config_busy=pending || param_pending || !enabled;end
+            132:begin cfg_rdata=param_address;writable=1;config_busy=param_pending;end
+            136:begin cfg_rdata=param_value;writable=1;config_busy=param_pending;end
+            140:cfg_rdata={14'd0,param_done,param_pending,param_exception,param_error,param_result};
+            144:cfg_rdata=param_readback;
+            148:cfg_rdata=param_count;
+            252:cfg_rdata=15;
             default:known=0;
         endcase
         cfg_error=0;cfg_error_code=`SENSOR_CFG_OK;
@@ -152,6 +178,10 @@ module ai8_modbus_rs485 #(
                     100:if(merged>3)cfg_error=1;
                     104:if(merged>1)cfg_error=1;
                     108:if(merged>8)cfg_error=1;
+                    128:if(cfg_wstrb!=4'hf || (cfg_wdata!=1 && cfg_wdata!=2) ||
+                        !param_read_allowed || (cfg_wdata==2 && !param_write_allowed) ||
+                        (cfg_wdata==2 && param_address==16'h0845 && param_value!=0 && param_value!=15 && param_value!=9655))cfg_error=1;
+                    132,136:if(merged>65535)cfg_error=1;
                     152:if(merged<1 || merged>8)cfg_error=1;
                     default:;
                 endcase
@@ -170,8 +200,9 @@ module ai8_modbus_rs485 #(
         .alarm(core_alarm),.control(core_control),.host_status(core_host),.online(core_online),
         .last_error(core_error),.exception_code(core_exception),.good_count(core_good),.error_count(core_bad),
         .sample_ticks(core_ticks),.now_ticks(timestamp_now),.time_sync_valid(time_sync_valid),.sample_time_sync(core_sample_sync),
-        .set_valid(pending && !submitted),.set_ready(core_set_ready),
-        .set_raw(pending_raw),.set_rsp_valid(core_rsp_valid),.set_rsp_ready(1'b1),.set_result(core_result),
+        .parameter_mode(param_pending),.parameter_write(param_write),.parameter_address(param_address),
+        .set_valid((pending && !submitted) || (param_pending && !param_submitted)),.set_ready(core_set_ready),
+        .set_raw(param_pending ? param_value : pending_raw),.set_rsp_valid(core_rsp_valid),.set_rsp_ready(1'b1),.set_result(core_result),
         .set_error(core_set_error),.set_exception(core_set_exception),.set_requested(core_requested),.set_readback(core_readback)
     );
     always @* begin
@@ -203,6 +234,9 @@ module ai8_modbus_rs485 #(
         .m_source_id(m_source_id),.m_msg_id(m_msg_id),.m_timestamp(m_timestamp),.m_cycle_id(m_cycle_id),.m_flags(m_flags));
     always @(posedge sys_clk)begin
         if(!local_rst_n)begin
+            param_pending<=0;param_submitted<=0;param_done<=0;param_write<=0;
+            param_address<=0;param_value<=0;param_readback<=0;param_count<=0;
+            param_result<=0;param_error<=0;param_exception<=0;
             scan_enable<=0;target_channel<=0;pending_channel<=1;cache_channel<=1;
             for(cache_i=0;cache_i<8;cache_i=cache_i+1)begin
                 cache_quality[cache_i]<=0;cache_pvsp[cache_i]<=0;cache_svop[cache_i]<=0;
@@ -230,13 +264,24 @@ module ai8_modbus_rs485 #(
                         shadow_uc_cached<=$signed(raw_merged)*32'sd100000;
                     else shadow_uc_cached<=0;
                 end
+                128:begin param_pending<=1;param_submitted<=0;param_done<=0;
+                    param_write<=cfg_wdata==2;param_readback<=0;
+                    param_result<=0;param_error<=0;param_exception<=0;end
+                132:param_address<=merged[15:0];136:param_value<=merged[15:0];
                 96:timeout_ms<=merged;100:retry_limit<=merged;
                 104:scan_enable<=merged[0];108:target_channel<=merged[7:0];152:cache_channel<=merged[7:0];
                 default:;
             endcase
             if(commit)begin pending_channel<=target_channel==0?channel[7:0]:target_channel;pending<=1;submitted<=0;pending_raw<=shadow_raw;result_valid<=0;end
             if(pending && !submitted && core_set_ready)submitted<=1;
-            if(core_rsp_valid)begin
+            if(param_pending && !param_submitted && core_set_ready)param_submitted<=1;
+            if(core_rsp_valid && param_pending)begin
+                param_pending<=0;param_submitted<=0;param_done<=1;
+                param_result<=core_result;param_error<=core_set_error;
+                param_exception<=core_set_exception;param_readback<=core_readback;
+                param_count<=param_count+1'b1;
+            end
+            if(core_rsp_valid && pending)begin
                 pending<=0;submitted<=0;result_valid<=1;result<=core_result;
                 transport_error<=core_set_error;result_exception<=core_set_exception;
                 last_requested<=core_requested;last_readback<=core_readback;
@@ -264,6 +309,10 @@ module ai8_modbus_rs485 #(
             end
             if(!enabled && !commit)begin
                 sample_online<=0;
+                if(param_pending)begin
+                    param_pending<=0;param_submitted<=0;param_done<=1;param_result<=5;
+                    param_error<=6;param_exception<=0;param_readback<=0;param_count<=param_count+1'b1;
+                end
                 if(pending)begin
                     pending<=0;submitted<=0;result_valid<=1;result<=5;transport_error<=6;
                     result_exception<=0;last_requested<=pending_raw;last_readback<=0;
