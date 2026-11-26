@@ -45,10 +45,10 @@ module tb_sensor_cfg_error_codes;
         access(4,1,8'h10,8'h44,15,6);access(4,1,8'h14,0,15,7);access(4,1,8'h18,3,15,7);access(4,1,8'h1c,7,15,7);access(4,1,8'h1c,2,15,7);
         access(5,1,8'h10,115199,15,7);access(5,1,8'h14,3,15,5);access(5,1,8'h18,5,15,5);access(5,1,8'h18,1,0,5);access(5,1,8'h3c,0,15,7);access(5,1,8'h4c,1001,15,5);
         access(6,1,8'h18,1,15,7);access(6,1,8'h1c,9,15,7);access(6,1,8'h20,32'd25000001,15,7);access(6,1,8'h20,-32'sd400000001,15,7);access(6,1,8'h2c,0,15,7);
-        // AI8 scan extensions are present; generic parameter transactions stay absent.
+        // AI8 parameter address is readable; a disabled driver rejects commands as busy.
         access(6,0,8'h68,0,15,0);access(6,1,8'h68,1,15,0);
-        access(6,0,8'h6c,0,15,0);access(6,1,8'h80,1,15,5);
-        access(6,0,8'h84,0,15,5);
+        access(6,0,8'h6c,0,15,0);access(6,1,8'h80,1,15,8);
+        access(6,0,8'h84,0,15,0);access(6,0,8'h9c,0,15,5);
         // Valid writes are unchanged, and masked invalid upper bytes are ignored.
         access(0,1,8'h10,32'hffff4b00,3,0);read_value(0,8'h10);if(saved!=19200)$fatal(1,"WSTRB merge");
         for(lane=0;lane<7;lane=lane+1)access(lane,1,8'h04,1,15,0);
