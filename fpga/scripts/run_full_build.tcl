@@ -43,7 +43,9 @@ proc full_hold_pin_repair {out exact_scope} {
         set source_clock [get_clocks -of_objects [get_pins $start]]
         set fanin [all_fanin -flat -startpoints_only -to $pin]
         if {[llength $fanin]!=1 || $fanin ne $start || [get_property REF_PIN_NAME $fanin] ne "C" || ![string match FD* [get_property REF_NAME [get_cells -of_objects $fanin]]]} {error "Unexpected hold launch for $destination"}
-        if {$dest_clock ne "sys_raw" || $source_clock ni {gpif_raw board25}} {error "Unexpected hold clock pair: $source_clock -> $dest_clock"}
+        set forward [expr {$source_clock eq "gpif_raw" && $dest_clock eq "sys_raw"}]
+        set reverse [expr {$source_clock eq "sys_raw" && $dest_clock eq "gpif_raw"}]
+        if {!$forward && !$reverse && !($source_clock eq "board25" && $dest_clock eq "sys_raw")} {error "Unexpected hold clock pair: $source_clock -> $dest_clock"}
         if {$source_clock eq "board25" && ![string match {u_clock_fault_cdc/gray_meta_reg*} $destination]} {error "Unreviewed board25 hold endpoint"}
         if {[regexp {^u_clock_fault_cdc/gray_meta_reg\[([0-9]+)\]/D$} $destination match bit] && $bit<32} {
             set expected_start [format {u_clock_fault_cdc/src_gray_reg[%d]/C} $bit]
@@ -58,9 +60,10 @@ proc full_hold_pin_repair {out exact_scope} {
             if {[llength $timed]!=1 || [get_property SLACK $timed]<0 || [get_property EXCEPTION $timed] ne ""} {error "Clock-fault second stage is failing or excepted"}
             dict incr group_counts clock_fault
         } elseif {[regexp {^u_usb_counter(0|1|3|4)/gray_meta_reg\[([0-9]+)\]/D$} $destination match instance bit] && $bit<32} {
+            if {!$forward} {error "Unexpected USB counter clock pair"}
             dict incr group_counts usb$instance
         } elseif {[regexp {^u_transport/u_(tx|rx)/(rd|wr)_gray_meta_reg\[([0-9]+)\]/D$} $destination match fifo pointer bit] && $bit<12} {
-            if {!(($fifo eq "tx" && $pointer eq "rd") || ($fifo eq "rx" && $pointer eq "wr"))} {error "Unexpected USB occupancy crossing direction"}
+            if {$forward != (($fifo eq "tx" && $pointer eq "rd") || ($fifo eq "rx" && $pointer eq "wr"))} {error "Unexpected USB occupancy crossing direction"}
             set base u_transport/u_$fifo
             set expected_start [format {%s/%s_gray_reg[%d]/C} $base $pointer $bit]
             set expected_msb [format {%s/%s_count_reg[%d]/C} $base $pointer $bit]
@@ -69,19 +72,19 @@ proc full_hold_pin_repair {out exact_scope} {
             set second_d [get_pins -of_objects $second -filter {REF_PIN_NAME == D}]
             set second_driver [get_pins -of_objects [get_nets -of_objects $second_d] -filter {DIRECTION == OUT}]
             if {[llength $second_driver]!=1 || [get_property NAME $second_driver] ne [format {%s/%s_gray_meta_reg[%d]/Q} $base $pointer $bit]} {error "USB occupancy second stage is not direct"}
-            if {[get_clocks -of_objects [get_pins -of_objects $second -filter {REF_PIN_NAME == C}]] ne "sys_raw"} {error "USB occupancy second stage clock changed"}
+            if {[get_clocks -of_objects [get_pins -of_objects $second -filter {REF_PIN_NAME == C}]] ne $dest_clock} {error "USB occupancy second stage clock changed"}
             set second_path [get_timing_paths -from [get_pins [string range $destination 0 end-1]C] -to $second_d -delay_type max -max_paths 1]
             if {[llength $second_path]!=1 || [get_property SLACK $second_path]<0 || [get_property EXCEPTION $second_path] ne ""} {error "USB occupancy second stage is failing or excepted"}
             dict incr group_counts $fifo
         } elseif {[regexp {^u_transport/u_(tx|rx)/u_fifo/(rd_gray_w1|wr_gray_r1)_reg\[([0-9]+)\]/D$} $destination match fifo first bit] && $bit<12} {
-            # Existing 2048-entry USB FIFO Gray synchronizers. Only the
-            # GPIF50 -> SYS100 direction is eligible; validate both stages
-            # and the direct registered Gray source before changing routing.
-            if {$fifo eq "tx" && $first eq "rd_gray_w1"} {
+            # Read pointers cross to the write clock and vice versa. TX writes
+            # on SYS and reads on GPIF; RX uses the opposite clocks.
+            if {$first eq "rd_gray_w1"} {
                 set pointer rd;set stage2 rd_gray_w2
-            } elseif {$fifo eq "rx" && $first eq "wr_gray_r1"} {
+            } else {
                 set pointer wr;set stage2 wr_gray_r2
-            } else {error "Unexpected USB FIFO crossing direction"}
+            }
+            if {$forward != (($fifo eq "tx" && $pointer eq "rd") || ($fifo eq "rx" && $pointer eq "wr"))} {error "Unexpected USB FIFO crossing direction"}
             set base u_transport/u_$fifo/u_fifo
             set expected_start [format {%s/%s_gray_reg[%d]/C} $base $pointer $bit]
             set expected_msb [format {%s/%s_bin_reg[%d]/C} $base $pointer $bit]
@@ -92,7 +95,7 @@ proc full_hold_pin_repair {out exact_scope} {
             set second_driver [get_pins -of_objects $second_net -filter {DIRECTION == OUT}]
             set expected_driver [format {%s/%s_reg[%d]/Q} $base $first $bit]
             if {[llength $second_driver]!=1 || [get_property NAME $second_driver] ne $expected_driver} {error "USB FIFO Gray second stage is not direct"}
-            if {[get_clocks -of_objects [get_pins -of_objects $second -filter {REF_PIN_NAME == C}]] ne "sys_raw"} {error "USB FIFO Gray second stage clock changed"}
+            if {[get_clocks -of_objects [get_pins -of_objects $second -filter {REF_PIN_NAME == C}]] ne $dest_clock} {error "USB FIFO Gray second stage clock changed"}
             set second_path [get_timing_paths -from [get_pins [string range $destination 0 end-1]C] -to $second_d -delay_type max -max_paths 1]
             if {[llength $second_path]!=1 || [get_property SLACK $second_path]<0 || [get_property EXCEPTION $second_path] ne ""} {error "USB FIFO Gray second stage is failing or excepted"}
             dict incr group_counts ${fifo}_fifo
