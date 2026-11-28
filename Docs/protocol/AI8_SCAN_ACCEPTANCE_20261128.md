@@ -44,3 +44,20 @@
 实板首次模式读数、能力及采集/输出寄存器、原设温、连续八路帧、通道缓存/时间戳、整轮周期、显式模式写回、软复位及交错命令均未取得。没有发出主机测量、设温、输出或参数写命令，无法确认各路传感器的接线或温度。本次只识别到上述一台 JTAG 目标，旧板兼容性仍待具备相应设备时验证。
 
 现场下一步是在负载安全时给 FPGA 主板完整断电再上电，确认主供电及配置跳线与曾成功的设置一致，随后重试同一 BIT 并读 DONE/EOS。原始证据位于 `D:/Project/Test/ai8_boot_20261128/board_2350/`，含 `hashes.json`、`source_check.json`、`program.log`、`retry3m.log`、`usb-post-retry.json`、`driver.json` 及 `fx3-after.txt`。
+
+## 主板断电重启后的同板对照（2026-11-29 北京时间）
+
+负责人确认主板已完整断电再上电。两次测试均使用 422Laptop3、同一条 JTAG 电缆 `13620207920cf6`、同一器件 `xcku11p_0 / 04A4E093` 和 6 MHz 时钟。两份 BIT 在各自下载前均重新校验了上文的 SHA-256。
+
+| 测试顺序 | FPGA 实测结果 | FX3 实测结果 |
+|---|---|---|
+| 上电后首次读回，随后下载 build4 | 首次 `CONFIG_STATUS=0x1080190C`。下载返回 `Labtools 27-3165`，结束后仍为 `0x1080190C`。 | 下载前 Windows 在场 USB 列表中无 `04B4:00F1`，下载后 GP01 enabled 接口数为 0。 |
+| 同板下载恢复 BIT `dab6d5d` | 下载前、后均为 `0x1080190C`，返回同一 EOS LOW。该 BIT 在 11 月 28 日 13:24 启动的现场会话中七项配置检查全部通过，日志为 `D:/Project/FPGA_Programmer/logs/20261128_132405_349046/session.log`。 | 下载后 GP01 enabled 接口数仍为 0。 |
+
+两份镜像均读回 EOS、内部 DONE、DONE 引脚为 0，启动状态机停在 `000`。INIT_B 内部及引脚为 1，CRC、IDCODE、security、bad packet 错误位均为 0，`BOOT_STATUS=0x00000000`。两次下载之间，经 JTAG 读得 SYSMON 温度 33.9 °C、VCCINT 0.847 V、VCCBRAM 0.847 V、VCCAUX 1.796 V。这些是一次采样值，下载期间的瞬态仍未知。
+
+当前可将阻塞定位到两个镜像共用的配置过程。最小现场排查动作是检查并重新插牢**板端 JTAG 下载接头**，确认插接方向、接地及针座接触后，再用恢复 BIT 检查 DONE/EOS。若条件允许，可使用另一条已知正常的下载线做单变量对照。现有数据不足以指定故障元件。
+
+最后一次尝试的是恢复 BIT。00:09:54 Vivado 完成关闭目标并退出，最后读回仍为 EOS/DONE=0。没有取得可确认的运行镜像或 GP01 句柄。此次无主机设温、参数、采集或输出写入，未写 Flash 或 FX3 EEPROM。`0x6668` 首读、八路 schema3 连续轮次、各通道缓存及时间戳、整轮周期和实物设温仍待配置成功后测量。
+
+原始证据位于 `D:/Project/Test/ai8_boot_20261128/board_postcycle_20261129_000507/`。`postcycle.log` 和 `recovery.log` 含两次下载前后完整配置状态，`diag.log` 含 SYSMON 读数，`fx3-after.txt`、`fx3-after-recovery.txt`、`usb-final.json` 保存 USB 枚举。
