@@ -1,5 +1,6 @@
 `include "sensor_cfg_codes.vh"
 `include "project_defs.vh"
+`include "register_map.vh"
 `include "error_codes.vh"
 `default_nettype none
 module ai8_modbus_rs485 #(
@@ -137,7 +138,7 @@ module ai8_modbus_rs485 #(
             92:cfg_rdata={sv,op};
             96:begin cfg_rdata=timeout_ms;writable=1;config_busy=enabled;end
             100:begin cfg_rdata=retry_limit;writable=1;config_busy=enabled;end
-            104:begin cfg_rdata=scan_enable;writable=1;config_busy=enabled;end
+            `REG_AI8_SCAN_ENABLE:begin cfg_rdata=scan_enable;writable=1;config_busy=enabled;end
             108:begin cfg_rdata=target_channel;writable=1;config_busy=pending;end
             152:begin cfg_rdata=cache_channel;writable=1;end
             160:cfg_rdata=cache_quality[cache_channel-1];
@@ -176,7 +177,7 @@ module ai8_modbus_rs485 #(
                     80:if($signed(raw_merged)<-9990 || $signed(raw_merged)>32000)cfg_error=1;
                     96:if(merged<1 || merged>65535)cfg_error=1;
                     100:if(merged>3)cfg_error=1;
-                    104:if(merged>1)cfg_error=1;
+                    `REG_AI8_SCAN_ENABLE:if(merged>1)cfg_error=1;
                     108:if(merged>8)cfg_error=1;
                     128:if(cfg_wstrb!=4'hf || (cfg_wdata!=1 && cfg_wdata!=2) ||
                         !param_read_allowed || (cfg_wdata==2 && !param_write_allowed) ||
@@ -237,7 +238,7 @@ module ai8_modbus_rs485 #(
             param_pending<=0;param_submitted<=0;param_done<=0;param_write<=0;
             param_address<=0;param_value<=0;param_readback<=0;param_count<=0;
             param_result<=0;param_error<=0;param_exception<=0;
-            scan_enable<=0;target_channel<=0;pending_channel<=1;cache_channel<=1;
+            scan_enable<=`AI8_SCAN_ENABLE_RESET;target_channel<=0;pending_channel<=1;cache_channel<=1;
             for(cache_i=0;cache_i<8;cache_i=cache_i+1)begin
                 cache_quality[cache_i]<=0;cache_pvsp[cache_i]<=0;cache_svop[cache_i]<=0;
                 cache_status[cache_i]<=0;cache_ticks[cache_i]<=0;cache_good[cache_i]<=0;cache_bad[cache_i]<=0;
@@ -269,7 +270,7 @@ module ai8_modbus_rs485 #(
                     param_result<=0;param_error<=0;param_exception<=0;end
                 132:param_address<=merged[15:0];136:param_value<=merged[15:0];
                 96:timeout_ms<=merged;100:retry_limit<=merged;
-                104:scan_enable<=merged[0];108:target_channel<=merged[7:0];152:cache_channel<=merged[7:0];
+                `REG_AI8_SCAN_ENABLE:scan_enable<=merged[0];108:target_channel<=merged[7:0];152:cache_channel<=merged[7:0];
                 default:;
             endcase
             if(commit)begin pending_channel<=target_channel==0?channel[7:0]:target_channel;pending<=1;submitted<=0;pending_raw<=shadow_raw;result_valid<=0;end

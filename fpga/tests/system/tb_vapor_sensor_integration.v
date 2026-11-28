@@ -54,7 +54,7 @@ module tb_vapor_sensor_integration #(parameter integer GPIF_TEST_HZ=50000000);
     end
 
     // Independent GPIF model: delayed flags, two-edge DQ latency, finite room.
-    localparam CMD_WORDS=182;
+    localparam CMD_WORDS=196;
     reg [31:0] commands[0:CMD_WORDS-1];reg [31:0] slave_dq=0,pending_read;
     reg [3:0] wf=0,wp=0;reg [2:0] rf=0,rp=0;
     assign ctl[4]=wf[3];assign ctl[6]=wp[3];assign ctl[5]=rf[2];assign ctl[8]=rp[2];
@@ -179,7 +179,7 @@ module tb_vapor_sensor_integration #(parameter integer GPIF_TEST_HZ=50000000);
     initial begin
         $readmemh("sensor_commands.hex",commands);
         for(k=0;k<7;k=k+1)begin counts[k]=0;beat_write[k]=0;beat_read[k]=0;frame_write[k]=0;frame_read[k]=0;building_beats[k]=0;end
-        wait(responses==13);$display("TOP_SENSOR_CONFIG_GPIF_PASS");
+        wait(responses==14);$display("TOP_SENSOR_CONFIG_GPIF_PASS");
         #20000000;run_sources=1;
         wait(gnss_tags>=1);#1000;sync_pulse=1;#100;sync_pulse=0;
         wait(counts[0]>=2&&counts[1]>=2&&counts[2]>=2&&counts[3]>=2&&counts[4]>=2&&counts[5]>=2&&counts[6]>=2);

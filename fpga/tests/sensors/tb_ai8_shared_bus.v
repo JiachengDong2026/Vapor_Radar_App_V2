@@ -107,7 +107,7 @@ module tb_ai8_shared_bus;
         cfg.expect_error(1,'h6110,38400);cfg.expect_error(1,'h6118,1);
         cfg.expect_error(1,'h661c,9);cfg.expect_error(1,'h6650,32001);
         cfg.expect_error(1,'h6620,24400001);cfg.expect_error(1,'h6620,-999100000);
-        cfg.write32('h661c,1);cfg.write32('h662c,1);cfg.write32('h6660,20);
+        cfg.write32('h661c,1);cfg.write32('h6668,0); cfg.write32('h662c,1);cfg.write32('h6660,20);
         cfg.write32('h611c,1);
         cfg.write32('h6104,1);cfg.write32('h6604,1);
         wait(ai_packets>=1 && hmp_packets>0);

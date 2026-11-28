@@ -111,7 +111,7 @@ module tb_hc2a_ai8_independent #(parameter integer INCLUDE_SDFM300=0);
         repeat(10)@(negedge clk);rst_n=1;
         #5000000;if(de||hc_txd!==1||hc_requests||ai_requests)$fatal(1,"DISABLED_STARTUP_TRAFFIC");
         if(INCLUDE_SDFM300)wr('h6504,1);
-        wr('h611c,100);wr('h662c,100);wr('h6104,1);wr('h6604,1);
+        wr('h611c,100);wr('h6668,0); wr('h662c,100);wr('h6104,1);wr('h6604,1);
         wait(hc_packets>=2 && ai_packets>=2);stage=1;
         if(hc_record[95:64]!==32'h42480000||hc_record[159:128]!==32'h41cc0000||ai_writes)
             $fatal(1,"HC_AI_NORMAL_DATA_OR_UNSOLICITED_WRITE");

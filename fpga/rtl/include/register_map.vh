@@ -388,6 +388,8 @@
 `define REG_WMS_DISC_API               8'h8c
 `define REG_WMS_DISC_STATUS            8'h90
 `define REG_WMS_DISC_STEP              8'h94
+`define REG_AI8_SCAN_ENABLE      8'h68
+`define AI8_SCAN_ENABLE_RESET    1'b1
 // AI8 single-register parameter mailbox, manual section 7.
 `define REG_AI8_PARAM_COMMAND    8'h80
 `define REG_AI8_PARAM_ADDRESS    8'h84

@@ -80,7 +80,7 @@ module tb_action_ai8;
     end
     initial begin
         repeat(10)@(negedge clk);rst_n=1;
-        cfg_access(1,'h662c,1);cfg_access(1,'h6660,20);cfg_access(1,'h6604,1);
+        cfg_access(1,'h6668,0); cfg_access(1,'h662c,1);cfg_access(1,'h6660,20);cfg_access(1,'h6604,1);
         stage=1;start_set(40000000);finish_set(0);
         cfg_access(0,'h6648,0);if(value!==1)$fatal(1,"40C confirmed count");
         cfg_access(0,'h6654,0);if(value!==32'h01900190)$fatal(1,"40C requested/readback raw");

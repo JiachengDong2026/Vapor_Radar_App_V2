@@ -38,7 +38,7 @@ module ai8_poll_core #(
     localparam START = 0, REQUEST = 1, RESPONSE = 2, HOLD = 3, GAP = 4,
         WRITE_REQ = 5, WRITE_RSP = 6, VERIFY_REQ = 7, VERIFY_RSP = 8;
     reg [3:0] state;
-    reg command_parameter, command_write;
+    reg command_parameter, command_write, resume_gap;
     reg [15:0] command_address;
     reg [7:0] scan_channel, command_channel;
     wire [7:0] poll_channel = scan_enable ? scan_channel : channel;
@@ -84,7 +84,7 @@ module ai8_poll_core #(
     );
     always @(posedge clk) begin
         if (!rst_n || !enable) begin
-            command_parameter <= 0; command_write <= 0; command_address <= 0;
+            resume_gap <= 0; command_parameter <= 0; command_write <= 0; command_address <= 0;
             scan_channel <= 1; sample_channel <= 1; command_channel <= 1;
             state <= START; item <= 0; ms_div <= 0; gap_ms <= 0;
             sample_valid <= 0; pv_raw <= 0; sp_raw <= 0; sv_raw <= 0; op_raw <= 0;
@@ -96,29 +96,32 @@ module ai8_poll_core #(
             set_requested <= 0; set_readback <= 0;
         end else begin
             if (set_rsp_valid && set_rsp_ready) set_rsp_valid <= 0;
-            // The gap clock starts at completion and runs through backpressure.
-            if (state == HOLD || state == GAP) begin
+            // Scan period is measured from CH1 start. Include bus work and commands.
+            // Single-channel mode keeps the original delay after completion.
+            if (scan_enable || state == HOLD || state == GAP) begin
                 if (ms_div >= SYS_CLK_HZ/1000 - 1) begin
                     ms_div <= 0;
                     if (gap_ms < poll_interval_ms) gap_ms <= gap_ms + 1'b1;
                 end else ms_div <= ms_div + 1'b1;
             end
             if (set_valid && set_ready) begin
+                resume_gap <= scan_enable && state == GAP;
                 command_channel <= set_channel;
                 command_parameter <= parameter_mode === 1'b1;
                 command_write <= parameter_write; command_address <= parameter_address;
                 set_requested <= set_raw; set_readback <= 0;
                 set_error <= 0; set_exception <= 0;
                 if (!CONFIG_OK) begin
-                    set_result <= 5; set_error <= 6; set_rsp_valid <= 1; state <= START;
+                    set_result <= 5; set_error <= 6; set_rsp_valid <= 1;
                 end else if (parameter_mode === 1'b1) begin
                     state <= parameter_write ? WRITE_REQ : VERIFY_REQ;
                 end else if ($signed(set_raw) < -9990 || $signed(set_raw) > 32000) begin
-                    set_result <= 4; set_rsp_valid <= 1; state <= START;
+                    set_result <= 4; set_rsp_valid <= 1; state <= resume_gap ? GAP : START;
                 end else state <= WRITE_REQ;
             end else case (state)
                 START: begin
                     item <= 0; sample_channel <= poll_channel;
+                    if (scan_enable && scan_channel == 1) begin ms_div <= 0; gap_ms <= 0; end
                     if (scan_enable) begin
                         pv_raw<=0;sp_raw<=0;sv_raw<=0;op_raw<=0;alarm<=0;control<=0;host_status<=0;
                     end
@@ -127,7 +130,8 @@ module ai8_poll_core #(
                         sample_valid <= 1; online <= 0; last_error <= 6;
                         exception_code <= 0; error_count <= error_count + 1'b1;
                         sample_ticks <= now_ticks; sample_time_sync <= time_sync_valid;
-                        ms_div <= 0; gap_ms <= 0; state <= HOLD;
+                        if (!scan_enable) begin ms_div <= 0; gap_ms <= 0; end
+                        state <= HOLD;
                     end
                 end
                 REQUEST: if (req_ready) state <= RESPONSE;
@@ -137,14 +141,18 @@ module ai8_poll_core #(
                         online <= 0; last_error <= master_error; exception_code <= master_exception;
                         error_count <= error_count + 1'b1; sample_ticks <= now_ticks;
                         sample_time_sync <= time_sync_valid;
-                        sample_valid <= 1; ms_div <= 0; gap_ms <= 0; state <= HOLD;
+                        sample_valid <= 1;
+                        if (!scan_enable) begin ms_div <= 0; gap_ms <= 0; end
+                        state <= HOLD;
                     end else if (item == 6) begin
                         sp_raw <= pending_sp; pv_raw <= pending_pv; sv_raw <= pending_sv;
                         op_raw <= pending_op; alarm <= pending_alarm; control <= pending_control;
                         host_status <= value; online <= 1; last_error <= 0; exception_code <= 0;
                         good_count <= good_count + 1'b1; sample_ticks <= now_ticks;
                         sample_time_sync <= time_sync_valid;
-                        sample_valid <= 1; ms_div <= 0; gap_ms <= 0; state <= HOLD;
+                        sample_valid <= 1;
+                        if (!scan_enable) begin ms_div <= 0; gap_ms <= 0; end
+                        state <= HOLD;
                     end else begin
                         case (item)
                             0: pending_sp <= value;
@@ -166,7 +174,7 @@ module ai8_poll_core #(
                 WRITE_RSP: if (done) begin
                     if (master_error != 0) begin
                         set_result <= 1; set_error <= master_error; set_exception <= master_exception;
-                        set_rsp_valid <= 1; state <= START;
+                        set_rsp_valid <= 1; state <= resume_gap ? GAP : START;
                     end else state <= VERIFY_REQ;
                 end
                 VERIFY_REQ: if (req_ready) state <= VERIFY_RSP;
@@ -176,7 +184,7 @@ module ai8_poll_core #(
                     if (master_error != 0) set_result <= 2;
                     else if ((!command_parameter || command_write) && value != set_requested) set_result <= 3;
                     else set_result <= 0;
-                    set_rsp_valid <= 1; state <= START;
+                    set_rsp_valid <= 1; state <= resume_gap ? GAP : START;
                 end
                 default: state <= START;
             endcase

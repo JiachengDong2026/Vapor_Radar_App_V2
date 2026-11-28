@@ -5,6 +5,8 @@ module tb_ai8_scan;
     reg [31:0] addr=0,data=0;
     wire [31:0] rd;
     wire err;
+    reg [63:0] tick=64'h1234567800000000, first_tick;
+    always @(posedge clk) tick<=tick+1'b1;
     reg done=0;
     reg [3:0] transport=0;
     reg [255:0] response=0;
@@ -13,7 +15,7 @@ module tb_ai8_scan;
     reg [15:0] expected,value;
     ai8_modbus_rs485 #(.SYS_CLK_HZ(2000000)) dut(
         .sys_clk(clk),.rst_sys_n(rst),.uart_rxd(1'b1),.uart_txd(),.rs485_de(),
-        .timestamp_now(64'd1234),.time_sync_valid(1'b1),.time_sync_seq(32'd0),
+        .timestamp_now(tick),.time_sync_valid(1'b1),.time_sync_seq(32'd0),
         .cfg_valid(valid),.cfg_write(write),.cfg_addr(addr),.cfg_wdata(data),.cfg_wstrb(4'hf),
         .cfg_ready(),.cfg_rdata(rd),.cfg_error(err),.cfg_error_code(),
         .m_valid(),.m_ready(1'b1),.m_data(),.m_keep(),.m_sof(),.m_last(),.m_source_id(),.m_msg_id(),
@@ -25,6 +27,14 @@ module tb_ai8_scan;
             #1;if(err)$fatal(1,"write rejected %h",a);@(negedge clk);valid=0;write=0;
         end
     endtask
+    task check_read;
+        input [31:0] a,d;
+        begin
+            @(negedge clk);valid=1;write=0;addr=a;
+            #1;if(err || rd!==d)$fatal(1,"read %h expected %h got %h",a,d,rd);
+            @(negedge clk);valid=0;
+        end
+    endtask
     initial begin
         force dut.core.req_ready=1'b1;
         force dut.core.done=done;
@@ -32,7 +42,8 @@ module tb_ai8_scan;
         force dut.core.master_exception=8'd0;
         force dut.core.read_data=response;
         repeat(4)@(negedge clk);rst=1;
-        wr('h6668,1);wr('h662c,1);wr('h6604,1);
+        check_read('h6668,1);check_read('h6604,0);check_read('h66fc,15);
+        wr('h662c,1);wr('h6604,1);
         for(round=0;round<2;round=round+1)begin
             for(ch=1;ch<=8;ch=ch+1)begin
                 for(item=0;item<7;item=item+1)begin
@@ -51,6 +62,16 @@ module tb_ai8_scan;
                 end
                 wait(dut.record_valid);@(negedge clk);
                 if(dut.record_data[15:0]!=3 || dut.core_channel!=ch)$fatal(1,"schema/channel mismatch");
+                if(ch==1 && round==0)first_tick=dut.record_timestamp;
+                if(ch==1 && round==1 && (dut.record_timestamp-first_tick<2000 || dut.record_timestamp-first_tick>2010))
+                    $fatal(1,"round period %d clocks",dut.record_timestamp-first_tick);
+                wr('h6698,ch);
+                // Compare the selected host window against this record's TLV values.
+                check_read('h66a0,{18'd0,dut.record_data[72*8+1 +: 12],1'b1,dut.record_data[72*8]});
+                check_read('h66a4,{dut.record_data[16*8 +: 16],dut.record_data[8*8 +: 16]});
+                check_read('h66a8,{dut.record_data[24*8 +: 16],dut.record_data[32*8 +: 16]});
+                check_read('h66ac,{dut.record_data[56*8 +: 16],dut.record_data[48*8 +: 8],dut.record_data[40*8 +: 8]});
+                check_read('h66b0,dut.record_timestamp[31:0]);check_read('h66b4,dut.record_timestamp[63:32]);
                 found=0;
                 for(k=4;k<dut.record_length;k=k+8)begin
                     if(dut.record_data[k*8+:16]==16'h0468)begin
@@ -83,9 +104,13 @@ module tb_ai8_scan;
         @(negedge clk);response={240'd0,8'h41,8'h01};done=1;
         @(negedge clk);done=0;repeat(3)@(negedge clk);
         if(dut.confirmed_count!=1 || dut.last_readback!=321)$fatal(1,"set confirmation missing");
+        wait(dut.core.state==2);
+        if(dut.core.address!=0)$fatal(1,"command in CH8 gap lost round boundary");
         wr('h6604,0);wr('h6668,0);wr('h661c,8);wr('h6604,1);
         wait(dut.core.state==2);
         if(dut.core.address!=7)$fatal(1,"single-channel selection lost");
+        wr('h6604,2);check_read('h6604,0);check_read('h6668,1);
+        wr('h6668,1);check_read('h6668,1);
         $display("TEST_PASS tb_ai8_scan eight real address sequences, isolated values/alarms/counts, failure progression, single-channel selection");$finish;
     end
     initial begin #10000000;$fatal(1,"watchdog");end

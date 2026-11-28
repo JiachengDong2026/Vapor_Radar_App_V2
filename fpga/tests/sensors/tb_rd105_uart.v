@@ -79,7 +79,7 @@ module tb_rd105_uart;
         cfg.expect_error(1,'h6a04,5);cfg.expect_error(1,'h6a80,1);cfg.expect_error(1,'h6a14,1);cfg.expect_error(1,'h6a10,9600);
         cfg.expect_error(1,'h6a20,25000001);cfg.expect_error(1,'h6a18,1);
         cfg.write32('h6120,3);cfg.write32('h611c,1);cfg.write32('h6104,1);
-        cfg.write32('h662c,1);cfg.write32('h6604,1);
+        cfg.write32('h6668,0); cfg.write32('h662c,1);cfg.write32('h6604,1);
         cfg.write32('h6a2c,1);cfg.write32('h6a04,1);
         wait(packets1>=2 && packets2>=2 && hmp>=2 && ai8>=14);stage=1;
         cfg.write32('h6a20,30000000);cfg.write32('h6a04,5);

@@ -92,7 +92,7 @@ module tb_sensor_bank_merge;
         @(negedge clk);cv=1;cw=0;ca='h6600;#1;
         if(!cr||ce||rd!==32'h00460200)$fatal(1,"AI8 identity/routing");
         @(negedge clk);cv=0;
-        wr('h6018,10);wr('h6314,100);wr('h6414,20);wr('h662c,20);
+        wr('h6018,10);wr('h6314,100);wr('h6414,20);wr('h6668,0); wr('h662c,20);
         wr('h6004,1);wr('h6204,1);wr('h6304,1);wr('h6404,1);wr('h6504,1);wr('h6604,1);
         #20000000;run_sources=1;
         wait(packets[0]>=2&&packets[2]>=2&&packets[3]>=2&&packets[4]>=2&&packets[5]>=2&&packets[6]>=2);
