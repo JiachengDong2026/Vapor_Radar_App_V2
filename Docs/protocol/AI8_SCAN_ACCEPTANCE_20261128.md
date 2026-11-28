@@ -20,7 +20,7 @@
 
 ## 现场续验
 
-连接板上 FX3 数据 USB，在上位机自动配置前独占该接口。先留存能力、扫描配置、八路原设温、输出及采集状态。通过 JTAG 临时加载已签核 BIT，读取配置状态和首次写前的 `0x6668`。首轮跳过主机模式写入，留存多轮 schema3 原帧，按通道、计数及完成时间戳与寄存器窗口配对。选安全的已接通道做可恢复的设温和参数页读写，核对独立读回并恢复所有暂改项。另测 AI8 软复位和主机写 `1` 后读回。SRAM 重配后的复位与实际断电后从非易失存储加载的镜像分别记录。本轮没有下载 FPGA、写 Flash/EEPROM 或改变实物参数及输出。
+按现场负责人更正的顺序，在 422Laptop3 接好数据 USB，先经 JTAG 将签核 BIT 加载至 SRAM。确认 DONE/EOS 后枚举 FX3 并独占接口，先读 `0x6668`，然后读取能力、扫描配置、可读设温、输出及采集状态。首轮跳过主机模式写入，留存多轮 schema3 原帧，按通道、计数及完成时间戳与寄存器窗口配对。选安全的已接通道做可恢复的设温和参数页读写，核对独立读回并恢复所有暂改项。另测 AI8 软复位和主机写 `1` 后读回。SRAM 重配与实际断电启动分别记录。上表及原始枚举日志记录的是早期只读清点。
 
 外部原始证据位于 `D:/Project/Test/ai8_boot_20261128/`。`inventory.log`、`usb-before.json`、`fx3-before.txt` 记录现场枚举，`window/` 包含最终缓存窗口及交错设温测试，`common3/` 保存公共报告。历史发布目录中旧 BIT 的哈希不能用作本次实现或实板的标识。
 
@@ -29,3 +29,18 @@
 - `build4/build_result.json` 记录 `FULL_SYSTEM_BUILD_PASS`、退出码 0、构建期间输入变动 0 项。最终 282705/282705 条网线全部布通，routing errors 0。WNS +0.019 ns，TNS 0，WHS +0.010 ns，THS 0。DAC 管脚最小裕量 7.283 ns，AD4630 管脚最小裕量 3.585 ns。
 - CDC 端点与项目基线精确匹配 2/2，含既有 CDC-10 Critical 复位路径和一条 CDC-3 Info。最终布线网表复核输出 `FORMAL_CDC_NETLIST_REVIEW_PASS memory_entries=0 reset_entries=1`。12 项 bus-skew 检查最小裕量 +7.991 ns。
 - BIT 位于 `D:/Project/Test/ai8_boot_20261128/build4/full_build/vapor_lidar_top.bit`，SHA-256 为 `bb7a14bbfad71ea7f0ead787b9cee27ae04a30966186969814b26ca684034882`。首次实现 `build3` 在反向 FIFO 保持路径处停止，原始失败报告留存。修订脚本按 TX/RX 的源、目的时钟校验两个方向的 Gray 指针及同步级，本轮 `build4` 从源码重新综合、布局、布线并通过原有门槛。
+
+## 现场续验结果（2026-11-28 北京时间 23:51–23:56）
+
+**实板阻塞在 FPGA 配置启动阶段。** 负责人已连接 FX3 数据线。422Laptop3 上两次向目标 SRAM 下载签核 BIT，Vivado 两次均报 `Labtools 27-3165 End of startup status: LOW`。
+
+| 核对项 | 实测及证据 |
+|---|---|
+| 交付标识 | 远端交付分支测前为 `04e369b1`。复算 build4 BIT 的 SHA-256 与上节一致。`source_inputs.json` 的 134 项输入逐项与 `11864af6` 对比均匹配（允许 Git 文本行尾转换）。原产物直接使用，基线静态检查再次通过。 |
+| JTAG | Vivado 2025.1，电缆 `13620207920cf6`，单器件 `xcku11p_0`，IDCODE `04A4E093`。默认 6 MHz 下载报 EOS LOW。随后硬件读回 `CONFIG_STATUS=0x10801904`。3 MHz 重试后读回 `0x1080190C`，`BOOT_STATUS=0x00000000`。两次状态均为 EOS=0、内部 DONE=0、DONE pin=0、INIT_B pin=1、CRC/IDCODE/security/bad-packet 错误位均为 0。两次读数间 DCI_MATCH 由 0 变为 1。 |
+| USB | 3 MHz 下载结束后 Windows 在场 USB 设备中可见 Xilinx JTAG 和 CH340，未出现 `04B4:00F1`。GP01 WinUSB 接口 GUID `{F8F79424-22D5-4531-AEAE-8EBE7CE62A3D}` 的 enabled 枚举为空。系统留有两条 FX3 历史记录，均为 `IsPresent=False`、驱动 `WinUSB/oem48.inf`。当前无法发起 GP01 控制传输或 VLP1 数据交换。 |
+| 恢复镜像与退出状态 | 桌面发布指针指向 `2026-11-26_PPS_AI8参数_dab6d5d`，本次复算恢复 BIT 的 SHA-256 为 `870364e37d6a4471570289e3a8518edd88a4af6f26da1b33833b5afb61c6adbb`。同机既有 `D:/Project/FPGA_Programmer/logs/20261128_234816_675123/session.log` 显示该 BIT 在本次操作前也报 EOS LOW。23:56:08 下载进程退出，JTAG 已释放，最后目标配置未完成，无已确认运行的 SRAM 镜像。整个续验仅向 SRAM 尝试下载，Flash 和 FX3 EEPROM 均未写入。 |
+
+实板首次模式读数、能力及采集/输出寄存器、原设温、连续八路帧、通道缓存/时间戳、整轮周期、显式模式写回、软复位及交错命令均未取得。没有发出主机测量、设温、输出或参数写命令，无法确认各路传感器的接线或温度。本次只识别到上述一台 JTAG 目标，旧板兼容性仍待具备相应设备时验证。
+
+现场下一步是在负载安全时给 FPGA 主板完整断电再上电，确认主供电及配置跳线与曾成功的设置一致，随后重试同一 BIT 并读 DONE/EOS。原始证据位于 `D:/Project/Test/ai8_boot_20261128/board_2350/`，含 `hashes.json`、`source_check.json`、`program.log`、`retry3m.log`、`usb-post-retry.json`、`driver.json` 及 `fx3-after.txt`。
