@@ -215,12 +215,12 @@ if {[catch {
     create_project -force vapor_lidar_top "$artifact_root/vivado_project" -part xcku11p-ffva1156-2-i
     set_property include_dirs $include_dirs [current_fileset]
     read_verilog $sources
-    add_files "$root/rtl/wms/sine_q31.mem"
+    add_files [list "$root/rtl/wms/sine_q31.mem"]
     set_property top vapor_lidar_top [current_fileset]
     set_property generic "GPIF_CLK_HZ=$gpif_hz" [current_fileset]
-    read_xdc "$root/constraints/system/clocks.xdc"
+    read_xdc [list "$root/constraints/system/clocks.xdc"]
     synth_design -top vapor_lidar_top -part xcku11p-ffva1156-2-i -flatten_hierarchy rebuilt -generic "GPIF_CLK_HZ=$gpif_hz"
-    read_xdc "$root/constraints/system/board_pins.xdc"
+    read_xdc [list "$root/constraints/system/board_pins.xdc"]
     report_utilization -hierarchical -file "$out/synth_utilization.rpt"
     write_checkpoint -force "$out/synth.dcp"
     puts [exec $python -I "$root/scripts/build_manifest.py" seal-synthesis $out]
@@ -236,10 +236,10 @@ if {[catch {
         source "$root/constraints/system/vapor_lidar_top.xdc"
         write_xdc -force "$out/full_resolved.xdc"
         if {[lsearch $argv resume-synth]<0} {
-            add_files -fileset constrs_1 "$out/full_resolved.xdc"
-            set_property USED_IN_SYNTHESIS false [get_files "$out/full_resolved.xdc"]
-            set_property USED_IN_IMPLEMENTATION false [get_files "$root/constraints/system/clocks.xdc"]
-            set_property USED_IN_IMPLEMENTATION false [get_files "$root/constraints/system/board_pins.xdc"]
+            add_files -fileset constrs_1 [list "$out/full_resolved.xdc"]
+            set_property USED_IN_SYNTHESIS false [get_files [list "$out/full_resolved.xdc"]]
+            set_property USED_IN_IMPLEMENTATION false [get_files [list "$root/constraints/system/clocks.xdc"]]
+            set_property USED_IN_IMPLEMENTATION false [get_files [list "$root/constraints/system/board_pins.xdc"]]
         }
         opt_design
         report_timing -delay_type max -max_paths 30 -nworst 1 -path_type full_clock_expanded -file "$out/optimized_worst30.rpt"
@@ -311,10 +311,10 @@ if {[catch {
             # resolved constraints in the saved source project explicitly.
             close_project
             open_project "$artifact_root/vivado_project/vapor_lidar_top.xpr"
-            add_files -fileset constrs_1 "$out/full_resolved.xdc"
-            set_property USED_IN_SYNTHESIS false [get_files "$out/full_resolved.xdc"]
-            set_property USED_IN_IMPLEMENTATION false [get_files "$root/constraints/system/clocks.xdc"]
-            set_property USED_IN_IMPLEMENTATION false [get_files "$root/constraints/system/board_pins.xdc"]
+            add_files -fileset constrs_1 [list "$out/full_resolved.xdc"]
+            set_property USED_IN_SYNTHESIS false [get_files [list "$out/full_resolved.xdc"]]
+            set_property USED_IN_IMPLEMENTATION false [get_files [list "$root/constraints/system/clocks.xdc"]]
+            set_property USED_IN_IMPLEMENTATION false [get_files [list "$root/constraints/system/board_pins.xdc"]]
             close_project
         }
     }

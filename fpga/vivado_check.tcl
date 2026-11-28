@@ -52,7 +52,7 @@ if {[regexp -nocase {fatal:|error:} $simulation_text] || [string first "PREDEV_C
 }
 
 # Out-of-context synthesis smoke test for the reusable common RTL.
-add_files -fileset sources_1 "$ROOT/fpga/tests/common_synth_smoke.v"
+add_files -fileset sources_1 [list "$ROOT/fpga/tests/common_synth_smoke.v"]
 set_property top common_synth_smoke [get_filesets sources_1]
 update_compile_order -fileset sources_1
 synth_design -top common_synth_smoke -part xcku11p-ffva1156-2-i
